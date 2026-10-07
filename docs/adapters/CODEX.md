@@ -58,23 +58,23 @@ Fluxo real de um turno: `thread/status/changed` (active) → `turn/started` → 
 | `thread/started` (`thread.parentThreadId` nulo) | — | `session.started` (`cwd`, `model`, `name`) |
 | `thread/started` com `parentThreadId` | — | `subagent.started` (`agentRole`/`agentNickname`); o subagente entra na Team da thread raiz |
 | `turn/started` | — | `activity: THINKING` |
-| `item/started:userMessage` (`content[]` com `{type:"text", text}`) | `human` · `prompt` | `human.input` (origem: ver §5) |
-| `item/completed:agentMessage` (`text`, `phase`) | `agent` · `narration` | — |
-| `item/completed:plan` | `agent` · `narration` | — |
-| `item/completed:reasoning` (`summary[]` de strings) | `agent` · `thought` · `summary` (só com texto) | `activity: THINKING` |
-| `item/started:commandExecution` (`command`, `commandActions[]`) | `agent` · `tool` | `activity` por `commandActions[].type` (`read`/`listFiles`/`search` → `READING`), senão pelo classificador de comandos |
-| `item/completed:commandExecution` (`aggregatedOutput`, `exitCode`) | `agent` · `result` | — |
-| `item/started:fileChange` (`changes[].path`) | `agent` · `tool` | `activity: CODING` |
-| `item/started:webSearch` / `mcpToolCall` | `agent` · `tool` | `activity: RESEARCHING` |
-| `item/started:collabAgentToolCall` | `agent` · `tool` | `activity: DELEGATING` |
-| `item/started:enteredReviewMode` | `agent` · `tool` | `activity: REVIEWING` |
+| `item/started:userMessage` (`content[]` com `{type:"text", text}`) | `prompt` | — |
+| `item/completed:agentMessage` (`text`, `phase`) | `narration` | — |
+| `item/completed:plan` | `narration` | — |
+| `item/completed:reasoning` (`summary[]` de strings) | `thought` · `summary` (só com texto) | `activity: THINKING` |
+| `item/started:commandExecution` (`command`, `commandActions[]`) | `tool` | `activity` por `commandActions[].type` (`read`/`listFiles`/`search` → `READING`), senão pelo classificador de comandos |
+| `item/completed:commandExecution` (`aggregatedOutput`, `exitCode`) | `result` | — |
+| `item/started:fileChange` (`changes[].path`) | `tool` | `activity: CODING` |
+| `item/started:webSearch` / `mcpToolCall` | `tool` | `activity: RESEARCHING` |
+| `item/started:collabAgentToolCall` | `tool` | `activity: DELEGATING` |
+| `item/started:enteredReviewMode` | `tool` | `activity: REVIEWING` |
 | `thread/status/changed` `active` + `activeFlags` ∋ `waitingOnApproval`/`waitingOnUserInput` | — | `waiting` (e `waiting.resolved` quando a flag some) |
 | ServerRequest `item/commandExecution/requestApproval`, `item/fileChange/requestApproval`, `item/permissions/requestApproval`, `item/tool/requestUserInput`, `mcpServer/elicitation/request`, `applyPatchApproval`, `execCommandApproval` | — | `waiting` (**nunca respondido**) |
 | `serverRequest/resolved` (`requestId`) | — | `waiting.resolved` |
 | `thread/tokenUsage/updated` (`tokenUsage.last`: `inputTokens`, `cachedInputTokens`, `outputTokens`, `reasoningOutputTokens`) | — | `usage` |
 | `turn/completed` | — | `idle` |
 | `thread/closed` | — | `session.ended` / `subagent.ended` |
-| `error` (`error.message`, `willRetry`) | `agent` · `system` | `error` |
+| `error` (`error.message`, `willRetry`) | `system` | `error` |
 | `*/delta`, `*/outputDelta`, `*/summaryTextDelta`, `*/patchUpdated`… | — | **não vira evento** (desempenho; o item completo traz o texto) |
 | Sem `threadId` (ex.: `account/rateLimits/updated`) | — | não pertence a um Alter Ego (fica para a camada Energy) |
 
@@ -93,14 +93,12 @@ adapter). Logo, `fidelity: summary`, nunca `raw`; sem texto, nada de entrada `th
 `THINKING` continua, porque o raciocínio aconteceu). Ao vivo com `gpt-5.6-luna` os `summary`
 vieram vazios, mas o `agentMessage` de `commentary` traz narração utilizável.
 
-## 5. Origem humana: ainda heurística
+## 5. Mensagens com papel `user`
 
-O `userMessage` do app-server não diz se o texto é do Lucas. Nos rollouts, mensagens `role: user`
-incluem contexto injetado (`<environment_context>`, `<external_codex_apps_open_page>`,
-`<in-app-browser-context>`…). Estrutura observada em 2026-10-07: os prompts digitados vêm com
-`metadata.user_input_order`; os injetados não. **Heurística do adapter de rollout:** humano se há
-`user_input_order`, não é `inherited_user_message` e o texto não começa com uma marca `<…>`.
-Precisa de confirmação ao vivo; `capabilities().human_origin = "heuristic"`.
+Aparecem como `prompt`, do jeito que o Codex grava; o Orb não rastreia quem escreveu
+([ADR 0003](../adr/0003-inner-world-une-terminal-e-pensamento.md)). Nos rollouts, mensagens
+`role: user` também incluem contexto injetado pelo próprio Codex (`<environment_context>`,
+`<external_codex_apps_open_page>`…): elas aparecem igualmente, com o texto que o Codex gravou.
 
 ## 6. Princípio de não interferência com o Codex
 
@@ -162,7 +160,6 @@ diálogo de atualização só na sessão, mas **o Orb não o usa por padrão**: 
 | Pensamento | `summary` (~42% dos blocos), nunca `raw` |
 | Aprovações | **Pedido + resolução** (melhor que o Claude); o observador não responde |
 | Subagentes | Sim (`parentThreadId` / `parent_thread_id`); 230 vistos nos rollouts desta máquina |
-| Origem humana | **Heurística** (§5) |
 | Tempo real | Nível 1 pelo app-server próprio |
 | Tokens / limites da conta | Sim (`thread/tokenUsage/updated`, `token_usage_record`, `account/rateLimits/updated`) |
 
@@ -173,5 +170,4 @@ diálogo de atualização só na sessão, mas **o Orb não o usa por padrão**: 
 2. Conversa completa na TUI ligada ao app-server do Orb, depois de o Lucas responder os diálogos.
 3. Subagentes ao vivo no app-server (`parentThreadId` em `thread/started`).
 4. Se `--remote` mantém todos os recursos da TUI (slash commands, plugins, MCP).
-5. Origem humana em `userMessage` (§5).
-6. `codex resume <id>` para reabrir um Alter Ego: confirmar que mantém o id da thread.
+5. `codex resume <id>` para reabrir um Alter Ego: confirmar que mantém o id da thread.

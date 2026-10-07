@@ -45,7 +45,7 @@ def test_turn_flow_keeps_codex_vocabulary():
         "item/started:commandExecution", "item/completed:commandExecution", "item/completed:reasoning",
         "item/completed:reasoning", "thread/tokenUsage/updated", "turn/completed"]
     by = {e["native"]["kind"] + str(i): e for i, e in enumerate(events)}
-    assert events[2]["inner"]["origin"] == "human" and events[2]["signal"]["type"] == "human.input"
+    assert events[2]["inner"] == {"role": "prompt", "text": "leia o MVP"} and events[2]["signal"] is None
     assert events[4]["signal"]["activity"] == "READING" and events[4]["inner"]["text"] == "Get-Content docs/MVP.md"
     assert events[6]["inner"] is None and events[6]["signal"]["activity"] == "THINKING"   # sem summary
     assert events[7]["inner"]["fidelity"] == "summary"
@@ -185,8 +185,7 @@ def test_rollout_reader_translates_verified_structure(tmp_path, jsonl):
         "session_meta", "response_item/message", "response_item/message", "event_msg/task_started",
         "response_item/reasoning", "response_item/custom_tool_call", "response_item/custom_tool_call_output",
         "response_item/message", "token_usage_record", "event_msg/task_complete"]
-    assert events[1]["inner"]["origin"] == "agent"                      # contexto injetado
-    assert events[2]["inner"]["origin"] == "human"                      # heurística user_input_order
+    assert events[1]["inner"]["role"] == events[2]["inner"]["role"] == "prompt"   # como o Codex gravou
     assert "encrypted_content" not in events[4]["native"]["body"]
     assert events[5]["signal"]["activity"] == "READING"
     assert {e["alter_ego"] for e in events} == {f"codex:{TID}"}

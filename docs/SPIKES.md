@@ -43,7 +43,7 @@ e observá-lo, no Windows?
 | S1 — TUI hospedada funciona | ✅ Logo, cores (truecolor/256), tela alternativa, cursor, redesenho ao redimensionar, teclado, Ctrl+C. `/slash` não exercitado |
 | S2 — Mesmo comportamento que fora do Orb | ✅ O Orb não escreveu em nada do projeto; só leu o transcript |
 | S3 — Evento chega ao painel em < 1 s | ✅ ~270–470 ms (inclui polling de 250 ms) |
-| S5 — Prompt do Lucas aparece | ✅ Apareceu como entrada humana do Inner World |
+| S5 — Prompt aparece na telemetria | ✅ Apareceu no painel |
 | S6 — Robustez | ◐ Linhas parciais/inválidas toleradas; teste de caos pendente |
 | S4 — Subagentes | ⏳ Não houve subagente nesta sessão |
 
@@ -118,8 +118,9 @@ numa GPU MX110); telemetria chegando ao Godot; latência ponta a ponta Godot ↔
 
 1. **Os resumos das docs tinham campos errados** (`tool_response`, não `tool_output`; sem
    `is_continuation`/`is_background`). Vale a fixture real.
-2. **`UserPromptSubmit` não é sempre o Lucas** (`<task-notification>`): a origem humana vem do
-   transcript (`origin.kind`). Revisto em 2026-10-07: existe também a origem `peer` (outra sessão).
+2. **`UserPromptSubmit` não é sempre o Lucas** (`<task-notification>`; o transcript distingue por
+   `origin.kind`). Em 2026-10-07 decidiu-se que o Orb não rastreia autoria (ADR 0003), então isso
+   ficou só como informação.
 3. **`Stop` do líder não encerra a Team:** a ferramenta `Agent` é assíncrona.
 4. Mitigação do travamento: receptor mínimo, `command` assíncrono com `curl -m 1`, e **nível 0 como
    padrão** ([ADR 0005](adr/0005-nivel-zero-de-pegada-por-padrao.md)).
@@ -186,7 +187,7 @@ nativo e streaming de resumo.
 | 3 | Um Orb travado não pode atrasar o agente | Spike 3 | [ARCHITECTURE.md](ARCHITECTURE.md) §4 |
 | 4 | Um único Terminal Host, em Python; o cliente só exibe | Spike 2 | [ADR 0004](adr/0004-terminal-host-unico-em-python.md) |
 | 5 | Toda entrada externa é validada na borda e a falha é isolada | Spike 2 | [ARCHITECTURE.md](ARCHITECTURE.md) §4 |
-| 6 | Entrada humana no Inner World só com origem confirmada | Spike 3 | [PROTOCOL.md](PROTOCOL.md) §4 |
+| 6 | ~~Entrada humana só com origem confirmada~~ — revista: o Orb não rastreia autoria | Spike 3 | [ADR 0003](adr/0003-inner-world-une-terminal-e-pensamento.md) |
 | 7 | Adapters declaram `capabilities()` | Spikes 3 e 4 | [ARCHITECTURE.md](ARCHITECTURE.md) §3 |
 
 ## O que continua em aberto

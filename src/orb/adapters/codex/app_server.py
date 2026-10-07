@@ -99,7 +99,7 @@ class AppServerTranslator:
         elif method == "error":
             error = params.get("error") if isinstance(params.get("error"), dict) else {}
             message = str(error.get("message") or mapping.short_json(params.get("error")))
-            inner = {"origin": "agent", "role": "system", "text": message}
+            inner = {"role": "system", "text": message}
             signal = {"type": "error", "message": message, "recoverable": bool(params.get("willRetry"))}
         return self._factory(root).make(key, ts, kind, params, agent=agent, inner=inner, signal=signal)
 
@@ -137,25 +137,24 @@ class AppServerTranslator:
             if not started:
                 return None, None
             text = mapping.user_text(item.get("content"))
-            return ({"origin": "human", "role": "prompt", "text": text},
-                    {"type": "human.input", "kind": "prompt", "channel": "terminal"})
+            return {"role": "prompt", "text": text}, None
         if itype == "agentMessage" and not started:
-            return {"origin": "agent", "role": "narration", "text": str(item.get("text") or "")}, None
+            return {"role": "narration", "text": str(item.get("text") or "")}, None
         if itype == "plan" and not started:
-            return {"origin": "agent", "role": "narration", "text": str(item.get("text") or "")}, None
+            return {"role": "narration", "text": str(item.get("text") or "")}, None
         if itype == "reasoning" and not started:
             summary = "\n".join(str(part) for part in item.get("summary") or [] if part)
             signal = {"type": "activity", "activity": "THINKING"}
             if not summary:
                 return None, signal     # sem texto: nada de entrada `thought`
-            return {"origin": "agent", "role": "thought", "text": summary, "fidelity": "summary"}, signal
+            return {"role": "thought", "text": summary, "fidelity": "summary"}, signal
         if itype == "commandExecution":
             if started:
-                return ({"origin": "agent", "role": "tool", "text": mapping.item_text(item)},
+                return ({"role": "tool", "text": mapping.item_text(item)},
                         {"type": "activity", "activity": mapping.command_activity(item), "target": item.get("command")})
-            return {"origin": "agent", "role": "result", "text": mapping.result_text(item)}, None
+            return {"role": "result", "text": mapping.result_text(item)}, None
         if started and itype in mapping.ITEM_ACTIVITY:
-            return ({"origin": "agent", "role": "tool", "text": mapping.item_text(item)},
+            return ({"role": "tool", "text": mapping.item_text(item)},
                     {"type": "activity", "activity": mapping.ITEM_ACTIVITY[itype]})
         return None, None
 

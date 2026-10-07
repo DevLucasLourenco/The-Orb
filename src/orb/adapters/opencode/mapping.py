@@ -15,7 +15,6 @@ CAPABILITIES = Capabilities(
     thought_fidelity=("raw",),              # blocos `reasoning`; raw ou resumo conforme o modelo (a confirmar)
     approvals="none",                        # tabela `permission` existe, sem linhas observadas ainda
     subagents=True,                          # session_v2.parent_id
-    human_origin="confirmed",                # `user` × `synthetic`/`system` em session_message.type
     realtime=False,                          # nível 1 (servidor próprio + --server) a validar
     usage=True,
 )
@@ -31,13 +30,8 @@ TOOL_ACTIVITY: dict[str, str] = {
 SHELL_TOOLS = frozenset({"bash", "shell"})
 TARGET_KEYS: tuple[str, ...] = ("filePath", "path", "command", "pattern", "url", "query", "description")
 
-# session_message.type -> (origem, papel) no Inner World. `user` é sempre o Lucas: o próprio opencode
-# separa o que ele mesmo injeta (`synthetic`, `system`).
-MESSAGE_TYPES: dict[str, tuple[str, str]] = {
-    "user": ("human", "prompt"),
-    "synthetic": ("agent", "system"),
-    "system": ("agent", "system"),
-}
+# session_message.type -> papel da linha no Inner World (o tipo nativo continua no rótulo).
+MESSAGE_TYPES: dict[str, str] = {"user": "prompt", "synthetic": "system", "system": "system"}
 FINISHED_TOOL_STATUS = frozenset({"completed", "error"})
 
 

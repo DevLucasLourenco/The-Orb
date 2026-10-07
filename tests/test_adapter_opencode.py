@@ -66,7 +66,7 @@ def test_starts_from_the_end_then_reads_streaming_rows_once(tmp_path, db):
     db.put("msg_a", "ses_root1", "assistant", {"content": [tool], "time": {"created": 3}}, seq=2)
     first = r.poll()
     assert kinds(first) == ["session_v2", "session_message/user", "session_message/assistant:tool"]
-    assert first[1]["inner"]["origin"] == "human" and first[1]["signal"]["type"] == "human.input"
+    assert first[1]["inner"]["role"] == "prompt" and first[1]["signal"] is None
     assert first[2]["signal"]["activity"] == "TESTING" and first[2]["inner"]["text"] == "bash pytest -q"
     # a mesma linha é REESCRITA conforme o streaming avança
     done = {**tool, "state": {"status": "completed", "input": {"command": "pytest -q"}, "content": "3 passed"}}
@@ -83,13 +83,14 @@ def test_starts_from_the_end_then_reads_streaming_rows_once(tmp_path, db):
     assert r.poll() == []
 
 
-def test_synthetic_and_system_messages_are_not_the_human(tmp_path, db):
+def test_synthetic_and_system_messages_keep_their_native_type(tmp_path, db):
     db.session("ses_root1")
     r = reader(tmp_path, replay=True)
     db.put("m1", "ses_root1", "synthetic", {"text": "lembrete injetado"})
     db.put("m2", "ses_root1", "system", {"text": "sistema"})
     events = [e for e in r.poll() if e["native"]["kind"].startswith("session_message")]
-    assert [e["inner"]["origin"] for e in events] == ["agent", "agent"]
+    assert [e["native"]["kind"] for e in events] == ["session_message/synthetic", "session_message/system"]
+    assert [e["inner"]["role"] for e in events] == ["system", "system"]
     assert all(e["signal"] is None for e in events)
 
 

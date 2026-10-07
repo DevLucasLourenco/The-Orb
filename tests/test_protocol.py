@@ -12,7 +12,7 @@ def _event(**over):
 
 
 def test_valid_event_keeps_native_intact():
-    event = _event(inner={"origin": "agent", "role": "tool", "text": "Read a.py"},
+    event = _event(inner={"role": "tool", "text": "Read a.py"},
                    signal={"type": "activity", "activity": "READING", "target": "a.py"})
     assert validate(event) is None
     assert event["native"] == {"kind": "assistant/tool_use", "body": {"name": "Read", "input": {"file_path": "a.py"}},
@@ -23,13 +23,13 @@ def test_signal_vocabulary_is_closed():
     assert validate(_event(signal={"type": "algo.novo"})) is not None
     assert validate(_event(signal={"type": "activity", "activity": "DANCING"})) is not None
     assert validate(_event(signal={"type": "activity"})) is not None          # falta o campo
-    assert validate(_event(signal={"type": "human.input", "kind": "prompt", "channel": "fax"})) is not None
+    assert validate(_event(signal={"type": "human.input", "kind": "prompt", "channel": "terminal"})) is not None  # saiu do vocabulário
 
 
 def test_thought_requires_fidelity_and_inferred_is_not_allowed():
-    assert validate(_event(inner={"origin": "agent", "role": "thought", "text": "x"})) is not None
-    assert validate(_event(inner={"origin": "agent", "role": "thought", "text": "x", "fidelity": "inferred"})) is not None
-    assert validate(_event(inner={"origin": "agent", "role": "thought", "text": "x", "fidelity": "summary"})) is None
+    assert validate(_event(inner={"role": "thought", "text": "x"})) is not None
+    assert validate(_event(inner={"role": "thought", "text": "x", "fidelity": "inferred"})) is not None
+    assert validate(_event(inner={"role": "thought", "text": "x", "fidelity": "summary"})) is None
 
 
 def test_invalid_shapes_are_rejected_without_raising():
@@ -47,5 +47,5 @@ def test_big_bodies_are_clipped_but_keep_keys():
 
 
 def test_inner_text_is_clipped():
-    event = _event(inner={"origin": "agent", "role": "narration", "text": "z" * 10_000})
+    event = _event(inner={"role": "narration", "text": "z" * 10_000})
     assert len(event["inner"]["text"]) == MAX_INNER_TEXT and event["inner"]["text"].endswith("…")

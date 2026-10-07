@@ -42,12 +42,11 @@ sabe, por exemplo, se o Lucas já tem hooks ou webhooks configurados.
 
 | `native.kind` | `inner` | `signal` |
 |---|---|---|
-| `messages/user` (sessão que não é subagente) | `human` · `prompt` | `human.input` (**heurística**) |
-| `messages/user` (subagente) | `agent` · `system` | — |
-| `messages/assistant.reasoning` (`reasoning` com texto) | `agent` · `thought` · `raw` | `activity: THINKING` |
-| `messages/assistant` (`content`) | `agent` · `narration` | — |
-| `messages/assistant.tool_call` (um por item de `tool_calls`) | `agent` · `tool` | `activity` por palavra-chave do nome da ferramenta; `terminal` pelo classificador de comandos |
-| `messages/tool` | `agent` · `result` | — |
+| `messages/user` | `prompt` | — |
+| `messages/assistant.reasoning` (`reasoning` com texto) | `thought` · `raw` | `activity: THINKING` |
+| `messages/assistant` (`content`) | `narration` | — |
+| `messages/assistant.tool_call` (um por item de `tool_calls`) | `tool` | `activity` por palavra-chave do nome da ferramenta; `terminal` pelo classificador de comandos |
+| `messages/tool` | `result` | — |
 | `messages/assistant.stop` (`finish_reason = "stop"`, líder) | — | `idle` |
 
 - **Subagente** = sessão com `source = "subagent"` e `parent_session_id` (`tools/delegate_tool.py:1942-1989`).
@@ -100,7 +99,6 @@ do Orb.
 | Pensamento | Coluna `reasoning`; `raw` ou `summary` conforme o modelo (a confirmar) |
 | Aprovações | Não registradas no banco (só o texto do resultado); nível 1 traria `approval.request` |
 | Subagentes | Sim (`source = subagent` + `parent_session_id`) |
-| Origem humana | **Heurística** (`role = user` em sessão que não é subagente) |
 | Tempo real | Não (nível 1 a implementar pelo sidecar da TUI) |
 | Tokens | Totais por sessão nas colunas de `sessions` (ainda não lidos pelo adapter) |
 
@@ -108,6 +106,6 @@ do Orb.
 
 1. Rodar o Hermes hospedado no Orb e confirmar o mapa ao vivo (com o Lucas acompanhando os diálogos).
 2. Nível 1 pelo `HERMES_TUI_SIDECAR_URL` (só `--tui`).
-3. Origem humana real e lista de ferramentas.
+3. Lista completa de ferramentas.
 4. Vínculo sessão hospedada ↔ Alter Ego sem flag de id (`--source`?).
 5. Tokens/custo por sessão (Energy).

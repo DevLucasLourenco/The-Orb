@@ -46,11 +46,12 @@ def test_native_kinds_inner_and_signals(tmp_path, jsonl):
     ])
     events = reader(tmp_path).poll()
     assert all(validate(e) is None for e in events)
-    assert kinds(events) == ["user/prompt", "assistant/text", "assistant/tool_use", "assistant/usage",
+    assert kinds(events) == ["user/text", "assistant/text", "assistant/tool_use", "assistant/usage",
                              "user/tool_result", "assistant/text", "assistant/stop"]
     by_kind = {e["native"]["kind"]: e for e in events}
-    assert by_kind["user/prompt"]["inner"]["origin"] == "human"
-    assert by_kind["user/prompt"]["signal"] == {"type": "human.input", "kind": "prompt", "channel": "terminal"}
+    assert by_kind["user/text"]["inner"] == {"role": "prompt", "text": "leia o MVP"}
+    assert by_kind["user/text"]["signal"] is None
+    assert by_kind["user/text"]["native"]["body"]["origin"] == {"kind": "human"}      # nativo intacto
     tool = by_kind["assistant/tool_use"]
     assert tool["native"]["body"]["name"] == "Read"                  # nativo intacto
     assert tool["inner"]["text"] == "Read docs/MVP.md"
@@ -66,33 +67,22 @@ def test_empty_thinking_is_not_a_thought_but_text_is_raw(tmp_path, jsonl):
         {"type": "thinking", "thinking": "pensando", "signature": "y"}]}}])
     events = reader(tmp_path).poll()
     assert len(events) == 1
-    assert events[0]["inner"] == {"origin": "agent", "role": "thought", "text": "pensando", "fidelity": "raw"}
+    assert events[0]["inner"] == {"role": "thought", "text": "pensando", "fidelity": "raw"}
     assert "signature" not in events[0]["native"]["body"]
 
 
-@pytest.mark.parametrize("entry, human", [
-    ({"origin": {"kind": "human"}, "message": {"content": "oi"}}, True),
-    ({"message": {"content": "oi"}}, True),                                   # sem origin, sem marcas
-    ({"origin": {"kind": "human"}, "message": {"content": [{"type": "text", "text": "oi"}]}}, True),
-    ({"origin": {"kind": "task-notification"}, "message": {"content": "<task-notification>x"}}, False),
-    ({"origin": {"kind": "task-notification"}, "message": {"content": [{"type": "text", "text": "x"}]}}, False),
-    ({"origin": {"kind": "peer"}, "isMeta": True, "message": {"content": "outra sessão"}}, False),
-    ({"isMeta": True, "message": {"content": "contexto"}}, False),
-    ({"message": {"content": "<local-command-stdout>ok</local-command-stdout>"}}, False),
-    ({"isSidechain": True, "message": {"content": "tarefa do subagente"}}, False),
+@pytest.mark.parametrize("entry", [
+    {"origin": {"kind": "human"}, "message": {"content": "oi"}},
+    {"message": {"content": [{"type": "text", "text": "oi"}]}},
+    {"origin": {"kind": "task-notification"}, "message": {"content": "<task-notification>x"}},
+    {"origin": {"kind": "peer"}, "isMeta": True, "message": {"content": "outra sessão"}},
 ])
-def test_human_origin_rule_in_every_content_shape(tmp_path, jsonl, entry, human):
+def test_user_messages_appear_as_the_session_recorded_them(tmp_path, jsonl, entry):
+    """O Orb não classifica quem escreveu (ADR 0003): toda mensagem `user` aparece como é."""
     jsonl(session_file(tmp_path), [{"type": "user", "uuid": "u1", **entry}])
     (event,) = reader(tmp_path).poll()
-    assert (event["inner"]["origin"] == "human") is human
-    assert (event["signal"] is not None) is human
-
-
-def test_slash_command_is_a_human_command(tmp_path, jsonl):
-    jsonl(session_file(tmp_path), [{"type": "user", "uuid": "u1", "origin": {"kind": "human"},
-                                    "message": {"content": "<command-message>review</command-message>"}}])
-    (event,) = reader(tmp_path).poll()
-    assert event["signal"]["kind"] == "command"
+    assert event["native"]["kind"] == "user/text" and event["inner"]["role"] == "prompt"
+    assert event["signal"] is None
 
 
 def test_partial_lines_invalid_json_and_incremental_reads(tmp_path):
@@ -103,7 +93,7 @@ def test_partial_lines_invalid_json_and_incremental_reads(tmp_path):
     r = reader(tmp_path)
     assert r.poll() == []
     path.write_bytes(line + b"\nlixo nao json\n")
-    assert kinds(r.poll()) == ["user/prompt"]
+    assert kinds(r.poll()) == ["user/text"]
     assert r.poll() == []                                                     # nada lido duas vezes
 
 
@@ -138,7 +128,6 @@ def test_subagent_joins_the_team_and_ends_with_foreground_result(tmp_path, jsonl
     assert sub["id"] == "ab12" and sub["kind"] == "Explore" and sub["active"] is False
     sub_events = [e for e in events if e["agent"] == "ab12"]
     assert sub_events[0]["signal"]["type"] == "subagent.started"
-    assert all(e["inner"]["origin"] == "agent" for e in sub_events if e["inner"])
 
 
 def test_hook_settings_are_observer_only_and_per_session():
@@ -159,7 +148,7 @@ def test_hook_translation_with_verified_fields():
     done = t.translate("PostToolUse", {**base, "tool_name": "Bash", "tool_response": {}, "tool_use_id": "t2"})
     assert done["signal"] == {"type": "waiting.resolved", "request": ask["signal"]["request"], "decision": "approved", "deduced": True}
     sys_prompt = t.translate("UserPromptSubmit", {**base, "prompt": "<task-notification>fim</task-notification>"})
-    assert sys_prompt["signal"] is None and sys_prompt["inner"]["origin"] == "agent"
+    assert sys_prompt["signal"] is None and sys_prompt["inner"]["role"] == "prompt"
     sub = t.translate("PreToolUse", {**base, "agent_id": "ag1", "agent_type": "Explore", "tool_name": "Read",
                                      "tool_input": {"file_path": "a"}, "tool_use_id": "t3"})
     assert sub["agent"] == "ag1"

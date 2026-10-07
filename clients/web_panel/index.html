@@ -6,7 +6,7 @@
 <title>The Orb — Painel</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@xterm/xterm@5.5.0/css/xterm.css">
 <style>
-  :root { --bg:#0e1116; --panel:#161b22; --line:#2a313c; --fg:#d6dde6; --dim:#8b95a3; --accent:#6aa9ff; --ok:#56d364; --warn:#e3b341; --err:#f85149; --human:#e3b341; }
+  :root { --bg:#0e1116; --panel:#161b22; --line:#2a313c; --fg:#d6dde6; --dim:#8b95a3; --accent:#6aa9ff; --ok:#56d364; --warn:#e3b341; --err:#f85149; }
   * { box-sizing: border-box; }
   html, body { height: 100%; margin: 0; background: var(--bg); color: var(--fg); font: 13px/1.4 system-ui, sans-serif; }
   .app { display: grid; grid-template-columns: 1fr 420px; grid-template-rows: 40px 1fr; height: 100%; }
@@ -24,7 +24,7 @@
   #inner { flex: 1; overflow: auto; padding: 4px 0; font-family: ui-monospace, Consolas, monospace; font-size: 12px; }
   .entry { padding: 3px 12px; border-bottom: 1px solid #1d232c; word-break: break-word; white-space: pre-wrap; }
   .entry .meta { color: var(--dim); } .entry .kind { color: var(--accent); }
-  .entry.human { border-left: 3px solid var(--human); } .entry.human .kind { color: var(--human); }
+  .entry.prompt { border-left: 3px solid var(--warn); } .entry.prompt .kind { color: var(--warn); }
   .entry.thought { font-style: italic; } .entry.result { color: var(--dim); }
   select, button, input { background: var(--bg); color: var(--fg); border: 1px solid var(--line); border-radius: 4px; padding: 3px 8px; }
   @media (max-width: 800px) { .app { grid-template-columns: 1fr; grid-template-rows: 40px 55% 1fr; } aside { border-left: 0; border-top: 1px solid var(--line); } }
@@ -83,7 +83,7 @@ function renderWorld(world) {
       row.append(el("b", null, `${ego.provider} · ${ego.title || ego.session.slice(0, 8)}`), " ",
                  el("span", "state " + ego.state, ego.state), " ",
                  el("span", "pill", ego.area || "—"), " ",
-                 el("span", "pill", `${ego.events} ev · ${ego.human_inputs} do Lucas`));
+                 el("span", "pill", `${ego.events} ev`));
       if (ego.target) row.append(el("div", "sub", ego.target));
       for (const w of ego.waiting) row.append(el("div", "sub", `⏳ esperando o Lucas: ${w.action || w.request}`));
       box.append(row);
@@ -97,8 +97,8 @@ function renderWorld(world) {
 function onEvent(ev, receivedAt) {
   if (ev.ts) { $("lat").textContent = `latência ~${Math.max(0, Math.round(receivedAt * 1000 - Date.parse(ev.ts)))} ms`; }
   if (!ev.inner) return;                       // só entradas de Inner World viram linha
-  const entry = el("div", `entry ${ev.inner.origin} ${ev.inner.role}`);
-  const who = ev.inner.origin === "human" ? "Lucas" : (ev.agent ? `sub ${ev.agent.slice(0, 8)}` : "líder");
+  const entry = el("div", `entry ${ev.inner.role}`);
+  const who = ev.agent ? `sub ${ev.agent.slice(0, 8)}` : "líder";
   const fidelity = ev.inner.fidelity ? ` [${ev.inner.fidelity}]` : "";
   entry.append(el("span", "meta", `${(ev.ts || "").slice(11, 19)} ${who} `), el("span", "kind", ev.native.kind + fidelity),
                document.createTextNode(" " + ev.inner.text));

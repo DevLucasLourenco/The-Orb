@@ -14,7 +14,6 @@ CAPABILITIES = Capabilities(
     thought_fidelity=("raw", "summary"),    # depende do modelo por trás (colunas reasoning*)
     approvals="none",                        # sem registro de aprovações no state.db
     subagents=True,                          # sessões filhas: parent_session_id + source "subagent"
-    human_origin="heuristic",                # role "user" numa sessão que não é subagente
     realtime=False,                          # nível 1 (sidecar da TUI) ainda não implementado
     usage=True,
 )

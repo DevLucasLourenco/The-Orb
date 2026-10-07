@@ -12,7 +12,7 @@
 |---|---|---|
 | `opencode --help`, `opencode <sub> --help`, `opencode debug paths` | Flags, subcomandos, pastas | **Alta** |
 | Estrutura do `opencode.db` desta máquina: tabelas, colunas, **chaves** dos JSON e contagens (sem ler conteúdo) | Esquema, tipos de mensagem, blocos, ferramentas | **Alta** |
-| Adapter rodado sobre o banco real (2026-10-07, só contagens) | 730 eventos, 2 sessões, 20 entradas humanas, **0 inválidos** | **Alta** |
+| Adapter rodado sobre o banco real (2026-10-07, só contagens) | 730 eventos, 2 sessões, **0 inválidos** | **Alta** |
 | opencode hospedado ao vivo no Orb; servidor `opencode serve` | — | **Não verificado** |
 
 ## 1. Onde fica
@@ -48,12 +48,12 @@ criação): o cursor é `(time_updated, id)` e cada bloco é emitido **uma vez**
 | `native.kind` | `inner` | `signal` |
 |---|---|---|
 | `session_v2` (1ª vez que a sessão aparece) | — | `session.started` (`directory`, `title`) ou `subagent.started` (`agent`) |
-| `session_message/user` | `human` · `prompt` (**origem confirmada**) | `human.input` |
-| `session_message/synthetic`, `session_message/system` | `agent` · `system` | — |
-| `session_message/assistant:tool` (`name`, `state.input`) | `agent` · `tool` | `activity` pela ferramenta |
-| `session_message/assistant:tool_result` (`state.content`) | `agent` · `result` | — |
-| `session_message/assistant:text` | `agent` · `narration` | — |
-| `session_message/assistant:reasoning` | `agent` · `thought` · `raw` | `activity: THINKING` |
+| `session_message/user` | `prompt` | — |
+| `session_message/synthetic`, `session_message/system` | `system` | — |
+| `session_message/assistant:tool` (`name`, `state.input`) | `tool` | `activity` pela ferramenta |
+| `session_message/assistant:tool_result` (`state.content`) | `result` | — |
+| `session_message/assistant:text` | `narration` | — |
+| `session_message/assistant:reasoning` | `thought` · `raw` | `activity: THINKING` |
 | `session_message/assistant:usage` (`tokens.input/output/reasoning/cache.read`, `cost`) | — | `usage` |
 | `session_message/idle` (`outcome`) | — | `idle` |
 
@@ -61,8 +61,7 @@ Ferramentas observadas: `read`, `glob`, `grep` → `READING`; `edit`, `write` �
 classificador de comandos; `todowrite` → `THINKING`; `webfetch`/`websearch` → `RESEARCHING` e
 `task` → `DELEGATING` (nomes previstos, ainda não vistos nesta máquina).
 
-**Origem humana confirmada:** diferente do Codex e do Hermes, o próprio opencode separa o que o
-Lucas digita (`user`) do que ele injeta (`synthetic`, `system`).
+O tipo nativo (`user`, `synthetic`, `system`) aparece no rótulo de cada linha do Inner World.
 
 ## 3. Sessão = Alter Ego
 
@@ -96,7 +95,6 @@ de eventos e confirmar que nada muda na configuração do Lucas.
 | Pensamento | Blocos `reasoning` (5 em 2 sessões); `raw` ou resumo conforme o modelo (a confirmar) |
 | Aprovações | Tabela `permission` existe, vazia nesta máquina; não mapeada |
 | Subagentes | Sim (`session_v2.parent_id`); nenhum observado ainda |
-| Origem humana | **Confirmada** (`user` × `synthetic`/`system`) |
 | Tempo real | Não (nível 1 a implementar) |
 | Tokens / custo | Sim (`tokens`, `cost` por mensagem) |
 

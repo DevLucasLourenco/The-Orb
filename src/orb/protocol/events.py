@@ -8,8 +8,7 @@ from __future__ import annotations
 import json
 from typing import Any
 
-from .vocab import (ACTIVITIES, CHANNELS, FIDELITIES, HUMAN_INPUT_KINDS, INNER_ROLES, ORIGINS,
-                    PROTOCOL_VERSION, SIGNAL_FIELDS)
+from .vocab import ACTIVITIES, FIDELITIES, INNER_ROLES, PROTOCOL_VERSION, SIGNAL_FIELDS
 
 MAX_BODY_BYTES = 16 * 1024    # native.body serializado
 MAX_STRING = 4 * 1024         # cada string dentro de native.body
@@ -114,8 +113,6 @@ def validate(event: Any) -> str | None:
 def _validate_inner(inner: Any) -> str | None:
     if not isinstance(inner, dict):
         return "inner deve ser um objeto"
-    if inner.get("origin") not in ORIGINS:
-        return f"inner.origin inválido: {inner.get('origin')!r}"
     if inner.get("role") not in INNER_ROLES:
         return f"inner.role inválido: {inner.get('role')!r}"
     if not isinstance(inner.get("text"), str):
@@ -137,6 +134,4 @@ def _validate_signal(signal: Any) -> str | None:
         return f"signal {kind} sem campos: {', '.join(sorted(missing))}"
     if kind == "activity" and signal["activity"] not in ACTIVITIES:
         return f"atividade inválida: {signal['activity']!r}"
-    if kind == "human.input" and (signal["kind"] not in HUMAN_INPUT_KINDS or signal["channel"] not in CHANNELS):
-        return "human.input com kind/channel inválido"
     return None

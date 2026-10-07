@@ -28,7 +28,6 @@ SIGNAL_FIELDS: dict[str, frozenset[str]] = {
     "subagent.ended": frozenset(),
     "waiting": frozenset({"request"}),
     "waiting.resolved": frozenset({"request"}),
-    "human.input": frozenset({"kind", "channel"}),
     "usage": frozenset({"input_tokens", "output_tokens"}),
     "error": frozenset({"message"}),
     "signal.lost": frozenset(),
@@ -38,8 +37,5 @@ SIGNAL_FIELDS: dict[str, frozenset[str]] = {
 # Sinais que só o sistema emite (nunca um adapter).
 SYSTEM_SIGNALS: frozenset[str] = frozenset({"signal.lost", "signal.restored"})
 
-ORIGINS: frozenset[str] = frozenset({"agent", "human"})
 INNER_ROLES: frozenset[str] = frozenset({"thought", "narration", "tool", "result", "prompt", "system"})
 FIDELITIES: frozenset[str] = frozenset({"raw", "summary"})
-HUMAN_INPUT_KINDS: frozenset[str] = frozenset({"prompt", "command", "interrupt"})
-CHANNELS: frozenset[str] = frozenset({"terminal", "panel", "gate"})

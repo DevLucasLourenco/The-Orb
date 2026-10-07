@@ -113,7 +113,7 @@ Room tem as cinco áreas do Environment, sem exceção, mesmo que o realm nunca 
 - O Alter Ego **persiste** depois que o terminal fecha, porque a sessão fica gravada pelo provider.
   Reabri-lo é retomar a sessão num terminal novo.
 - Stats e nível (XP), quando existirem, vêm só de histórico real (testes, PRs, retrabalho,
-  tokens, tempo, intervenções humanas). Nunca inventados.
+  tokens, tempo). Nunca inventados.
 
 ### Inner World
 
@@ -121,10 +121,10 @@ O interior de um Alter Ego ([ADR 0003](adr/0003-inner-world-une-terminal-e-pensa
 
 - **O terminal** com o CLI real da sessão. É onde o Lucas usa o agente, exatamente como fora do
   Orb.
-- **A linha do tempo** da sessão, com a origem de cada entrada:
-  - **de dentro (agente):** pensamento, narração, ferramentas, arquivos lidos e editados, sempre
-    com o nome e o texto do provider (`PreToolUse · Read` no Claude, `commandExecution` no Codex);
-  - **de fora (humano):** o que o Lucas escreveu, em linha com o raciocínio que provocou.
+- **A linha do tempo** da sessão: mensagens, pensamento, narração, ferramentas, arquivos lidos e
+  editados, sempre com o nome e o texto do provider (`PreToolUse · Read` no Claude,
+  `commandExecution` no Codex). O Orb não rastreia quem escreveu cada mensagem: quem usa o CLI é o
+  Lucas, no próprio terminal ([ADR 0003](adr/0003-inner-world-une-terminal-e-pensamento.md)).
 
 Limitação real: **o raciocínio interno nem sempre é exposto.** No Claude, ~88% dos blocos de
 thinking vêm sem texto; no Codex, ~42% dos blocos de reasoning têm `summary` e nunca `raw`. O Inner
@@ -209,14 +209,13 @@ com o zoom (realm → personagens → card detalhado).
 - Escala da altura (linear, raiz, log) para o skyline não ficar ilegível; linhas em branco e
   comentários contam? Lockfiles versionados entram? Frequência de recálculo; como expor o filtro.
 - Rooftop Room: nome definitivo; como o layout acomoda muitos Alter Egos e subagentes.
-- Estilo visual de cada realm; representação no 3D de uma entrada humana chegando ao Inner World.
+- Estilo visual de cada realm; como o Inner World aparece no 3D.
 - Como a UI avisa que um terminal está parado num diálogo esperando o Lucas.
 
 **Telemetria:**
 
 - Observador do Codex ignorando um pedido de aprovação: o servidor bloqueia, reenvia ou decide?
   **Risco principal**, ver [adapters/CODEX.md](adapters/CODEX.md) §9.
-- Origem humana no Codex (equivalente ao `origin.kind` do Claude).
 - Quais CLIs entram além de Claude, Codex, Hermes e opencode (qualquer CLI com sessões legíveis é candidato).
 - Persistência: o que vai para banco e o que fica só em memória.
 

@@ -8,7 +8,6 @@ from __future__ import annotations
 
 import json
 import os
-import re
 import time
 from dataclasses import dataclass
 from pathlib import Path
@@ -20,7 +19,6 @@ from . import mapping
 
 SOURCE = "codex/rollout"
 DISCOVER_EVERY = 2.0      # segundos entre varreduras da árvore de sessões (centenas de arquivos)
-_TAG = re.compile(r"\s*<[A-Za-z_\-]+")
 
 # Ferramenta (function_call/custom_tool_call) -> atividade. `exec` usa o classificador de comandos.
 TOOL_ACTIVITY: dict[str, str] = {
@@ -156,13 +154,9 @@ class RolloutReader:
                 text = "\n".join(str(part.get("text", "")) for part in payload.get("content") or []
                                  if isinstance(part, dict) and part.get("text"))
                 if role == "assistant":
-                    inner = {"origin": "agent", "role": "narration", "text": text}
+                    inner = {"role": "narration", "text": text}
                 elif role == "user":
-                    if _is_human(entry, text) and agent is None:
-                        inner = {"origin": "human", "role": "prompt", "text": text}
-                        signal = {"type": "human.input", "kind": "prompt", "channel": "terminal"}
-                    else:
-                        inner = {"origin": "agent", "role": "system", "text": text}
+                    inner = {"role": "prompt", "text": text}
                 else:
                     return None              # instruções de developer/system: moldam o agente, não são trabalho
             elif ptype == "reasoning":
@@ -170,19 +164,19 @@ class RolloutReader:
                                     if isinstance(part, dict) and part.get("text"))
                 signal = {"type": "activity", "activity": "THINKING"}
                 if summary:
-                    inner = {"origin": "agent", "role": "thought", "text": summary, "fidelity": "summary"}
+                    inner = {"role": "thought", "text": summary, "fidelity": "summary"}
                 payload = {k: v for k, v in payload.items() if k != "encrypted_content"}
             elif ptype in ("function_call", "custom_tool_call"):
                 name = str(payload.get("name") or "")
                 argument = payload.get("input") if ptype == "custom_tool_call" else payload.get("arguments")
                 activity = classify_command(argument) if name == "exec" else TOOL_ACTIVITY.get(name, "EXECUTING")
-                inner = {"origin": "agent", "role": "tool", "text": f"{name} {argument or ''}".strip()}
+                inner = {"role": "tool", "text": f"{name} {argument or ''}".strip()}
                 signal = {"type": "activity", "activity": activity}
             elif ptype in ("function_call_output", "custom_tool_call_output"):
                 output = payload.get("output")
                 if isinstance(output, list):
                     output = "\n".join(str(part.get("text", "")) for part in output if isinstance(part, dict))
-                inner = {"origin": "agent", "role": "result", "text": str(output or "")}
+                inner = {"role": "result", "text": str(output or "")}
             elif ptype == "compaction":
                 return None
         elif etype == "event_msg":
@@ -204,12 +198,3 @@ class RolloutReader:
             return None                      # turn_context, world_state, compacted…: sem trabalho visível
         return factory.make(key, ts, kind, payload, agent=agent, inner=inner, signal=signal)
 
-
-def _is_human(entry: dict[str, Any], text: str) -> bool:
-    """HEURÍSTICA (não confirmada): o rollout não marca a origem humana. Prompts digitados aparecem
-    com `metadata.user_input_order` e sem marca de contexto injetado (`<environment_context>` etc.).
-    Ver docs/adapters/CODEX.md §5."""
-    metadata = entry.get("metadata") if isinstance(entry.get("metadata"), dict) else {}
-    if "user_input_order" not in metadata or metadata.get("inherited_user_message"):
-        return False
-    return not _TAG.match(text or "")

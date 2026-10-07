@@ -17,7 +17,7 @@
 
 | Ideia | Resumo | Status |
 |---|---|---|
-| Terminal nativo por CLI | Terminal real com o CLI original (claude, codex, hermes), escolhido pelo modelo da sessão. **Nada de TUI criada do zero** | **Feito** (`terminal_host`) |
+| Terminal nativo por CLI | Terminal real com o CLI original (claude, codex, hermes, opencode), escolhido pelo modelo da sessão. **Nada de TUI criada do zero** | **Feito** (`terminal_host`) |
 | Linha de comando validada | Modelo, id e nome de sessão validados antes de serem digitados no shell | **Feito** |
 | Telemetria paralela | Fonte nativa → adapter → evento nativo + sinal de mundo + Inner World | **Feito** |
 | Nível 0 de pegada | Só ler o que o provider já grava | **Feito** (Claude, Codex, Hermes, opencode) |
@@ -30,7 +30,7 @@
 | Adapter Codex | Rollouts (nível 0) + observador de um app-server próprio do Orb (nível 1) | **Feito** (validação ao vivo pendente) |
 | Adapter Hermes | `state.db` somente leitura (nível 0) | **Feito** (validação ao vivo pendente) |
 | Hermes nível 1 pelo sidecar da TUI | `HERMES_TUI_SIDECAR_URL` por lançamento, sem mudar configuração (só `--tui`) | Próximo |
-| Adapter opencode | `opencode.db` somente leitura, só tabelas de sessão (nível 0); origem humana confirmada | **Feito** (validação ao vivo pendente) |
+| Adapter opencode | `opencode.db` somente leitura, só tabelas de sessão (nível 0) | **Feito** (validação ao vivo pendente) |
 | opencode nível 1 | Servidor próprio (`opencode serve`) + TUI com `--server` | Pesquisa |
 | Webhooks de saída do Hermes | Receber telemetria por HTTP | **Revisto**: exigem `config.yaml`; o sidecar da TUI ocupa o lugar |
 | Verificar assinante passivo vs. aprovações do Codex | O que o servidor faz quando o observador ignora um pedido de aprovação | Pesquisa (**prioridade**) |
@@ -86,11 +86,12 @@
 
 | Ideia | Resumo | Status |
 |---|---|---|
-| Inner World | Terminal do CLI + linha do tempo da sessão, com origem e `fidelity` | **Decidido** (ADR 0003) e **Feito** no protocolo/painel |
-| Intrusive Thoughts como conceito próprio | O que o Lucas escreve ao agente | **Revisto**: é a parte "de fora" do Inner World (ADR 0003) |
+| Inner World | Terminal do CLI + linha do tempo da sessão, com `fidelity` no pensamento | **Decidido** (ADR 0003) e **Feito** no protocolo/painel |
+| Intrusive Thoughts como conceito próprio | O que o Lucas escreve ao agente | **Revisto**: é parte da linha do tempo do Inner World (ADR 0003) |
+| Rastrear quem escreveu cada mensagem | Separar "veio do Lucas" de "veio do sistema" | **Revisto**: desnecessário; quem usa o CLI é o Lucas (ADR 0003) |
 | "Mergulhar" no Alter Ego | O cenário vira o mundo interno (plano, arquivos, dúvidas) | Backlog |
-| Visual da entrada humana no 3D | O texto do Lucas "chegando" ao Rooftop Room | Backlog |
-| Stat de intervenções humanas | Entradas humanas por tarefa | Backlog (contagem já existe no Core) |
+| Visual do Inner World no 3D | Mensagens e pensamento "chegando" ao Rooftop Room | Backlog |
+| Stat de intervenções humanas | Entradas humanas por tarefa | **Revisto**: o Orb não rastreia autoria |
 | Thinking quase vazio no Claude | ~88% sem texto; Inner World usa narração, ferramentas e prompts | **Decidido** |
 
 ## 6. Camadas vivas
@@ -115,7 +116,7 @@
 | Ideia | Resumo | Status |
 |---|---|---|
 | Menu de interação com o agente | Falar, prioridade, pausar, criar subagente, ver terminal/diff, aprovar | Backlog (todo "controle" = escrita no terminal) |
-| Enviar mensagem pelo painel | `input` no terminal; vira entrada humana com `channel: panel` | Próximo |
+| Enviar mensagem pelo painel | `input` no terminal, como se fosse digitado | Próximo |
 | Terminal cru como aba | A TUI original no Inner World | **Feito** |
 
 ## 8. Clientes

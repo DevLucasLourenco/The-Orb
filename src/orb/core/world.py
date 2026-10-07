@@ -50,7 +50,6 @@ class AlterEgo:
     subagents: dict[str, Subagent] = field(default_factory=dict)
     usage: dict[str, float] = field(default_factory=dict)
     events: int = 0
-    human_inputs: int = 0
     seq_gaps: int = 0
     last_ts: str | None = None
     _last_seq: dict[str, int] = field(default_factory=dict, repr=False)      # por fonte
@@ -83,7 +82,7 @@ class AlterEgo:
             "model": self.model, "state": state, "area": rules.area_for(state), "target": self.target,
             "ended": self.ended, "error": self.error,
             "waiting": [{"request": r, "action": a} for r, a in self.waiting.items()],
-            "events": self.events, "human_inputs": self.human_inputs, "seq_gaps": self.seq_gaps,
+            "events": self.events, "seq_gaps": self.seq_gaps,
             "usage": dict(self.usage), "last_ts": self.last_ts,
             "team": [sub.snapshot() for sub in self.subagents.values()],
         }
@@ -151,9 +150,6 @@ class World:
             ego.waiting.clear()
         elif kind == "activity":
             ego.base, ego.target, ego.error = signal["activity"], signal.get("target"), None
-        elif kind == "human.input":
-            ego.human_inputs += 1
-            ego.error = None
         elif kind == "waiting":
             ego.waiting[str(signal["request"])] = signal.get("action")
         elif kind == "waiting.resolved":

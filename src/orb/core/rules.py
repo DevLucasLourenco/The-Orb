@@ -24,7 +24,6 @@ BASE_STATE_AFTER: dict[str, str] = {
     "session.started": "IDLE",
     "session.ended": "IDLE",
     "idle": "IDLE",
-    "human.input": "THINKING",      # o Lucas escreveu: a sessão vai pensar a seguir
     "subagent.started": "THINKING",
 }
 

@@ -66,7 +66,7 @@ class HookTranslator:
         tool_input = payload.get("tool_input")
         pending = self._pending.setdefault(session, {})
         if name == "PreToolUse":
-            return ({"origin": "agent", "role": "tool", "text": mapping.tool_text(tool, tool_input)},
+            return ({"role": "tool", "text": mapping.tool_text(tool, tool_input)},
                     {"type": "activity", "activity": mapping.activity_for_tool(tool, tool_input),
                      "target": mapping.tool_target(tool_input)})
         if name in ("PostToolUse", "PostToolUseFailure", "PermissionDenied"):
@@ -91,9 +91,5 @@ class HookTranslator:
         if name == "SessionEnd":
             return None, {"type": "session.ended", "reason": payload.get("reason")}
         if name == "UserPromptSubmit":
-            prompt = str(payload.get("prompt") or "")
-            if mapping.hook_prompt_is_human(prompt):
-                return ({"origin": "human", "role": "prompt", "text": prompt},
-                        {"type": "human.input", "kind": "prompt", "channel": "terminal"})
-            return {"origin": "agent", "role": "system", "text": prompt}, None
+            return {"role": "prompt", "text": str(payload.get("prompt") or "")}, None
         return None, None

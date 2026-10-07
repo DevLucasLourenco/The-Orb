@@ -51,7 +51,7 @@ def test_reads_only_new_rows_from_the_end_and_maps_them(tmp_path):
     assert [e["native"]["kind"] for e in events] == [
         "messages/user", "messages/assistant.reasoning", "messages/assistant", "messages/assistant.tool_call",
         "messages/tool", "messages/assistant", "messages/assistant.stop"]
-    assert events[0]["inner"]["origin"] == "human"
+    assert events[0]["inner"]["role"] == "prompt" and events[0]["signal"] is None
     assert events[3]["signal"]["activity"] == "TESTING"
     assert {e["alter_ego"] for e in events} == {"hermes:S1"}
     assert r.poll() == []

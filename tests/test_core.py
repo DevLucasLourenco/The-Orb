@@ -57,13 +57,6 @@ def test_team_is_not_idle_while_a_subagent_works():
     assert snap["state"] == "IDLE" and snap["team"][0]["active"] is False
 
 
-def test_human_input_is_counted_and_starts_thinking():
-    world = World()
-    world.apply(ev({"type": "human.input", "kind": "prompt", "channel": "terminal"}))
-    snap = ego_snapshot(world)
-    assert snap["human_inputs"] == 1 and snap["state"] == "THINKING"
-
-
 def test_duplicates_are_ignored_and_rereading_is_idempotent():
     world = World()
     first = ev({"type": "usage", "input_tokens": 10, "output_tokens": 5}, key="u1")

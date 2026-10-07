@@ -87,7 +87,7 @@ Todo adapter expõe a mesma forma (`orb.adapters._shared.base`):
 | Membro | Contrato |
 |---|---|
 | `PROVIDER` | Nome do provider (`"claude"`, `"codex"`, …) |
-| `capabilities()` | O que este provider consegue informar (pensamento `raw`/`summary`, aprovações, subagentes, origem humana, tempo real). O resto do sistema se adapta, em vez de assumir |
+| `capabilities()` | O que este provider consegue informar (pensamento `raw`/`summary`, aprovações, subagentes, tempo real, tokens). O resto do sistema se adapta, em vez de assumir |
 | Leitor nível 0 | Objeto com `poll() -> list[OrbEvent]`, incremental e somente leitura |
 | Leitor nível 1 *(opcional)* | Hooks por sessão (Claude) ou observador de app-server (Codex) |
 | `mapping.py` | O Mapa do provider: tabelas declarativas de evento nativo → `signal`/`inner` |
@@ -203,7 +203,7 @@ The Orb/
 | Spike | Virou |
 |---|---|
 | `spikes/01-terminal-host/terminal_host.py` | `src/orb/terminal_host/` (`launch.py`, `env.py`, `terminal.py`) |
-| `spikes/01-terminal-host/transcript_tail.py` | `src/orb/adapters/claude/transcript.py` + `mapping.py` (com a regra de origem humana corrigida) |
+| `spikes/01-terminal-host/transcript_tail.py` | `src/orb/adapters/claude/transcript.py` + `mapping.py` |
 | `spikes/01-terminal-host/server.py` | `src/orb/gateway/` (`app.py`, `messages.py`) |
 | `spikes/01-terminal-host/static/index.html` | `clients/web_panel/index.html` (agora sem HTML não escapado e sem lógica de estado) |
 | `spikes/01-terminal-host/test_spike.py` | `tests/` |

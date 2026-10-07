@@ -127,7 +127,7 @@ class TranscriptReader:
         body = {"agentId": sub.agent_id, **{k: v for k, v in sub.meta.items() if k != "prompt"}}
         return session.factory.make(
             f"{sub.agent_id}#meta", None, "subagent/meta", body, agent=sub.agent_id,
-            inner={"origin": "agent", "role": "system",
+            inner={"role": "system",
                    "text": f"{sub.meta.get('agentType', 'subagente')}: {sub.meta.get('description', '')}".strip()},
             signal={"type": "subagent.started", "kind": sub.meta.get("agentType")})
 
@@ -152,7 +152,7 @@ class TranscriptReader:
                     continue
                 if block.get("type") == "tool_result":
                     out.append(make(f"{key}#{index}", ts, "user/tool_result", block, agent=agent,
-                                    inner={"origin": "agent", "role": "result",
+                                    inner={"role": "result",
                                            "text": _result_text(block)}))
                     ended = session.foreground_tools.pop(block.get("tool_use_id"), None)
                     if ended:
@@ -176,16 +176,16 @@ class TranscriptReader:
                 tool_input = block.get("input")
                 activity = mapping.activity_for_tool(name, tool_input)
                 out.append(make(ekey, ts, "assistant/tool_use", block, agent=agent,
-                                inner={"origin": "agent", "role": "tool", "text": mapping.tool_text(name, tool_input)},
+                                inner={"role": "tool", "text": mapping.tool_text(name, tool_input)},
                                 signal={"type": "activity", "activity": activity, "target": mapping.tool_target(tool_input)}))
             elif btype == "text" and block.get("text"):
                 out.append(make(ekey, ts, "assistant/text", block, agent=agent,
-                                inner={"origin": "agent", "role": "narration", "text": block["text"]}))
+                                inner={"role": "narration", "text": block["text"]}))
             elif btype == "thinking" and block.get("thinking"):
                 # Regra do protocolo: sem texto de pensamento, nada de entrada `thought`.
                 body = {k: v for k, v in block.items() if k != "signature"}
                 out.append(make(ekey, ts, "assistant/thinking", body, agent=agent,
-                                inner={"origin": "agent", "role": "thought", "text": block["thinking"], "fidelity": "raw"},
+                                inner={"role": "thought", "text": block["thinking"], "fidelity": "raw"},
                                 signal={"type": "activity", "activity": "THINKING"}))
         message_id = message.get("id")
         usage = mapping.usage_signal(message.get("usage"))
@@ -198,16 +198,14 @@ class TranscriptReader:
             out.append(make(f"{key}#stop", ts, "assistant/stop", {"stop_reason": "end_turn"}, signal={"type": "idle"}))
         return out
 
-    def _prompt(self, session: _Session, entry: dict[str, Any], text: str, key: str, ts: str | None,
+    @staticmethod
+    def _prompt(session: _Session, entry: dict[str, Any], text: str, key: str, ts: str | None,
                 agent: str | None) -> Event:
-        origin, prompt_kind = mapping.prompt_origin(entry, text)
-        if agent is not None or origin != "human":
-            return session.factory.make(key, ts, "user/system", {"content": text}, agent=agent,
-                                        inner={"origin": "agent", "role": "system", "text": text})
-        return session.factory.make(
-            key, ts, "user/prompt", {"content": text, "origin": entry.get("origin"), "promptId": entry.get("promptId")},
-            inner={"origin": "human", "role": "prompt", "text": text},
-            signal={"type": "human.input", "kind": prompt_kind, "channel": "terminal"})
+        """Mensagem com papel `user` na sessão, como o Claude a gravou (o Orb não classifica quem
+        escreveu: ver ADR 0003)."""
+        body = {"content": text, **{k: entry[k] for k in ("origin", "isMeta", "promptId") if k in entry}}
+        return session.factory.make(key, ts, "user/text", body, agent=agent,
+                                    inner={"role": "prompt", "text": text})
 
 
 def _result_text(block: dict[str, Any]) -> str:

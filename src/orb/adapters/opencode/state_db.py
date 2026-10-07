@@ -172,13 +172,8 @@ class OpencodeDbReader:
 
         if mtype in mapping.MESSAGE_TYPES:
             if self._once(mid, "msg"):
-                origin, role = mapping.MESSAGE_TYPES[mtype]
-                if agent is not None:
-                    origin, role = "agent", "system"      # o "prompt" de um subagente vem do líder
-                signal = {"type": "human.input", "kind": "prompt", "channel": "terminal"} if origin == "human" else None
                 out.append(make(mid, ts, kind, data, agent=agent,
-                                inner={"origin": origin, "role": role, "text": str(data.get("text") or "")},
-                                signal=signal))
+                                inner={"role": mapping.MESSAGE_TYPES[mtype], "text": str(data.get("text") or "")}))
             return out
         if mtype == "idle":
             if self._once(mid, "idle"):
@@ -200,22 +195,22 @@ class OpencodeDbReader:
                 if self._once(mid, f"{index}:start"):
                     out.append(make(key, ts, f"{kind}:tool", {k: v for k, v in block.items() if k != "state"} | {"input": tool_input},
                                     agent=agent,
-                                    inner={"origin": "agent", "role": "tool", "text": mapping.tool_text(name, tool_input)},
+                                    inner={"role": "tool", "text": mapping.tool_text(name, tool_input)},
                                     signal={"type": "activity", "activity": mapping.activity_for_tool(name, tool_input),
                                             "target": mapping.tool_target(tool_input)}))
                 if state.get("status") in mapping.FINISHED_TOOL_STATUS and self._once(mid, f"{index}:end"):
                     text = mapping.content_text(state.get("content"))
                     out.append(make(f"{key}:end", ts, f"{kind}:tool_result", {"name": name, "status": state.get("status"),
                                                                                "content": state.get("content")},
-                                    agent=agent, inner={"origin": "agent", "role": "result",
+                                    agent=agent, inner={"role": "result",
                                                         "text": ("[erro] " if state.get("status") == "error" else "") + text}))
             elif completed and btype in ("text", "reasoning") and block.get("text") and self._once(mid, str(index)):
                 if btype == "text":
                     out.append(make(key, ts, f"{kind}:text", block, agent=agent,
-                                    inner={"origin": "agent", "role": "narration", "text": block["text"]}))
+                                    inner={"role": "narration", "text": block["text"]}))
                 else:
                     out.append(make(key, ts, f"{kind}:reasoning", block, agent=agent,
-                                    inner={"origin": "agent", "role": "thought", "text": block["text"], "fidelity": "raw"},
+                                    inner={"role": "thought", "text": block["text"], "fidelity": "raw"},
                                     signal={"type": "activity", "activity": "THINKING"}))
         if completed and self._once(mid, "usage"):
             usage = mapping.usage_signal(data)

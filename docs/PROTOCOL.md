@@ -10,7 +10,7 @@ Versão do protocolo: `0.2` (rascunho) · Última atualização: 2026-10-07 · I
 > **Mudança desde a 0.1:** o protocolo deixou de traduzir eventos para um vocabulário universal.
 > Cada evento agora carrega o **evento nativo** do provider, intacto, e ao lado dele um **sinal de
 > mundo** e uma **entrada de Inner World** opcionais. O evento `intrusive_thought` deixou de
-> existir: é uma entrada de Inner World com origem `human`.
+> existir: o que o Lucas escreve é uma mensagem da sessão como outra qualquer (ADR 0003).
 
 ---
 
@@ -63,7 +63,7 @@ Versão do protocolo: `0.2` (rascunho) · Última atualização: 2026-10-07 · I
     "body": {"name": "Read", "id": "toolu_01…", "input": {"file_path": "backend/uwb.py"}},
     "truncated": false
   },
-  "inner": {"origin": "agent", "role": "tool", "text": "Read backend/uwb.py"},
+  "inner": {"role": "tool", "text": "Read backend/uwb.py"},
   "signal": {"type": "activity", "activity": "READING", "target": "backend/uwb.py"}
 }
 ```
@@ -88,14 +88,13 @@ continua na fonte do provider (transcript/rollout) e pode ser lido sob demanda.
 
 | Campo | Tipo | Descrição |
 |---|---|---|
-| `origin` | `agent` \| `human` | De dentro (a sessão) ou de fora (o Lucas) |
 | `role` | `thought` \| `narration` \| `tool` \| `result` \| `prompt` \| `system` | Para o cliente estilizar a linha; o rótulo mostrado é sempre `native.kind` |
 | `text` | string | **Texto do provider, sem reescrita** (≤ 4.000 caracteres; cortado com `…`) |
 | `fidelity` | `raw` \| `summary` | Só quando `role = thought` |
 
 Regras:
 
-- `origin: human` só quando a fonte confirma a origem humana (§7.1, regra do Claude).
+- O Orb **não rastreia quem escreveu**: mensagens com papel de usuário são `prompt`, como o provider as grava.
 - Sem texto de pensamento, **não há entrada `thought`**. O adapter nunca preenche lacuna.
 - `fidelity: inferred` não existe em `inner`: o que o Orb deduz vai só em `signal`.
 
@@ -113,7 +112,6 @@ Vocabulário **fechado**. Um tipo novo exige nova versão do protocolo.
 | `subagent.ended` | `outcome?` | O subagente se desmobiliza |
 | `waiting` | `request`, `action?` | O personagem espera o Lucas (`WAITING`); entra no Gate |
 | `waiting.resolved` | `request`, `decision?` | A espera terminou (`approved`, `denied`, `unknown`) |
-| `human.input` | `kind` (`prompt`\|`command`\|`interrupt`), `channel` (`terminal`\|`panel`\|`gate`) | O Lucas escreveu no Inner World |
 | `usage` | `input_tokens`, `output_tokens`, `cache_read_tokens?`, `reasoning_tokens?`, `cost_usd?` | Energy |
 | `error` | `message`, `recoverable` | O personagem vai a `ERROR` |
 | `signal.lost` / `signal.restored` | `since?` | `NO_SIGNAL` (emitido pelo sistema, nunca por adapter) |
@@ -154,19 +152,14 @@ Resumo; o detalhe e as evidências ficam no documento de cada adapter.
 
 | Fonte | `native.kind` | `inner` | `signal` |
 |---|---|---|---|
-| transcript | `user/prompt` (texto, origem humana confirmada) | `human` · `prompt` | `human.input` |
-| transcript | `assistant/text` | `agent` · `narration` | — |
-| transcript | `assistant/thinking` (só com texto) | `agent` · `thought` · `raw` | `activity: THINKING` |
-| transcript | `assistant/tool_use` | `agent` · `tool` | `activity` pela ferramenta; `Agent`/`Task` → `DELEGATING` |
-| transcript | `user/tool_result` | `agent` · `result` | — |
+| transcript | `user/text` | `prompt` | — |
+| transcript | `assistant/text` | `narration` | — |
+| transcript | `assistant/thinking` (só com texto) | `thought` · `raw` | `activity: THINKING` |
+| transcript | `assistant/tool_use` | `tool` | `activity` pela ferramenta; `Agent`/`Task` → `DELEGATING` |
+| transcript | `user/tool_result` | `result` | — |
 | transcript | `assistant/usage` | — | `usage` |
 | transcript (subagente) | primeira linha de `subagents/agent-<id>.jsonl` | — | `subagent.started` |
 | hooks (nível 1) | `PreToolUse`, `PostToolUse`, `PermissionRequest`, `SubagentStart`, `SubagentStop`, `Stop`, `SessionEnd`, `UserPromptSubmit` | conforme o caso | `activity`, `waiting`, `subagent.*`, `idle`, `session.ended` |
-
-**Origem humana (Claude):** `UserPromptSubmit` também dispara para prompts do sistema
-(`<task-notification>`). Uma entrada só tem `origin: human` se não for sidechain e `origin.kind`
-estiver ausente ou for `human`, em **qualquer** forma de conteúdo (texto simples ou lista de
-blocos). Sem transcript (só hook), vale a heurística: o prompt não começa com `<task-notification>`.
 
 ### 7.2 Codex ([adapters/CODEX.md](adapters/CODEX.md))
 
@@ -176,19 +169,19 @@ pedidos do servidor). `native.kind` = método, com `:<tipo do item>` para `item/
 | `native.kind` | `inner` | `signal` |
 |---|---|---|
 | `thread/started` | — | `session.started` (ou `subagent.started` se `thread.parentThreadId`) |
-| `item/started:userMessage` | `human` · `prompt` | `human.input` (origem humana: ver CODEX.md §5) |
-| `item/completed:agentMessage` (`phase: commentary`) | `agent` · `narration` | — |
-| `item/completed:agentMessage` (`phase: final_answer`) | `agent` · `narration` | — |
-| `item/completed:reasoning` (`summary` não vazio) | `agent` · `thought` · `summary` | `activity: THINKING` |
-| `item/started:commandExecution` | `agent` · `tool` | `activity` por `commandActions` ou pela tabela de comandos |
-| `item/started:fileChange` | `agent` · `tool` | `activity: CODING` |
-| `item/started:webSearch`, `item/started:mcpToolCall` | `agent` · `tool` | `activity: RESEARCHING` |
-| `item/started:collabAgentToolCall` | `agent` · `tool` | `activity: DELEGATING` |
+| `item/started:userMessage` | `prompt` | — |
+| `item/completed:agentMessage` (`phase: commentary`) | `narration` | — |
+| `item/completed:agentMessage` (`phase: final_answer`) | `narration` | — |
+| `item/completed:reasoning` (`summary` não vazio) | `thought` · `summary` | `activity: THINKING` |
+| `item/started:commandExecution` | `tool` | `activity` por `commandActions` ou pela tabela de comandos |
+| `item/started:fileChange` | `tool` | `activity: CODING` |
+| `item/started:webSearch`, `item/started:mcpToolCall` | `tool` | `activity: RESEARCHING` |
+| `item/started:collabAgentToolCall` | `tool` | `activity: DELEGATING` |
 | `thread/status/changed` (`active` com `waitingOnApproval`) | — | `waiting` |
 | `serverRequest/resolved` | — | `waiting.resolved` |
 | `thread/tokenUsage/updated` | — | `usage` |
 | `turn/completed` | — | `idle` |
-| `error` | `agent` · `system` | `error` |
+| `error` | `system` | `error` |
 
 Os pedidos do servidor (`item/commandExecution/requestApproval` etc.) são registrados como evento
 nativo com `signal: waiting`, e **nunca respondidos** pelo Orb ([ADR 0006](adr/0006-o-orb-nunca-responde-dialogos.md)).
@@ -197,14 +190,14 @@ nativo com `signal: waiting`, e **nunca respondidos** pelo Orb ([ADR 0006](adr/0
 
 Nível 0 pelo `state.db` (SQLite, somente leitura). `native.kind` = `messages/<role>` (`user`,
 `assistant`, `assistant.reasoning`, `assistant.tool_call`, `assistant.stop`, `tool`). Subagente =
-sessão com `source = subagent`. Origem humana: **heurística**. Sem execução ao vivo ainda.
+sessão com `source = subagent`. Sem execução ao vivo ainda.
 
 ### 7.4 opencode ([adapters/OPENCODE.md](adapters/OPENCODE.md))
 
 Nível 0 pelo `opencode.db` (SQLite, somente leitura, **só** `session_v2` e `session_message`; o banco
 também guarda credenciais). `native.kind` = `session_message/<type>` (`user`, `synthetic`, `system`,
 `idle`, `assistant:tool`, `assistant:tool_result`, `assistant:text`, `assistant:reasoning`,
-`assistant:usage`). Origem humana **confirmada** (`user` × `synthetic`/`system`). Subagente =
+`assistant:usage`). Subagente =
 sessão com `parent_id`.
 
 ## 8. Validação e erros

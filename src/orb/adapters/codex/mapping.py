@@ -17,7 +17,6 @@ CAPABILITIES = Capabilities(
     thought_fidelity=("summary",),          # ~42% dos blocos de reasoning com summary; nunca raw
     approvals="requested+resolved",         # ServerRequest + serverRequest/resolved + activeFlags
     subagents=True,                         # thread.parentThreadId (formato; ainda não visto ao vivo)
-    human_origin="heuristic",               # userMessage não diz se é humano (CODEX.md §5)
     realtime=True,                          # nível 1: app-server próprio do Orb + codex --remote
     usage=True,
 )

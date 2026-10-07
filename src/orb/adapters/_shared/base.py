@@ -43,7 +43,6 @@ class Capabilities:
     thought_fidelity: tuple[str, ...]     # () = nenhum; ("raw",), ("summary",)
     approvals: str                        # "none" | "requested" | "requested+resolved"
     subagents: bool
-    human_origin: str                     # "confirmed" | "heuristic" | "none"
     realtime: bool                        # nível 1 disponível
     usage: bool
 

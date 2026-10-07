@@ -68,15 +68,9 @@ _Evite_: engine, motor, LLM (como sinônimo de provider)
 
 **Inner World**:
 O interior de um Alter Ego: o **terminal com o CLI real** daquela sessão e a linha do tempo de
-tudo o que se observa nela, nos dois sentidos. **De dentro**: o que o agente pensa, narra e
-faz. **De fora**: o que o Lucas escreve no terminal (prompts, comandos, interrupções). É o único
-lugar onde se escreve para um agente.
+tudo o que se observa nela (mensagens, pensamento, ferramentas, resultados), do jeito que o
+provider grava. É o único lugar onde se escreve para um agente.
 _Evite_: Intrusive Thoughts, chat espelhado, console
-
-**Origem**:
-De quem é uma entrada do Inner World: `agente` (veio da sessão) ou `humano` (o Lucas escreveu).
-Uma entrada só é `humano` quando a origem humana é confirmada pela fonte do provider.
-_Evite_: autor, remetente
 
 **Fidelity**:
 O quanto uma entrada de pensamento é literal: `raw` (texto exposto pelo provider), `summary`
@@ -170,7 +164,7 @@ _Evite_: custo (sozinho), billing
 
 - **Alter Ego**: antes era "a persona persistente que troca de provider". Agora é **uma sessão**;
   ver [ADR 0001](docs/adr/0001-alter-ego-e-uma-sessao.md).
-- **Intrusive Thoughts**: deixou de ser um conceito próprio; o que o Lucas escreve é a parte "de
-  fora" do Inner World. Ver [ADR 0003](docs/adr/0003-inner-world-une-terminal-e-pensamento.md).
+- **Intrusive Thoughts**: deixou de ser um conceito próprio; o que o Lucas escreve é parte da
+  linha do tempo do Inner World, sem rótulo de autoria. Ver [ADR 0003](docs/adr/0003-inner-world-une-terminal-e-pensamento.md).
 - **Neutro de provider**: substituído por "cada provider aparece como ele é", com sinais de mundo
   derivados. Ver [ADR 0002](docs/adr/0002-eventos-nativos-por-provider.md).

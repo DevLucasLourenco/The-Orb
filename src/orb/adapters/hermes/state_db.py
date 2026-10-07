@@ -134,28 +134,23 @@ class StateDbReader:
         content = msg.get("content") if isinstance(msg.get("content"), str) else ""
         out: list[Event] = []
         if role == "user":
-            if agent is None:
-                out.append(factory.make(key, ts, "messages/user", msg,
-                                        inner={"origin": "human", "role": "prompt", "text": content},
-                                        signal={"type": "human.input", "kind": "prompt", "channel": "terminal"}))
-            else:
-                out.append(factory.make(key, ts, "messages/user", msg, agent=agent,
-                                        inner={"origin": "agent", "role": "system", "text": content}))
+            out.append(factory.make(key, ts, "messages/user", msg, agent=agent,
+                                    inner={"role": "prompt", "text": content}))
             return out
         if role == "tool":
             out.append(factory.make(key, ts, "messages/tool", msg, agent=agent,
-                                    inner={"origin": "agent", "role": "result", "text": content}))
+                                    inner={"role": "result", "text": content}))
             return out
         if role != "assistant":
             return out
         if isinstance(msg.get("reasoning"), str) and msg["reasoning"]:
             out.append(factory.make(f"{key}#reasoning", ts, "messages/assistant.reasoning", {"reasoning": msg["reasoning"]},
-                                    agent=agent, inner={"origin": "agent", "role": "thought", "text": msg["reasoning"],
+                                    agent=agent, inner={"role": "thought", "text": msg["reasoning"],
                                                         "fidelity": "raw"},
                                     signal={"type": "activity", "activity": "THINKING"}))
         if content:
             out.append(factory.make(key, ts, "messages/assistant", msg, agent=agent,
-                                    inner={"origin": "agent", "role": "narration", "text": content}))
+                                    inner={"role": "narration", "text": content}))
         for index, call in enumerate(_tool_calls(msg.get("tool_calls"))):
             function = call.get("function") if isinstance(call.get("function"), dict) else {}
             name = str(function.get("name") or call.get("name") or "?")
@@ -165,7 +160,7 @@ class StateDbReader:
             except json.JSONDecodeError:
                 parsed = arguments
             out.append(factory.make(f"{key}#tool{index}", ts, "messages/assistant.tool_call", call, agent=agent,
-                                    inner={"origin": "agent", "role": "tool", "text": f"{name} {arguments or ''}".strip()},
+                                    inner={"role": "tool", "text": f"{name} {arguments or ''}".strip()},
                                     signal={"type": "activity", "activity": mapping.activity_for_tool(name, parsed)}))
         # Valor "stop" segue a convenção chat-completions que o Hermes usa; a confirmar ao vivo.
         if msg.get("finish_reason") == "stop" and agent is None:

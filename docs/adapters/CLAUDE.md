@@ -50,37 +50,26 @@ camadas futuras (título da sessão, custo).
 - **`user`:** `message.content` (texto, ou lista com blocos `tool_result`/`text`/`image`), `origin`,
   `isMeta`, `promptId`.
 
-### 1.4 Origem humana (a regra do Inner World)
+### 1.4 Mensagens com papel `user`
 
-Observado em 2.1.248 (contagens, sem conteúdo):
-
-| `origin.kind` | Forma | O que é | Origem no Orb |
-|---|---|---|---|
-| `human` | texto, ou lista `text`/`image` | Prompt do Lucas (inclui `<command-message>` de slash command e `<pasted_content>`) | `human` |
-| *(ausente)* + `isMeta` | texto | Contexto injetado pelo harness | `agent` (system) |
-| *(ausente)* | `<local-command-stdout>`, `<local-command-caveat>`, `<system-reminder>`, `<ci-monitor-event>` | Saídas e avisos do harness | `agent` (system) |
-| *(ausente)* | `<command-name>` | Slash command local digitado | `human` (`command`) |
-| *(ausente)* | texto livre | Versões antigas sem `origin` | `human` |
-| `task-notification` | `<task-notification>` | Subagente em segundo plano terminou | `agent` (system) |
-| `peer` | texto, `isMeta` | Mensagem de **outra sessão** | `agent` (system) |
-
-**Regra (em qualquer forma de conteúdo, texto simples ou lista de blocos):** humano se não for
-sidechain e (`origin.kind == "human"` **ou** não há `origin`, não é `isMeta` e não começa com uma
-marca do harness). Tabela em `mapping.py` (`HUMAN_ORIGINS`, `SYSTEM_TAGS`, `COMMAND_TAGS`).
+Toda entrada `user` com texto aparece no Inner World como `user/text` (papel `prompt`), do jeito que
+o Claude gravou; o corpo nativo mantém `origin`, `isMeta` e `promptId`. O Orb **não classifica quem
+escreveu** ([ADR 0003](../adr/0003-inner-world-une-terminal-e-pensamento.md)). Para referência, o
+`origin.kind` observado em 2.1.248 distingue `human`, `task-notification` (subagente em segundo
+plano terminou) e `peer` (mensagem de outra sessão); entradas `isMeta` são contexto do harness.
 
 ### 1.5 Mapa do provider (transcript)
 
 | `native.kind` | `inner` | `signal` |
 |---|---|---|
-| `user/prompt` | `human` · `prompt` | `human.input` (`prompt` ou `command`) |
-| `user/system` | `agent` · `system` | — |
-| `user/tool_result` | `agent` · `result` | `subagent.ended` quando fecha um subagente *foreground* |
-| `assistant/text` | `agent` · `narration` | — |
-| `assistant/thinking` (só com texto) | `agent` · `thought` · `raw` | `activity: THINKING` |
-| `assistant/tool_use` | `agent` · `tool` (`Nome alvo`) | `activity` pela tabela de ferramentas |
+| `user/text` | `prompt` | — |
+| `user/tool_result` | `result` | `subagent.ended` quando fecha um subagente *foreground* |
+| `assistant/text` | `narration` | — |
+| `assistant/thinking` (só com texto) | `thought` · `raw` | `activity: THINKING` |
+| `assistant/tool_use` | `tool` (`Nome alvo`) | `activity` pela tabela de ferramentas |
 | `assistant/usage` | — | `usage` (uma vez por `message.id`) |
 | `assistant/stop` | — | `idle` (`stop_reason: end_turn` do líder) |
-| `subagent/meta` | `agent` · `system` | `subagent.started` (`kind` = `agentType`) |
+| `subagent/meta` | `system` | `subagent.started` (`kind` = `agentType`) |
 
 Ferramenta → atividade: `Read`/`Glob`/`Grep` → `READING`; `Edit`/`Write`/`NotebookEdit` →
 `CODING`; `Bash`/`PowerShell` → classificador de comandos (`pytest` → `TESTING`, `git status` →
@@ -124,7 +113,7 @@ Comuns: `session_id`, `prompt_id`, `transcript_path`, `cwd`, `hook_event_name`; 
 
 | Hook | Campos específicos | → `signal` |
 |---|---|---|
-| `UserPromptSubmit` | `prompt`, `permission_mode` (**sem** `is_continuation`/`is_background`) | `human.input` se não começar com marca do harness |
+| `UserPromptSubmit` | `prompt`, `permission_mode` (**sem** `is_continuation`/`is_background`) | — (entra no Inner World como `prompt`) |
 | `PreToolUse` | `tool_name`, `tool_input`, `tool_use_id`, `permission_mode` | `activity` |
 | `PostToolUse` | `tool_name`, `tool_input`, **`tool_response`** (não `tool_output`), `duration_ms`, `tool_use_id` | `waiting.resolved` deduzido, se havia pedido |
 | `PostToolBatch` | `tool_calls[]` | — |
@@ -143,7 +132,8 @@ Não exercitados (não é o mesmo que "não existem"): `UserPromptExpansion`, `S
 ### 2.3 Comportamentos que moldaram o desenho
 
 1. Eventos dentro de um subagente trazem `agent_id`/`agent_type`: atribuição confirmada.
-2. **`UserPromptSubmit` também dispara para prompts do sistema** (`<task-notification>`).
+2. **`UserPromptSubmit` também dispara para prompts do sistema** (`<task-notification>`); como o Orb
+   não rastreia autoria, isso não muda nada no mundo.
 3. **A ferramenta `Agent` é assíncrona:** o `Stop` do líder chegou aos 5 s e o `SubagentStop` aos
    12 s. `Stop` do líder ≠ Team parada (o Core mostra o líder `DELEGATING`).
 4. O `session_id` dos hooks é o mesmo do `--session-id` dado pelo Orb, também na TUI hospedada.
@@ -190,7 +180,6 @@ processo termina antes do `curl` (`SessionEnd` em `-p`); `SessionStart` não che
 | Pensamento | `raw`, raro (~12% dos blocos) |
 | Aprovações | Pedido sim (nível 1); decisão deduzida |
 | Subagentes | Sim (meta + hooks); fim de subagente em segundo plano só no nível 1 |
-| Origem humana | Confirmada (`origin.kind`) |
 | Tempo real | Nível 1 por hooks de sessão |
 | Tokens | Sim (`message.usage`) |
 

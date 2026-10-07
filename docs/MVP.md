@@ -25,7 +25,7 @@ O MVP é a **fundação** que o 3D vai renderizar depois.
 3. **Protocol 0.2:** evento nativo intacto + sinal de mundo + entrada de Inner World.
 4. **Core:** mundo Realm → Alter Ego (sessão) → Subagentes → Atividade.
 5. **Painel 2D** (página web com xterm.js): o terminal, a árvore do mundo e a linha do tempo do
-   Inner World com a origem de cada entrada.
+   Inner World.
 
 ### Já existe, mas fora dos critérios do MVP
 
@@ -46,7 +46,7 @@ Archive · Perfil do Alter Ego · persistência em banco · multiusuário.
 | S2 | O CLI hospedado se comporta **igual** a fora do Orb | Nenhum arquivo do projeto/config alterado pelo Orb | ✅ com ressalvas (ambiente limpo, nível 1 só por sessão) |
 | S3 | Eventos chegam ao painel em < 1 s | Medir latência | ✅ ~270–470 ms |
 | S4 | Subagentes aparecem na Team do Alter Ego certo | Sessão com subagentes | ◐ Hooks ao vivo (Spike 3) e transcripts reais de subagentes lidos pelo adapter; falta ver na TUI hospedada |
-| S5 | O que o Lucas escreve aparece no Inner World como origem humana, e o que o sistema injeta não | Enviar prompt; provocar `<task-notification>` | ✅ Regra testada (9 formas de entrada) |
+| S5 | O que se escreve no terminal aparece na linha do tempo do Inner World | Enviar prompt e verificar | ✅ Spike 1 |
 | S6 | Falha de um módulo não derruba os outros | Matar adapter/terminal e observar | ◐ Validação na borda e isolamento da telemetria testados; teste de caos pendente |
 
 ## 4. Riscos
