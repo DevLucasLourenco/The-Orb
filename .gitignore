@@ -1,0 +1,19 @@
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Godot (cache local do editor)
+.godot/
+
+# Addon de terceiros (~33 MB, binários de todas as plataformas): baixar conforme
+# spikes/02-terminal-godot/README.md
+spikes/02-terminal-godot/addons/godot_xterm/
+
+# Gerados pelos spikes: contêm caminhos locais, prompts e dados da conta (ex.: plano e uso).
+# São regeneráveis rodando os próprios spikes. Não versionar.
+spikes/*/captures/
+spikes/*/fixtures/
+spikes/*/report.json
+spikes/*/*.log
+spikes/03-live-hooks/orb-hooks*.settings.json
