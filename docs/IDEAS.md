@@ -28,6 +28,9 @@
 | Eventos nativos por provider | Cada provider aparece como ele é; o mundo usa sinais derivados | **Decidido** e **Feito** (protocolo 0.2) |
 | Painel 2D de validação | Árvore Realm → Alter Ego → Team → Atividade + Inner World | **Revisto**: substituído pelo mundo 3D (ADR 0007) |
 | Observador por realm | Os 4 providers observados ao mesmo tempo em cada projeto; sessões de fora do Orb aparecem sozinhas | **Feito** |
+| Realms configurados por caminho (`--realm`, `--root`) | O Lucas informa as pastas dos projetos | **Revisto**: viola R3; os realms são detectados pelos providers |
+| Detecção de realms pelos providers | A cidade se monta sozinha a partir das sessões que os 4 CLIs registram | **Decidido** (R3); pendências D-REALM-1 a 5; ticket a criar |
+| Linguagem visual documentada | Cada elemento do mundo tem significado declarado (dado, legenda ou cenário) | **Decidido** ([VISUAL.md](VISUAL.md)) |
 | Adapter Codex | Rollouts (nível 0) + observador de um app-server próprio do Orb (nível 1) | **Feito** (validação ao vivo pendente) |
 | Adapter Hermes | `state.db` somente leitura (nível 0) | **Feito** (validação ao vivo pendente) |
 | Hermes nível 1 pelo sidecar da TUI | `HERMES_TUI_SIDECAR_URL` por lançamento, sem mudar configuração (só `--tui`) | Próximo |
@@ -99,7 +102,7 @@
 
 | Ideia | Resumo | Status |
 |---|---|---|
-| Janelas acesas e andares | Andares = módulos; janelas acendem onde houve edição recente | Próximo (1ª) |
+| Janelas acesas e andares | Andares = módulos; janelas acendem onde houve edição recente | Próximo (1ª); hoje as janelas são aleatórias e violam R12 (V-REALM-3) |
 | Gate | Vê o que espera o Lucas e escreve a qualquer Alter Ego pelo terminal dele | Próximo (2ª; a parte de **ver** já existe: feixe âmbar no prédio e contagem no topo) |
 | Team | Alter Ego + subagentes agrupados e endereçáveis | **Feito** em parte (subagentes como personagens menores na sala) |
 | Orb como centralizador de IAs | Inner World e Gate: duas portas para o mesmo terminal | **Decidido** |

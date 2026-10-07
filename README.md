@@ -18,6 +18,8 @@ agentes trabalham.
 | Documento | Para quê |
 |---|---|
 | [CONTEXT.md](CONTEXT.md) | **Glossário** canônico (Orb, Realm, Alter Ego, Inner World, Team, Gate…) |
+| [docs/RULES.md](docs/RULES.md) | **Regras do produto**, numeradas, com a auditoria da implementação atual; fonte dos tickets |
+| [docs/VISUAL.md](docs/VISUAL.md) | **Linguagem visual**: o que cada elemento do mundo 3D significa |
 | [docs/VISION.md](docs/VISION.md) | Visão, princípios, como o mundo se organiza, roadmap e questões em aberto |
 | [docs/adr/](docs/adr/) | Decisões difíceis de reverter, e por quê |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Módulos por âmbito, contratos, robustez, desempenho, testes, pastas |
@@ -57,8 +59,9 @@ python -m pytest -q
 python -m orb.gateway.app --root "C:\Users\llourenco\Documents\Sistemas e Projetos"
 ```
 
-Com `--root`, **cada subpasta é um projeto** (um prédio da cidade), e pastas novas entram sozinhas.
-Também dá para apontar projetos avulsos com `--realm PASTA` (repetível, combinável com `--root`). O servidor imprime a URL com o token; abra no navegador.
+Com `--root`, **cada subpasta é um projeto** (um prédio da cidade). Isso é **provisório**: pela
+regra R3 os realms serão detectados pelos próprios providers, sem informar caminhos
+([docs/RULES.md](docs/RULES.md)). O servidor imprime a URL com o token; abra no navegador.
 Qualquer sessão de `claude`, `codex`, `hermes` ou `opencode` aberta na pasta de um realm (pelo Orb
 ou fora dele, inclusive em subpastas como os worktrees do Claude) aparece sozinha como um
 personagem com a cor do seu provider. `--lookback 30` (minutos)

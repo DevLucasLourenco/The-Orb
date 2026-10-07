@@ -4,8 +4,9 @@ Vocabulário canônico do **The Orb**: um mundo 3D onde cada projeto real é um 
 de um agente de IA é um personagem que trabalha nele. Se um termo muda de significado, este
 arquivo muda primeiro; código, protocolo e interface usam estes termos exatamente assim.
 
-Este arquivo é **só glossário**. Visão e princípios: [docs/VISION.md](docs/VISION.md). Decisões:
-[docs/adr/](docs/adr/). Contratos técnicos: [docs/PROTOCOL.md](docs/PROTOCOL.md).
+Este arquivo é **só glossário**. Visão e princípios: [docs/VISION.md](docs/VISION.md). Regras:
+[docs/RULES.md](docs/RULES.md). Decisões: [docs/adr/](docs/adr/). Contratos técnicos:
+[docs/PROTOCOL.md](docs/PROTOCOL.md). O que cada elemento visual significa: [docs/VISUAL.md](docs/VISUAL.md).
 
 Última atualização: 2026-10-07
 
@@ -22,8 +23,9 @@ providers, em todos os realms.
 _Evite_: população, frota
 
 **Realm**:
-Um projeto real (um repositório), desenhado no Orb como um prédio. A altura do prédio é a
-quantidade de linhas de código do projeto, sempre ignorando o que o `.gitignore` ignora.
+Um projeto real (um repositório), desenhado no Orb como um prédio. É **detectado pelos providers**:
+existe porque algum CLI tem sessões naquele projeto, sem o Lucas informar caminhos. A altura do
+prédio é a quantidade de linhas de código do projeto, sempre ignorando o que o `.gitignore` ignora.
 _Evite_: projeto (no contexto do mundo), prédio (como nome do conceito), workspace
 
 **Rooftop Room** *(nome provisório)*:

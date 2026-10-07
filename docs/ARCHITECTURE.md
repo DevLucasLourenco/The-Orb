@@ -111,10 +111,11 @@ Todo adapter expõe a mesma forma (`orb.adapters._shared.base`):
 
 ### Gateway
 
-- **Observatório** (`orb.gateway.realms.Observatory`): conhece todos os realms (`--root`: cada
-  subpasta é um realm, e pastas novas entram sozinhas; `--realm`: avulsos) e observa os **4
-  providers ao mesmo tempo**. Qualquer sessão numa pasta de realm **ou subpasta dela** (worktrees),
-  aberta pelo Orb ou fora dele, vira um Alter Ego que carrega o seu provider.
+- **Observatório** (`orb.gateway.realms.Observatory`): observa os **4 providers ao mesmo tempo**.
+  Qualquer sessão numa pasta de realm **ou subpasta dela** (worktrees), aberta pelo Orb ou fora
+  dele, vira um Alter Ego que carrega o seu provider. **Hoje** os realms vêm de `--root`/`--realm`;
+  isso **viola a regra R3** e será substituído pela detecção descrita em
+  [Detecção de realms](#detecção-de-realms-pelos-providers-alvo).
   - Codex, Hermes e opencode guardam tudo numa loja única: **um leitor por provider para a cidade
     inteira**, que distribui as sessões pelos realms com `realm_resolver` (prefixo de pasta mais
     longo vence; "trisafe" não captura "trisafe-enhanced").
@@ -130,6 +131,43 @@ Todo adapter expõe a mesma forma (`orb.adapters._shared.base`):
 - Segurança: escuta só em `127.0.0.1`, token por execução, `Origin` local obrigatória, lista fixa
   de executáveis.
 - `handle_client_message(term, raw)` valida cada mensagem e **nunca levanta**.
+
+### Detecção de realms pelos providers (alvo)
+
+Regra R3 ([RULES.md](RULES.md)): **o Lucas não informa caminhos.** A cidade se monta sozinha a
+partir do que os providers já gravam. Um realm existe porque algum provider tem uma sessão naquele
+projeto.
+
+**Como (proposta, a validar antes dos tickets):**
+
+1. Cada adapter já lê, de cada sessão, a pasta onde ela roda. Essa pasta é a fonte do realm:
+
+   | Provider | Onde está a pasta da sessão | Raiz do projeto dada pelo próprio provider |
+   |---|---|---|
+   | Claude | Campo `cwd` das linhas do transcript; uma pasta por projeto em `~/.claude/projects/` | — |
+   | Codex | `session_meta.cwd` (1ª linha do rollout) | — (`session_meta.git` traz branch, commit e URL, não a pasta) |
+   | Hermes | `sessions.cwd` no `state.db` | `sessions.git_repo_root` |
+   | opencode | `session_v2.directory` no `opencode.db` | `project.worktree` (via `session_v2.project_id`) |
+
+2. **Pasta → projeto.** Vence a raiz que o próprio provider informa. Sem ela, o Orb sobe da pasta da
+   sessão até achar o repositório git, lendo arquivos (`.git` como pasta ou arquivo; num worktree,
+   o arquivo `.git` aponta para o repositório principal), **sem executar nada**. Fora de um
+   repositório, a própria pasta da sessão é o projeto.
+3. **Projeto → realm.** O id é o nome da pasta do projeto (ex.: `trisafe-enhanced`); dois projetos
+   com o mesmo nome em lugares diferentes ganham sufixo. Worktrees contam para o projeto principal.
+4. **Descoberta contínua.** Os leitores dos 4 providers passam a ler **todas** as sessões (sem
+   filtro por pasta). Sessão de um projeto novo cria o prédio na hora.
+5. `--root` e `--realm` saem (viram, no máximo, opções de depuração).
+
+**Questões em aberto (decidir antes dos tickets):**
+
+| Id | Pergunta |
+|---|---|
+| D-REALM-1 | **Quais realms aparecem:** só os com sessão recente (janela de quanto tempo?), ou todo projeto que algum provider já registrou? O histórico do Claude e do Codex tem dezenas de pastas antigas. |
+| D-REALM-2 | **Sessões fora de projeto** (pasta do usuário, `Temp`, `Downloads`): viram realm, ficam num "realm sem projeto", ou são ignoradas? |
+| D-REALM-3 | **Realm sem sessões há muito tempo:** some da cidade, apaga as luzes, ou fica para sempre? |
+| D-REALM-4 | **Esconder/fixar um realm** pelo Lucas: existe? (sem exigir que ele informe caminhos) |
+| D-REALM-5 | **Persistência da cidade:** o Orb guarda a lista de realms vistos (para a posição dos prédios ser estável entre execuções) ou recalcula tudo a cada início? |
 
 ## 4. Robustez
 

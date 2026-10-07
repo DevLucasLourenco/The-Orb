@@ -79,7 +79,16 @@ Archive · Perfil do Alter Ego · persistência em banco · multiusuário.
 
 ## 6. Próximos passos
 
-1. **Usar o mundo 3D no dia a dia** (`python -m orb.gateway.app --root "<pasta dos projetos>"`)
+**Antes de qualquer implementação (regra P1):**
+
+1. O Lucas revisa [RULES.md](RULES.md) e [VISUAL.md](VISUAL.md).
+2. Decidir as pendências: janelas, "dormindo", subagentes sem sinal, cenário, posição dos prédios
+   (VISUAL.md, V-PEND-1 a 6) e detecção de realms (ARCHITECTURE.md, D-REALM-1 a 5).
+3. Criar os tickets por épico (RULES.md, "Do documento aos tickets").
+
+Depois, pela ordem dos tickets:
+
+1. **Usar o mundo 3D no dia a dia**
    e usar o `claude` hospedado pelo painel (fecha S1 `/slash`, S4 e S6).
 2. **Amadurecer o Alter Ego / Perfil** (retomada, fork, `/clear`, várias sessões por realm).
 3. **Testar o risco R7** com o Lucas acompanhando.

@@ -78,7 +78,10 @@ The Orb  (o mundo: uma cidade conceitual)
 
 ### Realm
 
-Cada projeto real é um realm, e cada realm é um prédio. Pode ter aparência temática própria (ex.:
+Cada projeto real é um realm, e cada realm é um prédio. **Os realms são detectados pelos
+providers**: a cidade se monta sozinha a partir das sessões que Claude, Codex, Hermes e opencode já
+registram; o Lucas não informa caminhos (regra R3; como, em [ARCHITECTURE.md](ARCHITECTURE.md),
+Detecção de realms). Pode ter aparência temática própria (ex.:
 TriSafe como centro industrial, CLARA como biblioteca, UTC CONECTA+ como estação de comunicação).
 O objetivo é reconhecer onde há trabalho só olhando a cidade.
 
@@ -173,6 +176,9 @@ Tudo abaixo é visualização de dados reais, somente leitura (princípio 5).
 Ordem sugerida: janelas acesas → Gate → Chronicle → Weather → Energy → Archive.
 
 ## 6. Roadmap
+
+**Como se avança (regra P1):** documentar a regra ([RULES.md](RULES.md), [VISUAL.md](VISUAL.md), ADR) →
+criar o ticket → implementar. Nada entra no código sem passar pelos dois primeiros.
 
 0. ✅ **Spikes 1 a 4** (2026-10-06): terminal real hospedado, terminal no Godot e como monitor 3D,
    hooks do Claude ao vivo, observação do Codex. Ver [SPIKES.md](SPIKES.md).
