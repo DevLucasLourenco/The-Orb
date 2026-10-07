@@ -194,6 +194,25 @@ def test_rollout_reader_translates_verified_structure(tmp_path, jsonl):
     assert {e["alter_ego"] for e in events} == {f"codex:{TID}"}
 
 
+def test_rollout_titles_come_from_the_session_index(tmp_path, jsonl):
+    cwd = r"C:\proj\demo"
+    rollout(tmp_path, TID, [meta(TID, cwd)], jsonl)
+    index = tmp_path / ".codex" / "session_index.jsonl"
+    jsonl(index, [{"id": TID, "thread_name": "Revisar o login", "updated_at": "2026-10-07T10:00:00Z"}])
+    r = RolloutReader(cwd, realm="demo", since=time.time() - 5, home=tmp_path)
+    world = World()
+    for e in r.poll():
+        world.apply(e)
+    assert world.snapshot()["realms"][0]["alter_egos"][0]["title"] == "Revisar o login"
+    time.sleep(0.05)
+    jsonl(index, [{"id": TID, "thread_name": "Login e testes", "updated_at": "2026-10-07T11:00:00Z"}], append=True)
+    import os
+    os.utime(index, None)
+    for e in r.poll():
+        world.apply(e)
+    assert world.snapshot()["realms"][0]["alter_egos"][0]["title"] == "Login e testes"
+
+
 def test_rollout_subagent_and_start_from_end(tmp_path, jsonl):
     cwd = r"C:\proj\demo"
     rollout(tmp_path, TID, [meta(TID, cwd)], jsonl)

@@ -17,7 +17,7 @@ from pathlib import Path
 from typing import Any
 
 from ...protocol import Event
-from .._shared import EventFactory
+from .._shared import EventFactory, RealmOf, single_realm
 from .._shared.sqlite import connect_readonly, table_columns
 from . import mapping
 
@@ -47,15 +47,11 @@ def _iso(value: Any) -> str | None:
     return value if isinstance(value, str) and value else None
 
 
-def _norm(path: str) -> str:
-    return os.path.normcase(os.path.normpath(path))
-
 
 class StateDbReader:
-    def __init__(self, cwd: str | None, *, realm: str, home: Path | None = None,
-                 since: float | None = None, replay: bool = False) -> None:
-        self.cwd = _norm(cwd) if cwd else None
-        self.realm = realm
+    def __init__(self, cwd: str | None = None, *, realm: str = "", home: Path | None = None,
+                 since: float | None = None, replay: bool = False, realm_of: RealmOf | None = None) -> None:
+        self.realm_of = realm_of or single_realm(cwd, realm)
         self.db_path = (home or hermes_home()) / "state.db"
         self.since = time.time() if since is None else since
         self.replay = replay
@@ -99,8 +95,9 @@ class StateDbReader:
         if row is None:
             return None             # sessão ainda não gravada: tenta de novo na próxima mensagem
         session: dict[str, Any] | None = dict(row)
-        if self.cwd and (not isinstance(session.get("cwd"), str) or _norm(session["cwd"]) != self.cwd):
-            session = None          # outra pasta: não é deste realm
+        session["_realm"] = self.realm_of(session.get("cwd"))
+        if session["_realm"] is None:
+            session = None          # outra pasta: não é de nenhum realm observado
         self._sessions[session_id] = session
         return session
 
@@ -119,11 +116,11 @@ class StateDbReader:
             current = parent
         return str(current["id"]) if current else str(session["id"]), agent
 
-    def _factory(self, root: str) -> EventFactory:
+    def _factory(self, realm: str, root: str) -> EventFactory:
         factory = self._factories.get(root)
         if factory is None:
             factory = self._factories[root] = EventFactory(provider=mapping.PROVIDER, source=SOURCE,
-                                                           realm=self.realm, session=root)
+                                                           realm=realm, session=root)
         return factory
 
     def _announce(self, session: dict[str, Any], root: str, agent: str | None, factory: EventFactory) -> Event | None:
@@ -133,6 +130,7 @@ class StateDbReader:
             return None
         self._announced.add(sid)
         body = {k: session.get(k) for k in ("id", "source", "model", "title", "cwd", "parent_session_id")}
+        body = {k: v for k, v in body.items() if not k.startswith("_")}
         signal = ({"type": "subagent.started", "kind": session.get("source")} if agent else
                   {"type": "session.started", "cwd": session.get("cwd"), "title": session.get("title"),
                    "model": session.get("model")})
@@ -140,7 +138,7 @@ class StateDbReader:
 
     def _translate(self, conn: sqlite3.Connection, session: dict[str, Any], msg: dict[str, Any]) -> list[Event]:
         root, agent = self._root_and_agent(conn, session)
-        factory = self._factory(root)
+        factory = self._factory(session["_realm"], root)
         announce = self._announce(session, root, agent, factory)
         ts = _iso(msg.get("timestamp"))
         key = f"m{msg['id']}"

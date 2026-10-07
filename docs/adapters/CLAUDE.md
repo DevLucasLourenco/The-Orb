@@ -30,6 +30,13 @@ ignora campos desconhecidos e preserva o nativo intacto.
 - Subagentes: `<session_id>/subagents/agent-<agentId>.jsonl`, com `agent-<agentId>.meta.json` ao lado
   (`agentType`, `description`, `toolUseId`, `spawnDepth`, `requestShape`, `requestNonInteractive`).
 - Append-only, uma linha JSON por entrada: dá para acompanhar em tempo real.
+- **Subpastas e worktrees:** uma sessão aberta numa subpasta do projeto (ex.:
+  `<projeto>/.claude/worktrees/<nome>`) tem a sua própria pasta codificada. O leitor do realm
+  também acompanha as pastas cujo nome começa com o do projeto, mas só depois de confirmar pelo
+  `cwd` gravado no transcript, porque o nome codificado é ambíguo ("trisafe" é prefixo de
+  "trisafe-enhanced").
+- **Identidade:** o título vem de `custom-title` (`customTitle`) ou `agent-name` (`agentName`), e o
+  modelo de `message.model`; na descoberta o leitor lê só o fim do arquivo para achá-los.
 
 ### 1.2 Tipos de entrada observados
 

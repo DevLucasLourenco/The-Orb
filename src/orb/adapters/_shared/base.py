@@ -3,10 +3,11 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import re
 from dataclasses import dataclass
 from datetime import datetime, timezone
-from typing import Any
+from typing import Any, Callable
 
 from ...protocol import Event, make_event
 
@@ -21,6 +22,38 @@ def realm_id_for(cwd: str) -> str:
     name = re.split(r"[\\/]", cwd.rstrip("\\/"))[-1] or cwd
     slug = re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-")
     return slug or "realm"
+
+
+# cwd de uma sessão -> id do realm (ou None: a sessão não é de nenhum realm observado).
+RealmOf = Callable[[Any], "str | None"]
+
+
+def norm_path(path: str) -> str:
+    return os.path.normcase(os.path.normpath(path))
+
+
+def realm_resolver(realms: dict[str, str]) -> RealmOf:
+    """Resolve o realm de uma pasta: a pasta do realm ou qualquer subpasta dela (ex.: worktrees
+    em `<projeto>/.claude/worktrees/...`). Vence o realm mais específico (prefixo mais longo)."""
+    roots = sorted(((norm_path(cwd), realm) for realm, cwd in realms.items()), key=lambda r: -len(r[0]))
+
+    def realm_of(cwd: Any) -> str | None:
+        if not isinstance(cwd, str) or not cwd:
+            return None
+        path = norm_path(cwd)
+        for root, realm in roots:
+            if path == root or path.startswith(root.rstrip(os.sep) + os.sep):
+                return realm
+        return None
+
+    return realm_of
+
+
+def single_realm(cwd: str | None, realm: str) -> RealmOf:
+    """Um único realm: sem pasta, aceita tudo; com pasta, a pasta e as subpastas dela."""
+    if not cwd:
+        return lambda _cwd: realm
+    return realm_resolver({realm: cwd})
 
 
 def stable_key(value: Any) -> str:

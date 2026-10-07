@@ -15,12 +15,13 @@ from pathlib import Path
 from typing import Any
 
 from ...protocol import Event
-from .._shared import EventFactory, JsonlFollower, realm_id_for
+from .._shared import EventFactory, JsonlFollower, realm_id_for, single_realm
 from . import mapping
 
 SOURCE = "claude/transcript"
 _SEEN_MESSAGES = 2048     # ids de mensagem lembrados para não contar `usage` repetido
 _PEEK_BYTES = 256 * 1024  # fim do arquivo lido na descoberta, para achar título e modelo
+_RESCAN_DIRS = 5.0        # segundos entre varreduras das pastas de projeto (subpastas/worktrees)
 
 
 def encode_cwd(cwd: str) -> str:
@@ -51,6 +52,26 @@ class _Session:
     announced: bool = False
     title: str | None = None
     model: str | None = None
+
+
+def _recorded_cwd(folder: Path) -> str | None:
+    """O `cwd` que o Claude gravou num transcript desta pasta (só as primeiras linhas)."""
+    for path in folder.glob("*.jsonl"):
+        try:
+            with open(path, "rb") as fh:
+                for _ in range(40):
+                    raw = fh.readline()
+                    if not raw:
+                        break
+                    try:
+                        entry = json.loads(raw)
+                    except (json.JSONDecodeError, UnicodeDecodeError):
+                        continue
+                    if isinstance(entry, dict) and isinstance(entry.get("cwd"), str):
+                        return entry["cwd"]
+        except OSError:
+            continue
+    return None
 
 
 def _identity(path: Path) -> tuple[str | None, str | None]:
@@ -92,8 +113,13 @@ class TranscriptReader:
     """
 
     def __init__(self, cwd: str, *, realm: str | None = None, session_id: str | None = None,
-                 since: float | None = None, home: Path | None = None, replay: bool = False) -> None:
+                 since: float | None = None, home: Path | None = None, replay: bool = False,
+                 subfolders: bool = True) -> None:
         self.cwd = cwd
+        self.subfolders = subfolders and session_id is None
+        self._inside = single_realm(cwd, "realm")
+        self._dirs: dict[Path, bool] = {}          # pasta de projeto do Claude -> é deste realm?
+        self._last_scan = float("-inf")
         self.realm = realm or realm_id_for(cwd)
         self.session_id = session_id
         self.since = time.time() if since is None else since
@@ -102,11 +128,33 @@ class TranscriptReader:
         self._sessions: dict[Path, _Session] = {}
 
     # --- descoberta -------------------------------------------------------------------------
+    def _project_dirs(self) -> list[Path]:
+        """A pasta do realm e, se pedido, as de subpastas dele (ex.: worktrees em
+        `<projeto>/.claude/worktrees/...`). O nome codificado é ambíguo ("trisafe" é prefixo de
+        "trisafe-enhanced"), então cada candidata é confirmada pelo `cwd` gravado no transcript."""
+        exact = project_dir(self.cwd, self.home)
+        if not self.subfolders:
+            return [exact]
+        now = time.monotonic()
+        if now - self._last_scan >= _RESCAN_DIRS:
+            self._last_scan = now
+            prefix = exact.name + "-"
+            parent = exact.parent
+            if parent.is_dir():
+                for folder in parent.iterdir():
+                    if folder not in self._dirs and folder.name.startswith(prefix) and folder.is_dir():
+                        verdict = _recorded_cwd(folder)
+                        if verdict is not None:
+                            self._dirs[folder] = self._inside(verdict) is not None
+        return [exact] + [folder for folder, mine in self._dirs.items() if mine]
+
     def _discover(self) -> None:
-        root = project_dir(self.cwd, self.home)
-        if not root.is_dir():
-            return
         pattern = f"{self.session_id}.jsonl" if self.session_id else "*.jsonl"
+        for root in self._project_dirs():
+            if root.is_dir():
+                self._discover_in(root, pattern)
+
+    def _discover_in(self, root: Path, pattern: str) -> None:
         for path in root.glob(pattern):
             if path in self._sessions:
                 continue

@@ -111,10 +111,16 @@ Todo adapter expõe a mesma forma (`orb.adapters._shared.base`):
 
 ### Gateway
 
-- **Realms observados** (`orb.gateway.realms`): um `RealmObserver` por pasta de projeto roda os
-  leitores de nível 0 dos **4 providers ao mesmo tempo**. Qualquer sessão que nasça na pasta (pelo
-  Orb ou fora dele) vira um Alter Ego que carrega o seu provider. A falha de um provider não afeta
-  os outros (fica em `errors` do realm).
+- **Observatório** (`orb.gateway.realms.Observatory`): conhece todos os realms (`--root`: cada
+  subpasta é um realm, e pastas novas entram sozinhas; `--realm`: avulsos) e observa os **4
+  providers ao mesmo tempo**. Qualquer sessão numa pasta de realm **ou subpasta dela** (worktrees),
+  aberta pelo Orb ou fora dele, vira um Alter Ego que carrega o seu provider.
+  - Codex, Hermes e opencode guardam tudo numa loja única: **um leitor por provider para a cidade
+    inteira**, que distribui as sessões pelos realms com `realm_resolver` (prefixo de pasta mais
+    longo vence; "trisafe" não captura "trisafe-enhanced").
+  - O Claude guarda uma pasta por projeto: um leitor (barato) por realm, que também acha as pastas
+    de subpastas e confirma cada uma pelo `cwd` gravado no transcript.
+  - A falha de um leitor não afeta os outros (fica em `errors`).
 - **`Hub`**: um laço único lê todos os realms (fora do loop, `to_thread`), aplica no Core, guarda as
   últimas linhas de Inner World por sessão (`Feed`) e distribui aos clientes.
 - `/world?token=…`: o mundo para o cliente 3D — snapshot, depois `event` (linhas de Inner World),

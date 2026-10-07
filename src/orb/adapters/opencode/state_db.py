@@ -19,7 +19,7 @@ from pathlib import Path
 from typing import Any
 
 from ...protocol import Event
-from .._shared import EventFactory, connect_readonly, table_columns
+from .._shared import EventFactory, RealmOf, connect_readonly, single_realm, table_columns
 from . import mapping
 
 SOURCE = "opencode/db"
@@ -44,9 +44,6 @@ def _iso(ms: Any) -> str | None:
     return None
 
 
-def _norm(path: str) -> str:
-    return os.path.normcase(os.path.normpath(path))
-
 
 def _select(conn: sqlite3.Connection, table: str, columns: list[str], where: str, params: tuple) -> list[sqlite3.Row]:
     if table not in ALLOWED_TABLES:
@@ -55,10 +52,9 @@ def _select(conn: sqlite3.Connection, table: str, columns: list[str], where: str
 
 
 class OpencodeDbReader:
-    def __init__(self, cwd: str | None, *, realm: str, data_dir: Path | None = None,
-                 since: float | None = None, replay: bool = False) -> None:
-        self.cwd = _norm(cwd) if cwd else None
-        self.realm = realm
+    def __init__(self, cwd: str | None = None, *, realm: str = "", data_dir: Path | None = None,
+                 since: float | None = None, replay: bool = False, realm_of: RealmOf | None = None) -> None:
+        self.realm_of = realm_of or single_realm(cwd, realm)
         self.db_path = (data_dir or opencode_data_dir()) / "opencode.db"
         self.since = time.time() if since is None else since
         self.replay = replay
@@ -109,8 +105,11 @@ class OpencodeDbReader:
         if not rows:
             return None              # ainda não gravada: tenta na próxima linha
         session: dict[str, Any] | None = dict(rows[0])
-        if self.cwd and (not isinstance(session.get("directory"), str) or _norm(session["directory"]) != self.cwd):
-            session = None
+        realm = self.realm_of(session.get("directory"))
+        if realm is None:
+            session = None           # outra pasta: não é de nenhum realm observado
+        else:
+            session["_realm"] = realm
         self._sessions[session_id] = session
         return session
 
@@ -126,11 +125,11 @@ class OpencodeDbReader:
         root = str(current["id"])
         return root, (str(session["id"]) if root != session["id"] else None)
 
-    def _factory(self, root: str) -> EventFactory:
+    def _factory(self, realm: str, root: str) -> EventFactory:
         factory = self._factories.get(root)
         if factory is None:
             factory = self._factories[root] = EventFactory(provider=mapping.PROVIDER, source=SOURCE,
-                                                           realm=self.realm, session=root)
+                                                           realm=realm, session=root)
         return factory
 
     def _once(self, message_id: str, key: str) -> bool:
@@ -147,7 +146,7 @@ class OpencodeDbReader:
     # --- tradução -----------------------------------------------------------------------------
     def _translate(self, conn: sqlite3.Connection, session: dict[str, Any], row: dict[str, Any]) -> list[Event]:
         root, agent = self._root(conn, session)
-        factory = self._factory(root)
+        factory = self._factory(session["_realm"], root)
         out: list[Event] = []
         sid = str(session["id"])
         if sid not in self._announced:

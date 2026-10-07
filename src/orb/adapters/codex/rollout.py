@@ -7,14 +7,13 @@ primeira linha é lida à parte. Estrutura verificada em docs/adapters/CODEX.md 
 from __future__ import annotations
 
 import json
-import os
 import time
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
 from ...protocol import Event
-from .._shared import EventFactory, JsonlFollower, classify_command
+from .._shared import EventFactory, JsonlFollower, RealmOf, classify_command, single_realm
 from . import mapping
 
 SOURCE = "codex/rollout"
@@ -32,8 +31,10 @@ def sessions_root(home: Path | None = None) -> Path:
     return (home or Path.home()) / ".codex" / "sessions"
 
 
-def _norm(path: str) -> str:
-    return os.path.normcase(os.path.normpath(path))
+def session_index(home: Path | None = None) -> Path:
+    """`~/.codex/session_index.jsonl`: `{id, thread_name, updated_at}` por linha (o nome da conversa)."""
+    return (home or Path.home()) / ".codex" / "session_index.jsonl"
+
 
 
 def _first_line(path: Path) -> dict[str, Any] | None:
@@ -52,17 +53,19 @@ class _Thread:
     parent: str | None
     follower: JsonlFollower
     meta: dict[str, Any]
+    realm: str
     announced: bool = False
     model: str | None = None
+    title: str | None = None
 
 
 class RolloutReader:
-    """Acompanha as threads do Codex de um realm (filtradas pelo `cwd`) ativas desde `since`."""
+    """Acompanha as threads do Codex ativas desde `since`. Uma instância serve um realm (`cwd` +
+    `realm`) ou vários (`realm_of`: a loja do Codex é única, então lê-la uma vez basta)."""
 
-    def __init__(self, cwd: str | None, *, realm: str, since: float | None = None,
-                 home: Path | None = None, replay: bool = False) -> None:
-        self.cwd = _norm(cwd) if cwd else None
-        self.realm = realm
+    def __init__(self, cwd: str | None = None, *, realm: str = "", since: float | None = None,
+                 home: Path | None = None, replay: bool = False, realm_of: RealmOf | None = None) -> None:
+        self.realm_of = realm_of or single_realm(cwd, realm)
         self.since = time.time() if since is None else since
         self.home = home
         self.replay = replay
@@ -70,9 +73,11 @@ class RolloutReader:
         self._ignored: set[Path] = set()
         self._factories: dict[str, EventFactory] = {}
         self._last_discovery = float("-inf")
+        self._titles: dict[str, str] = {}
+        self._titles_mtime: float | None = None
 
-    def _root(self, thread_id: str) -> str:
-        by_id = {t.thread_id: t for t in self._threads.values()}
+    @staticmethod
+    def _root(thread_id: str, by_id: dict[str, "_Thread"]) -> str:
         seen: set[str] = set()
         while thread_id in by_id and by_id[thread_id].parent and thread_id not in seen:
             seen.add(thread_id)
@@ -100,35 +105,69 @@ class RolloutReader:
             meta = (first or {}).get("payload") if (first or {}).get("type") == "session_meta" else None
             if not isinstance(meta, dict) or not isinstance(meta.get("id"), str):
                 continue             # ainda sem a primeira linha: tenta no próximo poll
-            if self.cwd and (not isinstance(meta.get("cwd"), str) or _norm(meta["cwd"]) != self.cwd):
-                self._ignored.add(path)
+            realm = self.realm_of(meta.get("cwd"))
+            if realm is None:
+                self._ignored.add(path)           # outra pasta: não é de nenhum realm observado
                 continue
             born = getattr(stat, "st_birthtime", stat.st_ctime)
             parent = meta.get("parent_thread_id") if isinstance(meta.get("parent_thread_id"), str) else None
             self._threads[path] = _Thread(meta["id"], parent or None,
-                                          JsonlFollower(path, start_at_end=not self.replay and born < self.since), meta)
+                                          JsonlFollower(path, start_at_end=not self.replay and born < self.since), meta, realm)
 
-    def _factory(self, root: str) -> EventFactory:
+    def _factory(self, realm: str, root: str) -> EventFactory:
         factory = self._factories.get(root)
         if factory is None:
             factory = self._factories[root] = EventFactory(provider=mapping.PROVIDER, source=SOURCE,
-                                                           realm=self.realm, session=root)
+                                                           realm=realm, session=root)
         return factory
+
+    def _load_titles(self) -> None:
+        """Relê o índice de nomes só quando ele muda (arquivo pequeno, somente leitura)."""
+        path = session_index(self.home)
+        try:
+            mtime = path.stat().st_mtime
+        except OSError:
+            return
+        if mtime == self._titles_mtime:
+            return
+        self._titles_mtime = mtime
+        titles: dict[str, str] = {}
+        try:
+            with open(path, "rb") as fh:
+                for raw in fh:
+                    try:
+                        entry = json.loads(raw)
+                    except (json.JSONDecodeError, UnicodeDecodeError):
+                        continue
+                    if isinstance(entry, dict) and isinstance(entry.get("id"), str) and isinstance(entry.get("thread_name"), str):
+                        titles[entry["id"]] = entry["thread_name"]       # a última linha vence
+        except OSError:
+            return
+        self._titles = titles
 
     def poll(self) -> list[Event]:
         self._discover()
+        self._load_titles()
         events: list[Event] = []
+        by_id = {t.thread_id: t for t in self._threads.values()}
         for thread in self._threads.values():
-            root = self._root(thread.thread_id)
+            root = self._root(thread.thread_id, by_id)
             agent = thread.thread_id if root != thread.thread_id else None
-            factory = self._factory(root)
+            factory = self._factory(by_id[root].realm if root in by_id else thread.realm, root)
             if not thread.announced:
                 thread.announced = True
                 meta = {k: v for k, v in thread.meta.items() if k not in ("base_instructions", "instructions")}
+                thread.title = self._titles.get(thread.thread_id)
                 signal = ({"type": "subagent.started", "kind": meta.get("agent_role") or meta.get("agent_nickname")}
-                          if agent else {"type": "session.started", "cwd": meta.get("cwd")})
+                          if agent else {"type": "session.started", "cwd": meta.get("cwd"), "title": thread.title})
                 events.append(factory.make(f"{thread.thread_id}:meta", meta.get("timestamp"), "session_meta",
                                            meta, agent=agent, signal=signal))
+            title = self._titles.get(thread.thread_id)
+            if agent is None and title and title != thread.title:
+                thread.title = title
+                events.append(factory.make(f"{thread.thread_id}:title:{len(title)}:{title[:40]}", None, "session_index",
+                                           {"id": thread.thread_id, "thread_name": title},
+                                           signal={"type": "session.updated", "title": title}))
             for offset, entry in thread.follower.poll():
                 event = self._translate(factory, thread, agent, entry, offset)
                 if event is not None:

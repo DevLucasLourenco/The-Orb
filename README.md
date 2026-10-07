@@ -54,12 +54,14 @@ Requisitos: Python 3.12+ e os CLIs que for usar, instalados e logados.
 ```powershell
 pip install -e ".[dev]"          # na pasta do The Orb: fastapi, uvicorn, websockets, pywinpty, pytest
 python -m pytest -q
-python -m orb.gateway.app --realm "C:\caminho\projeto-a" --realm "C:\caminho\projeto-b"
+python -m orb.gateway.app --root "C:\Users\llourenco\Documents\Sistemas e Projetos"
 ```
 
-Cada `--realm` é um projeto (um prédio). O servidor imprime a URL com o token; abra no navegador.
+Com `--root`, **cada subpasta é um projeto** (um prédio da cidade), e pastas novas entram sozinhas.
+Também dá para apontar projetos avulsos com `--realm PASTA` (repetível, combinável com `--root`). O servidor imprime a URL com o token; abra no navegador.
 Qualquer sessão de `claude`, `codex`, `hermes` ou `opencode` aberta na pasta de um realm (pelo Orb
-ou fora dele) aparece sozinha como um personagem com a cor do seu provider. `--lookback 30` (minutos)
+ou fora dele, inclusive em subpastas como os worktrees do Claude) aparece sozinha como um
+personagem com a cor do seu provider. `--lookback 30` (minutos)
 decide quão recente uma sessão precisa ser para já aparecer ao abrir.
 
 **Atenção:** o terminal hospedado roda o **CLI de verdade** e **consome cota** da conta logada. O

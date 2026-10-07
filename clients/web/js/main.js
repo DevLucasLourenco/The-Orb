@@ -19,19 +19,26 @@ let layoutKey = "";
 const NEAR = 120;                 // distância da câmera em que os detalhes aparecem
 
 // ---------------------------------------------------------------------------------------------
-// Layout da cidade: os realms em anel no disco do Orb.
+// Layout da cidade: os realms em quarteirões (grade) sobre o disco do Orb.
+const BLOCK = 46;                 // distância entre prédios
 function layout() {
   const ids = world.realms.map((r) => r.id);
   const key = ids.join("|");
   if (key === layoutKey) return;
   layoutKey = key;
   const n = ids.length;
-  const radius = n <= 1 ? 0 : Math.max(46, n * 13);
+  const cols = Math.max(1, Math.ceil(Math.sqrt(n)));
+  const rows = Math.max(1, Math.ceil(n / cols));
   ids.forEach((id, i) => {
-    const a = (i / Math.max(1, n)) * Math.PI * 2 - Math.PI / 2;
-    buildings.get(id)?.setPosition(Math.cos(a) * radius, Math.sin(a) * radius);
+    const col = i % cols, row = Math.floor(i / cols);
+    // última fileira incompleta fica centralizada
+    const inRow = row === rows - 1 ? n - row * cols : cols;
+    const x = (col - (inRow - 1) / 2) * BLOCK;
+    const z = (row - (rows - 1) / 2) * BLOCK;
+    buildings.get(id)?.setPosition(x, z);
   });
-  stage.setGroundRadius(radius + 52);
+  const half = Math.hypot((cols - 1) / 2, (rows - 1) / 2) * BLOCK;
+  stage.setGroundRadius(half + 48);
 }
 
 function syncWorld(next) {

@@ -36,11 +36,22 @@ export function renderTopbar(world) {
   );
 }
 
+// Só redesenha quando o conteúdo muda (o mundo chega várias vezes por segundo).
+const lastDrawn = {};
+function changed(slot, value) {
+  const key = JSON.stringify(value);
+  if (lastDrawn[slot] === key) return false;
+  lastDrawn[slot] = key;
+  return true;
+}
+
 export function renderRealmList(world, selected, onSelect) {
   const nav = document.getElementById("realms");
+  const shape = world.realms.map((r) => [r.id, r.name, r.alter_egos.map((e) => [e.provider, e.state, e.waiting.length, isAsleep(e)])]);
+  if (!changed("realms", [selected, shape])) return;
   nav.replaceChildren(...world.realms.map((realm, i) => {
     const s = summarize(realm);
-    const btn = el("button", `realm-btn${realm.id === selected ? " active" : ""}`);
+    const btn = el("button", `realm-btn${realm.id === selected ? " active" : ""}${s.sessions ? "" : " empty"}`);
     btn.append(el("span", "realm-key", i < 9 ? String(i + 1) : ""), el("span", "realm-name", realm.name || realm.id));
     btn.append(s.waiting ? el("span", "badge-wait", s.waiting) : el("span", "muted", s.sessions ? String(s.sessions) : ""));
     const dots = el("div", "dots");
@@ -96,8 +107,11 @@ export function renderOverview(realm, onOpen) {
   const panel = document.getElementById("overview");
   if (!realm) {
     panel.classList.add("hidden");
+    changed("overview", null);
     return;
   }
+  // "há Xs" muda sozinho: arredonda para não redesenhar a cada segundo.
+  if (!changed("overview", [realm, Math.floor(Date.now() / 15000)])) return;
   panel.classList.remove("hidden");
   document.getElementById("ov-title").textContent = realm.name || realm.id;
   document.getElementById("ov-path").textContent = realm.cwd || "";

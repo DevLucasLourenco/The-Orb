@@ -5,7 +5,9 @@
 - `/ws`: o terminal real de um Inner World (abre uma sessão nova do CLI num realm).
 - `/`: o cliente 3D (clients/web).
 
-Uso:  the-orb --realm PASTA [--realm OUTRA ...] [--port 8765] [--lookback 30]
+Uso:  the-orb --root PASTA_DOS_PROJETOS          (cada subpasta é um realm)
+      the-orb --realm PASTA [--realm OUTRA ...]  (realms avulsos; dá para combinar com --root)
+      [--port 8765] [--lookback 30]
       (ou: python -m orb.gateway.app ...). Abra a URL com token que o servidor imprime.
 
 Segurança (o servidor abre shells): só 127.0.0.1, token por execução, `Origin` local obrigatória,
@@ -36,7 +38,7 @@ from ..protocol import validate
 from ..terminal_host import (HostedTerminal, InvalidLaunchValue, Launch, ProviderNotInstalled,
                              UnknownProvider, available_providers, resolve_provider, winpty_factory)
 from .messages import handle_client_message
-from .realms import Feed, RealmObserver, build_observers
+from .realms import Feed, Observatory
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 WEB_CLIENT = REPO_ROOT / "clients" / "web"
@@ -48,7 +50,8 @@ FEED_ON_CONNECT = 80           # linhas de Inner World por sessão enviadas a qu
 
 @dataclass
 class GatewayConfig:
-    realms: list[str]                      # pastas dos projetos (cada uma é um realm)
+    realms: list[str] = field(default_factory=list)   # pastas de projeto (cada uma é um realm)
+    roots: list[str] = field(default_factory=list)    # pastas cujas subpastas são realms
     token: str = field(default_factory=lambda: secrets.token_urlsafe(24))
     home: Path | None = None               # raiz das pastas dos providers (testes)
     poll_seconds: float = POLL_SECONDS
@@ -65,35 +68,35 @@ def authorized(token: str, query_token: str | None, origin: str | None) -> bool:
 class Hub:
     """O mundo vivo: observa os realms, aplica no Core e distribui aos clientes do mundo."""
 
-    def __init__(self, observers: list[RealmObserver]) -> None:
-        self.observers = {obs.id: obs for obs in observers}
+    def __init__(self, observatory: Observatory) -> None:
+        self.observatory = observatory
         self.world = World()
         self.feed = Feed()
         self.clients: set[asyncio.Queue[dict[str, Any]]] = set()
 
     def realms(self) -> list[dict[str, Any]]:
-        return [obs.describe() for obs in self.observers.values()]
+        return [self.observatory.describe(rid) for rid in sorted(self.observatory.realms)]
 
     def snapshot(self) -> dict[str, Any]:
         world = self.world.snapshot()
         known = {realm["id"] for realm in world["realms"]}
-        # Todo realm configurado existe na cidade, mesmo sem nenhuma sessão ainda.
-        world["realms"] += [{"id": rid, "alter_egos": []} for rid in self.observers if rid not in known]
-        info = {obs.id: obs.describe() for obs in self.observers.values()}
+        # Todo realm observado existe na cidade, mesmo sem nenhuma sessão ainda.
+        world["realms"] += [{"id": rid, "alter_egos": []} for rid in self.observatory.realms if rid not in known]
         for realm in world["realms"]:
-            realm.update({k: v for k, v in info.get(realm["id"], {}).items() if k != "id"})
+            if realm["id"] in self.observatory.realms:
+                realm.update({k: v for k, v in self.observatory.describe(realm["id"]).items() if k != "id"})
         world["realms"].sort(key=lambda r: r["id"])
         return world
 
     def poll_once(self) -> tuple[list[dict[str, Any]], bool]:
         """Lê todos os realms (chamado fora do loop). Devolve (eventos aplicados, mudou?)."""
         applied: list[dict[str, Any]] = []
-        for obs in self.observers.values():
-            for event in obs.poll():
-                if validate(event) is None and self.world.apply(event):
-                    applied.append(event)
-                    self.feed.add(event)
-        return applied, bool(applied)
+        known = len(self.observatory.realms)
+        for event in self.observatory.poll():
+            if validate(event) is None and self.world.apply(event):
+                applied.append(event)
+                self.feed.add(event)
+        return applied, bool(applied) or len(self.observatory.realms) != known
 
     def publish(self, message: dict[str, Any]) -> None:
         for queue in list(self.clients):
@@ -116,9 +119,9 @@ class Hub:
 
 
 def create_app(config: GatewayConfig, *, pty_factory: Callable = winpty_factory,
-               check_installed: bool = True, observers: list[RealmObserver] | None = None) -> FastAPI:
-    hub = Hub(observers if observers is not None else
-              build_observers(config.realms, lookback_minutes=config.lookback_minutes, home=config.home))
+               check_installed: bool = True, observatory: Observatory | None = None) -> FastAPI:
+    hub = Hub(observatory if observatory is not None else
+              Observatory(config.realms, roots=config.roots, lookback_minutes=config.lookback_minutes, home=config.home))
 
     @contextlib.asynccontextmanager
     async def lifespan(_app: FastAPI):
@@ -184,7 +187,8 @@ def create_app(config: GatewayConfig, *, pty_factory: Callable = winpty_factory,
             await ws.close(code=4401)
             return
         await ws.accept()
-        realm = hub.observers.get(ws.query_params.get("realm") or "") or next(iter(hub.observers.values()), None)
+        realms = hub.observatory.realms
+        realm = realms.get(ws.query_params.get("realm") or "") or next(iter(realms.values()), None)
         if realm is None:
             await ws.send_json({"channel": "system", "error": "nenhum realm configurado"})
             await ws.close()
@@ -257,6 +261,7 @@ def create_app(config: GatewayConfig, *, pty_factory: Callable = winpty_factory,
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="The Orb — o mundo das suas sessões de IA")
+    parser.add_argument("--root", action="append", default=[], help="pasta cujas subpastas são projetos (cada uma vira um realm)")
     parser.add_argument("--realm", action="append", default=[], help="pasta de um projeto (repita para vários)")
     parser.add_argument("--cwd", action="append", default=[], help="o mesmo que --realm")
     parser.add_argument("--port", type=int, default=8765)
@@ -264,9 +269,14 @@ def main() -> None:
     args = parser.parse_args()
     import uvicorn
 
-    folders = [str(Path(p).resolve()) for p in (args.realm + args.cwd)] or [os.getcwd()]
-    config = GatewayConfig(realms=folders, lookback_minutes=args.lookback)
-    print("\nThe Orb — realms:")
+    folders = [str(Path(p).resolve()) for p in (args.realm + args.cwd)]
+    roots = [str(Path(p).resolve()) for p in args.root]
+    if not folders and not roots:
+        folders = [os.getcwd()]
+    config = GatewayConfig(realms=folders, roots=roots, lookback_minutes=args.lookback)
+    print("\nThe Orb")
+    for root in roots:
+        print(f"  · cada projeto em {root}")
     for folder in folders:
         print(f"  · {folder}")
     print(f"\nAbra: http://127.0.0.1:{args.port}/?token={config.token}\n", flush=True)

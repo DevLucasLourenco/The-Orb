@@ -1,6 +1,7 @@
 import base64
 import json
 import time
+from pathlib import Path
 
 import pytest
 
@@ -111,16 +112,18 @@ def _codex_session(home, cwd, tid):
 
 def test_one_realm_shows_claude_and_codex_sessions_at_the_same_time(tmp_path):
     """O Alter Ego identifica o próprio provider: num mesmo realm, Claude e Codex juntos."""
-    from orb.gateway import Hub, build_observers
+    from orb.gateway import Hub, Observatory
     project = r"C:\p\TOTEM INTEGRADOR"        # a pasta não precisa existir: só identifica o realm
     other = r"C:\p\Outro"
     _claude_session(tmp_path, project, "11111111-1111-4111-8111-111111111111", "Integração do totem")
     _codex_session(tmp_path, project, "019a0000-0000-7000-8000-000000000001")
     _claude_session(tmp_path, other, "22222222-2222-4222-8222-222222222222", "Outro projeto")
-    hub = Hub(build_observers([project, other], home=tmp_path))
+    hub = Hub(Observatory([project, other], home=tmp_path))
     hub.poll_once()
     realms = {r["id"]: r for r in hub.snapshot()["realms"]}
     assert set(realms) == {"totem-integrador", "outro"}
+    # Um leitor só por loja global (Codex, Hermes, opencode) para a cidade inteira; Claude por realm.
+    assert sorted(hub.observatory.readers) == ["claude:outro", "claude:totem-integrador", "codex", "hermes", "opencode"]
     egos = {e["provider"]: e for e in realms["totem-integrador"]["alter_egos"]}
     assert set(egos) == {"claude", "codex"}
     assert egos["claude"]["title"] == "Integração do totem" and egos["claude"]["model"] == "claude-opus-5-5"
@@ -154,3 +157,42 @@ def test_world_stream_sends_snapshot_and_inner_world(tmp_path):
                 if msg["channel"] == "feed":
                     assert [e["native"]["kind"] for e in msg["events"]] == ["assistant/tool_use"]
                     break
+
+
+@pytest.fixture
+def short_tmp():
+    """Pasta temporária de caminho curto: nomes codificados do Claude estouram os 260 do Windows."""
+    import shutil
+    import tempfile
+    path = Path(tempfile.mkdtemp(prefix="orb")).resolve()
+    yield path
+    shutil.rmtree(path, ignore_errors=True)
+
+
+def test_root_makes_every_project_folder_a_realm_and_worktrees_count_for_it(short_tmp):
+    from orb.gateway import Hub, Observatory
+    tmp_path = short_tmp
+    root = tmp_path / "P"
+    for name in ("trisafe", "trisafe-enhanced", ".oculta"):
+        (root / name).mkdir(parents=True)
+    enhanced = str((root / "trisafe-enhanced").resolve())
+    trisafe = str((root / "trisafe").resolve())
+    worktree = enhanced + r"\.claude\worktrees\distracted-wescoff"
+    # Sessão do Claude num worktree do trisafe-enhanced, e uma no trisafe (nome codificado é prefixo!).
+    from orb.adapters.claude import project_dir
+    for cwd, sid in ((worktree, "11111111-1111-4111-8111-111111111111"), (trisafe, "22222222-2222-4222-8222-222222222222")):
+        folder = project_dir(cwd, home=tmp_path)
+        folder.mkdir(parents=True)
+        (folder / f"{sid}.jsonl").write_text(json.dumps({"type": "user", "uuid": "u1", "cwd": cwd,
+                                                         "message": {"content": "oi"}}) + "\n", encoding="utf-8")
+    _codex_session(tmp_path, worktree, "019a0000-0000-7000-8000-000000000009")
+    hub = Hub(Observatory(roots=[str(root)], home=tmp_path))
+    hub.poll_once()
+    realms = {r["id"]: r for r in hub.snapshot()["realms"]}
+    assert set(realms) == {"trisafe", "trisafe-enhanced"}                      # pasta oculta fica de fora
+    providers = sorted(e["provider"] for e in realms["trisafe-enhanced"]["alter_egos"])
+    assert providers == ["claude", "codex"]                                     # o worktree conta para o projeto
+    assert [e["provider"] for e in realms["trisafe"]["alter_egos"]] == ["claude"]
+    (root / "novo-projeto").mkdir()
+    hub.observatory.sync_roots(force=True)
+    assert "novo-projeto" in {r["id"] for r in hub.snapshot()["realms"]}        # pasta nova entra sozinha

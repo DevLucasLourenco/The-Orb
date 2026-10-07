@@ -79,7 +79,7 @@ Archive · Perfil do Alter Ego · persistência em banco · multiusuário.
 
 ## 6. Próximos passos
 
-1. **Usar o mundo 3D no dia a dia** (`python -m orb.gateway.app --realm <projeto> …`)
+1. **Usar o mundo 3D no dia a dia** (`python -m orb.gateway.app --root "<pasta dos projetos>"`)
    e usar o `claude` hospedado pelo painel (fecha S1 `/slash`, S4 e S6).
 2. **Amadurecer o Alter Ego / Perfil** (retomada, fork, `/clear`, várias sessões por realm).
 3. **Testar o risco R7** com o Lucas acompanhando.
