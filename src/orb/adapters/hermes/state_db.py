@@ -18,6 +18,7 @@ from typing import Any
 
 from ...protocol import Event
 from .._shared import EventFactory
+from .._shared.sqlite import connect_readonly, table_columns
 from . import mapping
 
 SOURCE = "hermes/state-db"
@@ -62,23 +63,12 @@ class StateDbReader:
         self._sessions: dict[str, dict[str, Any] | None] = {}
         self._factories: dict[str, EventFactory] = {}
 
-    def _connect(self) -> sqlite3.Connection:
-        uri = self.db_path.resolve().as_uri() + "?mode=ro"
-        conn = sqlite3.connect(uri, uri=True, timeout=1.0)
-        conn.row_factory = sqlite3.Row
-        return conn
-
-    @staticmethod
-    def _columns(conn: sqlite3.Connection, table: str, wanted: tuple[str, ...]) -> list[str]:
-        have = {row["name"] for row in conn.execute(f"PRAGMA table_info({table})")}
-        return [column for column in wanted if column in have]
-
     def poll(self) -> list[Event]:
         if not self.db_path.is_file():
             return []
-        conn = self._connect()
+        conn = connect_readonly(self.db_path)
         try:
-            columns = self._columns(conn, "messages", _WANTED_MESSAGE_COLUMNS)
+            columns = table_columns(conn, "messages", _WANTED_MESSAGE_COLUMNS)
             if "id" not in columns or "session_id" not in columns:
                 return []
             if self.last_id is None:
@@ -103,7 +93,7 @@ class StateDbReader:
     def _session(self, conn: sqlite3.Connection, session_id: str) -> dict[str, Any] | None:
         if session_id in self._sessions:
             return self._sessions[session_id]
-        columns = self._columns(conn, "sessions", _WANTED_SESSION_COLUMNS)
+        columns = table_columns(conn, "sessions", _WANTED_SESSION_COLUMNS)
         row = conn.execute(f"SELECT {', '.join(columns)} FROM sessions WHERE id = ?", (session_id,)).fetchone() if columns else None
         if row is None:
             return None             # sessão ainda não gravada: tenta de novo na próxima mensagem

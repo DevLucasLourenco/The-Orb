@@ -10,8 +10,8 @@
 ## 1. O que é
 
 O **The Orb** é um jogo 3D visto de cima (estilo RTS / colony-management, câmera livre) que
-representa em tempo real o trabalho **real** de agentes de IA (Claude Code, Codex, Hermes e
-outros CLIs) nos projetos reais do Lucas.
+representa em tempo real o trabalho **real** de agentes de IA (Claude Code, Codex, Hermes,
+opencode e outros CLIs) nos projetos reais do Lucas.
 
 Os agentes continuam trabalhando de verdade nos repositórios, com os CLIs originais. O Orb
 **observa** e transforma o que observa em mundo. Em uma frase:
@@ -49,7 +49,7 @@ The Orb  (o mundo: uma cidade conceitual)
 2. **Realidade confirmada por fontes externas.** "O agente disse que terminou" ≠ "terminou". Git,
    GitHub e CI confirmam o que de fato mudou, passou ou quebrou.
 3. **Cada provider aparece como ele é.** O Orb não traduz o vocabulário do Claude, do Codex ou
-   do Hermes para um formato comum. Eventos são preservados no formato nativo e mostrados assim.
+   do Hermes e do opencode para um formato comum. Eventos são preservados no formato nativo e mostrados assim.
    O mundo usa só **sinais de mundo** derivados, ao lado do evento nativo
    ([ADR 0002](adr/0002-eventos-nativos-por-provider.md)).
 4. **CLI nativo, nada criado do zero.** O Orb não cria TUI nem terminal próprios. Abre um terminal
@@ -145,10 +145,10 @@ Nos dois modos a telemetria é a mesma (adapter → eventos nativos + sinais de 
 
 **Níveis de pegada** ([ADR 0005](adr/0005-nivel-zero-de-pegada-por-padrao.md)):
 
-| Nível | Claude Code | Codex | Hermes |
-|---|---|---|---|
-| **0 — zero pegada** (padrão) | Lê o transcript em `~/.claude/projects/` | Lê os rollouts em `~/.codex/sessions/` | Ver [adapters/HERMES.md](adapters/HERMES.md) |
-| **1 — tempo real** (opcional) | Hooks **por sessão** com `--settings` | **App-server próprio do Orb** + `codex --remote` | Ver [adapters/HERMES.md](adapters/HERMES.md) |
+| Nível | Claude Code | Codex | Hermes | opencode |
+|---|---|---|---|---|
+| **0 — zero pegada** (padrão) | Lê o transcript em `~/.claude/projects/` | Lê os rollouts em `~/.codex/sessions/` | Lê o `state.db` (somente leitura) | Lê o `opencode.db` (só tabelas de sessão) |
+| **1 — tempo real** (opcional) | Hooks **por sessão** com `--settings` | **App-server próprio do Orb** + `codex --remote` | Sidecar da TUI (`HERMES_TUI_SIDECAR_URL`), a implementar | Servidor próprio + `--server`, a levantar |
 
 ## 5. Camadas vivas
 
@@ -181,7 +181,7 @@ Ordem sugerida: janelas acesas → Gate → Chronicle → Weather → Energy →
 2. **MVP** ([MVP.md](MVP.md)): um realm, Claude hospedado, nível 0, painel 2D Realm → Alter Ego →
    Subagente → Atividade e Inner World. *Etapa mais importante: se a árvore em tempo real estiver
    certa, o 3D vira só um renderizador.*
-3. Codex e Hermes no mesmo painel; modo Observar.
+3. Codex, Hermes e opencode validados ao vivo no mesmo painel; modo Observar.
 4. **Sala 3D** pequena, com personagens no lugar dos cards e o terminal como monitor do Rooftop
    Room.
 5. **Camadas vivas** e camada de jogo (mapas, movimentação, XP, quests, conquistas).
@@ -217,7 +217,7 @@ com o zoom (realm → personagens → card detalhado).
 - Observador do Codex ignorando um pedido de aprovação: o servidor bloqueia, reenvia ou decide?
   **Risco principal**, ver [adapters/CODEX.md](adapters/CODEX.md) §9.
 - Origem humana no Codex (equivalente ao `origin.kind` do Claude).
-- Quais CLIs entram além de Claude, Codex e Hermes (o `opencode` está instalado nesta máquina).
+- Quais CLIs entram além de Claude, Codex, Hermes e opencode (qualquer CLI com sessões legíveis é candidato).
 - Persistência: o que vai para banco e o que fica só em memória.
 
 ## 8. Origem

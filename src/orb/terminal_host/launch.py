@@ -24,18 +24,19 @@ class InvalidLaunchValue(ValueError):
 
 
 # Provider -> executável. O Orb nunca executa um comando arbitrário.
-PROVIDERS: dict[str, str] = {"claude": "claude", "codex": "codex", "hermes": "hermes"}
+PROVIDERS: dict[str, str] = {"claude": "claude", "codex": "codex", "hermes": "hermes", "opencode": "opencode"}
 
 # Prefixo do modelo -> provider (escolha automática pelo modelo da sessão).
 MODEL_PREFIXES: tuple[tuple[str, str], ...] = (
     ("claude", "claude"), ("opus", "claude"), ("sonnet", "claude"), ("haiku", "claude"), ("fable", "claude"),
     ("gpt", "codex"), ("codex", "codex"), ("o1", "codex"), ("o3", "codex"), ("o4", "codex"),
-    ("hermes", "hermes"),
+    ("hermes", "hermes"), ("opencode", "opencode"),
 )
 
 _SAFE_MODEL = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:/\-\[\]]{0,79}$")
 _SAFE_NAME = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._\-]{0,63}$")
 _SAFE_URL = re.compile(r"^ws://127\.0\.0\.1:\d{2,5}$")
+_SAFE_OPENCODE_SESSION = re.compile(r"^ses_[A-Za-z0-9]{8,64}$")
 
 
 def resolve_provider(provider: str | None = None, model: str | None = None) -> str:
@@ -69,7 +70,7 @@ class Launch:
     """Como abrir uma sessão (um Alter Ego) de um provider."""
     provider: str
     model: str | None = None
-    session_id: str | None = None      # Claude: o Orb escolhe o id e sabe qual é o transcript
+    session_id: str | None = None      # Claude: o Orb escolhe o id (UUID); opencode: `ses_…` para reabrir
     session_name: str | None = None
     resume: bool = False               # reabrir a sessão `session_id` (reabrir um Alter Ego)
     remote_url: str | None = None      # Codex nível 1: app-server próprio do Orb
@@ -79,6 +80,11 @@ class Launch:
             raise UnknownProvider(self.provider)
         model = _check(self.model, _SAFE_MODEL, "modelo")
         name = _check(self.session_name, _SAFE_NAME, "nome de sessão")
+        if self.provider == "opencode":
+            session = _check(self.session_id, _SAFE_OPENCODE_SESSION, "id de sessão do opencode")
+            # A TUI do opencode não aceita modelo por flag (só `opencode run -m`): o modelo da sessão
+            # vem da configuração dele. `--session` reabre (ou cria) aquela sessão.
+            return " ".join([PROVIDERS["opencode"]] + (["--session", session] if session else []))
         if self.session_id is not None:
             try:
                 session_id = str(uuid.UUID(self.session_id))

@@ -13,8 +13,8 @@ que rodam os CLIs de verdade (02, 03, 04), agora importando os módulos definiti
 
 **Ambiente dos spikes:** outra máquina (pasta anterior do projeto), com `claude` 2.1.269,
 `codex` 0.149.0, Hermes não instalado. **Esta máquina** (2026-10-07): `claude` 2.1.248, `codex`
-0.160.1, `hermes` 0.20.5, `opencode` 2.0.23; Python 3.14; Godot fora do PATH; `pywinpty` não
-instalado.
+0.160.1, `hermes` 0.20.5, `opencode` 2.0.23; Python 3.14; Godot fora do PATH; `pywinpty` 3.0.5
+(instalado em 2026-10-07).
 
 ## Veredito
 
@@ -197,7 +197,6 @@ nativo e streaming de resumo.
 | Hermes ao vivo (instalado nesta máquina; hoje só leitura do código e do `state.db`) | Média |
 | Subagentes ao vivo (Claude na TUI e Codex no app-server); hooks não provocados | Média |
 | Clique do mouse e desempenho com vários monitores 3D | Média (com o cliente 3D) |
-| Terminal real nesta máquina (`pywinpty` não instalado) | Baixa |
 
 ## Como reproduzir
 

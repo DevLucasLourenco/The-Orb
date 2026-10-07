@@ -20,7 +20,7 @@
 | Terminal nativo por CLI | Terminal real com o CLI original (claude, codex, hermes), escolhido pelo modelo da sessão. **Nada de TUI criada do zero** | **Feito** (`terminal_host`) |
 | Linha de comando validada | Modelo, id e nome de sessão validados antes de serem digitados no shell | **Feito** |
 | Telemetria paralela | Fonte nativa → adapter → evento nativo + sinal de mundo + Inner World | **Feito** |
-| Nível 0 de pegada | Só ler o que o provider já grava | **Feito** (Claude, Codex, Hermes) |
+| Nível 0 de pegada | Só ler o que o provider já grava | **Feito** (Claude, Codex, Hermes, opencode) |
 | Nível 1 de pegada (Claude) | Hooks por sessão via `--settings`, transporte `command` async + `curl` | Próximo (gerador e tradutor feitos; receptor pendente) |
 | Receptor de hooks sempre responsivo | Processo mínimo que só enfileira e responde `{}` | Próximo |
 | Hooks ainda não exercitados | TaskCreated/Completed, Notification, PostToolUseFailure, PermissionDenied, StopFailure, Pre/PostCompact, CwdChanged | Pesquisa |
@@ -30,13 +30,15 @@
 | Adapter Codex | Rollouts (nível 0) + observador de um app-server próprio do Orb (nível 1) | **Feito** (validação ao vivo pendente) |
 | Adapter Hermes | `state.db` somente leitura (nível 0) | **Feito** (validação ao vivo pendente) |
 | Hermes nível 1 pelo sidecar da TUI | `HERMES_TUI_SIDECAR_URL` por lançamento, sem mudar configuração (só `--tui`) | Próximo |
+| Adapter opencode | `opencode.db` somente leitura, só tabelas de sessão (nível 0); origem humana confirmada | **Feito** (validação ao vivo pendente) |
+| opencode nível 1 | Servidor próprio (`opencode serve`) + TUI com `--server` | Pesquisa |
 | Webhooks de saída do Hermes | Receber telemetria por HTTP | **Revisto**: exigem `config.yaml`; o sidecar da TUI ocupa o lugar |
 | Verificar assinante passivo vs. aprovações do Codex | O que o servidor faz quando o observador ignora um pedido de aprovação | Pesquisa (**prioridade**) |
 | Classificador de comandos | Tabela declarativa: `Get-Content`, `git status` → `READING`; `pytest` → `TESTING`… | **Feito** (compartilhado) |
 | Orb passa o modelo explicitamente | `-m`/`--model` quando a sessão tem modelo (o padrão do `config.toml` pode não ser aceito) | **Feito** |
 | Sessões grandes do Codex | Leitura incremental começando do fim (rollouts de 145 MB) | **Feito** |
 | Diálogos da TUI são do Lucas | Nunca responder; detectar e avisar na UI | **Decidido** (aviso na UI: Pesquisa) |
-| Adapters para outros CLIs | `opencode` (instalado nesta máquina), Gemini CLI, Cursor, agentes próprios | Backlog |
+| Adapters para outros CLIs | Gemini CLI, Cursor, agentes próprios (o opencode já entrou) | Backlog |
 | Modo Observar | Sessões iniciadas fora do Orb | Próximo (leitores já suportam) |
 | Modo Hospedar via stream JSON | Alternativa à TUI | Backlog |
 | Chat espelhado | Painel com a conversa a partir dos eventos | **Revisto**: é a linha do tempo do Inner World |

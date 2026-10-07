@@ -195,8 +195,17 @@ nativo com `signal: waiting`, e **nunca respondidos** pelo Orb ([ADR 0006](adr/0
 
 ### 7.3 Hermes ([adapters/HERMES.md](adapters/HERMES.md))
 
-Instalado nesta máquina (0.20.5). Levantamento por leitura do código-fonte, ainda sem execução ao
-vivo: ver o documento do adapter.
+Nível 0 pelo `state.db` (SQLite, somente leitura). `native.kind` = `messages/<role>` (`user`,
+`assistant`, `assistant.reasoning`, `assistant.tool_call`, `assistant.stop`, `tool`). Subagente =
+sessão com `source = subagent`. Origem humana: **heurística**. Sem execução ao vivo ainda.
+
+### 7.4 opencode ([adapters/OPENCODE.md](adapters/OPENCODE.md))
+
+Nível 0 pelo `opencode.db` (SQLite, somente leitura, **só** `session_v2` e `session_message`; o banco
+também guarda credenciais). `native.kind` = `session_message/<type>` (`user`, `synthetic`, `system`,
+`idle`, `assistant:tool`, `assistant:tool_result`, `assistant:text`, `assistant:reasoning`,
+`assistant:usage`). Origem humana **confirmada** (`user` × `synthetic`/`system`). Subagente =
+sessão com `parent_id`.
 
 ## 8. Validação e erros
 

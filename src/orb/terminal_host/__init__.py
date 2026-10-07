@@ -1,4 +1,5 @@
-"""Terminal Host: o terminal real do Inner World (ADR 0004). Não conhece o domínio."""
+"""Terminal Host: o terminal real do Inner World (ADR 0004). Não conhece o domínio.
+Providers (lista fixa): claude, codex, hermes, opencode."""
 from .env import INHERITED_MARKERS, clean_env
 from .launch import (MODEL_PREFIXES, PROVIDERS, InvalidLaunchValue, Launch, ProviderNotInstalled,
                      UnknownProvider, available_providers, resolve_provider)

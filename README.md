@@ -3,7 +3,7 @@
 Um **grande centralizador de IAs, das suas sessões e dos seus subagentes**: um mundo 3D visto de
 cima onde cada projeto real é um prédio (**Realm**), cada sessão de um CLI de IA é um personagem
 (**Alter Ego**) trabalhando no teto do prédio (**Rooftop Room**), e tudo o que se vê é **telemetria
-real** dos agentes de verdade (Claude Code, Codex, Hermes), nunca animação inventada.
+real** dos agentes de verdade (Claude Code, Codex, Hermes, opencode), nunca animação inventada.
 
 O Lucas usa os CLIs originais dentro do Orb, no **Inner World** de cada Alter Ego (o terminal real
 da sessão + a linha do tempo do que ela pensa e faz). O Orb só observa: não altera em nada como os
@@ -22,7 +22,7 @@ agentes trabalham.
 | [docs/adr/](docs/adr/) | Decisões difíceis de reverter, e por quê |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Módulos por âmbito, contratos, robustez, desempenho, testes, pastas |
 | [docs/PROTOCOL.md](docs/PROTOCOL.md) | Event Protocol 0.2: evento nativo + sinal de mundo + Inner World |
-| [docs/adapters/](docs/adapters/) | O que [Claude Code](docs/adapters/CLAUDE.md), [Codex](docs/adapters/CODEX.md) e [Hermes](docs/adapters/HERMES.md) expõem, verificado |
+| [docs/adapters/](docs/adapters/) | O que [Claude Code](docs/adapters/CLAUDE.md), [Codex](docs/adapters/CODEX.md), [Hermes](docs/adapters/HERMES.md) e [opencode](docs/adapters/OPENCODE.md) expõem, verificado |
 | [docs/MVP.md](docs/MVP.md) | Escopo do MVP, critérios, riscos, decisões e próximos passos |
 | [docs/SPIKES.md](docs/SPIKES.md) | Resultados completos dos 4 spikes |
 | [docs/IDEAS.md](docs/IDEAS.md) | Backlog **completo** de ideias, com status (nada é apagado) |
@@ -32,7 +32,7 @@ agentes trabalham.
 1. **Telemetria real**: o mundo só mostra o que foi observado.
 2. **Cada provider aparece como ele é**: o vocabulário nativo de cada CLI é preservado; o mundo usa
    só sinais derivados.
-3. **CLI nativo, nada criado do zero**: o Orb abre um terminal real e chama `claude`/`codex`/`hermes` nele.
+3. **CLI nativo, nada criado do zero**: o Orb abre um terminal real e chama `claude`/`codex`/`hermes`/`opencode` nele.
 4. **Não interferência**: tudo que molda o agente é somente leitura; a única porta de escrita é o
    terminal do Inner World. **O Orb nunca responde diálogos** dos CLIs.
 5. **Modular, robusto, com desempenho e lógica bem estruturada.**
@@ -40,7 +40,7 @@ agentes trabalham.
 ## Estrutura
 
 ```
-src/orb/        protocol · core · adapters (claude, codex, hermes) · terminal_host · gateway
+src/orb/        protocol · core · adapters (claude, codex, hermes, opencode) · terminal_host · gateway
 clients/        web_panel (xterm.js + mundo + Inner World) · godot (terminal remoto)
 tests/          testes automatizados (python -m pytest -q)
 spikes/         experimentos que rodam os CLIs reais (02 Godot, 03 hooks, 04 Codex)

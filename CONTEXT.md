@@ -40,7 +40,7 @@ _Evite_: cenário, mapa
 ## Os agentes
 
 **Alter Ego**:
-Uma **sessão** de um CLI de IA (Claude Code, Codex, Hermes…) em um realm, desenhada como um
+Uma **sessão** de um CLI de IA (Claude Code, Codex, Hermes, opencode) em um realm, desenhada como um
 personagem: o **líder** da sua Team. Uma sessão é um Alter Ego; duas sessões são dois Alter
 Egos. O provider e o modelo pertencem à sessão e não mudam.
 _Evite_: agente principal, persona do provider, bot
@@ -60,7 +60,7 @@ Subagentes podem ter subagentes (profundidade).
 _Evite_: squad, equipe (como nome do conceito)
 
 **Provider**:
-O CLI de IA de onde vem uma sessão (`claude`, `codex`, `hermes`). Cada provider aparece no Orb
+O CLI de IA de onde vem uma sessão (`claude`, `codex`, `hermes`, `opencode`). Cada provider aparece no Orb
 **como ele é**, com o seu próprio vocabulário de eventos.
 _Evite_: engine, motor, LLM (como sinônimo de provider)
 

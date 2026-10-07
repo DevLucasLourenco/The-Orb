@@ -50,7 +50,7 @@
 |---|---|---|---|---|
 | **Protocol** | `src/orb/protocol/` | Envelope, vocabulário fechado (atividades, sinais), limites de tamanho, validação | nada | todos os outros |
 | **Core** | `src/orb/core/` | O mundo: aplica eventos, deriva a atividade de cada personagem, Teams, pendências, Energy; snapshot | Protocol | Adapters, Gateway, disco, rede, relógio |
-| **Adapters** | `src/orb/adapters/<provider>/` | Ler a fonte nativa do provider e produzir eventos (nativo + sinal + inner) pelo Mapa do provider | Protocol | Core, Gateway, outros adapters |
+| **Adapters** (claude, codex, hermes, opencode) | `src/orb/adapters/<provider>/` | Ler a fonte nativa do provider e produzir eventos (nativo + sinal + inner) pelo Mapa do provider | Protocol | Core, Gateway, outros adapters |
 | **Terminal Host** | `src/orb/terminal_host/` | Abrir o terminal real (ConPTY), chamar o CLI (lista fixa), transportar bytes, limpar o ambiente herdado | nada do domínio | Core, adapters |
 | **Gateway** | `src/orb/gateway/` | Autenticar, ligar terminal + adapter + Core por sessão, validar mensagens do cliente, distribuir por WebSocket | todos, por interfaces | internals de adapters |
 | **Clients** | `clients/` | Renderizar o mundo e o Inner World, enviar teclas | só as mensagens do Gateway | adapters, providers |
@@ -61,8 +61,8 @@
 - Dependências apontam para **Protocol** e **Core**, nunca o contrário. O Core não importa nada
   além do Protocol.
 - **Adapters não importam uns aos outros.** O que eles compartilham é genérico e fica em
-  `src/orb/adapters/_shared/` (fábrica de eventos, classificador de comandos de shell), sem
-  conhecimento de provider.
+  `src/orb/adapters/_shared/` (fábrica de eventos, leitura incremental de JSONL, leitura somente
+  leitura de SQLite, classificador de comandos de shell), sem conhecimento de provider.
 - **Adicionar um provider = adicionar um adapter** (`mapping.py` + leitores), sem tocar em Core,
   Gateway ou clientes ([ADR 0002](adr/0002-eventos-nativos-por-provider.md)).
 - Clientes nunca falam com adapters ou providers; só com o Gateway.
@@ -138,6 +138,7 @@ Todo adapter expõe a mesma forma (`orb.adapters._shared.base`):
 | Ponto | Regra |
 |---|---|
 | Leitura de transcript/rollout | Incremental por offset; só lê bytes novos; linha parcial fica em buffer |
+| Bancos SQLite (Hermes, opencode) | `mode=ro`; cursor por id/`time_updated`; lotes de 500; só tabelas permitidas |
 | Arquivos grandes (rollouts de 145 MB) | Arquivo que já existia começa **do fim**; nunca se lê o arquivo inteiro |
 | Corpo de evento | `native.body` ≤ 16 KiB, strings ≤ 4 KiB, `inner.text` ≤ 4.000 caracteres |
 | Deduplicação | Janela limitada por Alter Ego (memória constante) |
@@ -159,7 +160,7 @@ Todo adapter expõe a mesma forma (`orb.adapters._shared.base`):
 |---|---|---|
 | Protocol | Contrato: todo evento produzido valida; limites e cortes | `tests/test_protocol.py` |
 | Core | Unitários puros: atividade, Team, `WAITING`, dedupe, snapshot | `tests/test_core.py` |
-| Adapters | Linhas/notificações com a forma verificada (spikes + esquema oficial do Codex) | `tests/test_adapter_claude.py`, `tests/test_adapter_codex.py` |
+| Adapters | Linhas/notificações/bancos com a forma verificada (spikes, esquema oficial do Codex, estrutura dos bancos reais) | `tests/test_adapter_{claude,codex,hermes,opencode}.py` |
 | Classificador de comandos | Tabela de casos | `tests/test_commands.py` |
 | Terminal Host | PTY falsa (sempre) + terminal real (quando `pywinpty` e o CLI existem) | `tests/test_terminal_host.py` |
 | Gateway | Validação de mensagens; app com terminal falso | `tests/test_gateway.py` |
@@ -177,15 +178,17 @@ The Orb/
 ├── README.md · CONTEXT.md · pyproject.toml
 ├── docs/
 │   ├── VISION.md · ARCHITECTURE.md · PROTOCOL.md · MVP.md · SPIKES.md · IDEAS.md
-│   ├── adapters/   CLAUDE.md · CODEX.md · HERMES.md
+│   ├── adapters/   CLAUDE.md · CODEX.md · HERMES.md · OPENCODE.md
 │   └── adr/        decisões numeradas
 ├── src/orb/
 │   ├── protocol/        events.py · vocab.py
 │   ├── core/            world.py · rules.py
 │   ├── adapters/
-│   │   ├── _shared/     base.py · commands.py
+│   │   ├── _shared/     base.py · commands.py · jsonl.py · sqlite.py
 │   │   ├── claude/      mapping.py · transcript.py · hooks.py
-│   │   └── codex/       mapping.py · app_server.py · rollout.py
+│   │   ├── codex/       mapping.py · app_server.py · rollout.py
+│   │   ├── hermes/      mapping.py · state_db.py
+│   │   └── opencode/    mapping.py · state_db.py
 │   ├── terminal_host/   launch.py · env.py · terminal.py
 │   └── gateway/         app.py · messages.py
 ├── clients/
@@ -216,4 +219,4 @@ reais); eles importam os módulos definitivos em vez de duplicar código.
 - Isolamento de adapters: tarefa supervisionada (hoje) ou processo separado.
 - Onde vive o log de eventos (arquivo/SQLite) e quando entra um banco.
 - Receptor de hooks do nível 1 como processo separado, sempre responsivo.
-- Adapter do Hermes (ver [adapters/HERMES.md](adapters/HERMES.md)).
+- Nível 1 de Hermes (sidecar da TUI) e opencode (servidor próprio).

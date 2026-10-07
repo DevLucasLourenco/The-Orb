@@ -29,8 +29,8 @@ O MVP é a **fundação** que o 3D vai renderizar depois.
 
 ### Já existe, mas fora dos critérios do MVP
 
-Os adapters do **Codex** (rollouts e observador do app-server) e do **Hermes** (`state.db`) foram
-promovidos e funcionam sobre dados reais, e o Gateway já os usa no nível 0. Eles não fazem parte do
+Os adapters do **Codex** (rollouts e observador do app-server), do **Hermes** (`state.db`) e do
+**opencode** (`opencode.db`) foram escritos e funcionam sobre dados reais desta máquina, e o Gateway já os usa no nível 0. Eles não fazem parte do
 critério de aceite do MVP: ficam para a etapa seguinte do roadmap, com validação ao vivo.
 
 ### Fora (por enquanto)
@@ -57,7 +57,7 @@ Archive · Perfil do Alter Ego · persistência em banco · multiusuário.
 | R2 | Telemetria em tempo real pelo transcript | ✅ Validado (Claude, ~270–470 ms) |
 | R3 | Terminal no cliente 3D (Godot) | ✅ Validado (Spike 2) |
 | R4 | Hooks ao vivo (nível 1) | ✅ Com restrição: um Orb travado atrasa o agente; mitigado |
-| R5 | Formatos de Codex e Hermes | ✅ Codex validado (Spike 4 + rollouts reais); Hermes lido no código e no `state.db`, sem execução ao vivo |
+| R5 | Formatos de Codex, Hermes e opencode | ✅ Codex validado (Spike 4 + rollouts reais); Hermes e opencode lidos nos bancos reais, sem execução ao vivo |
 | R6 | Desempenho e legibilidade do 3D em escala | Pendente (cliente 3D) |
 | **R7** | Observador do Codex ignorando um pedido de aprovação | **Aberto**, prioridade alta ([adapters/CODEX.md](adapters/CODEX.md) §10) |
 | R8 | O modelo "Alter Ego = sessão" não bastar (Perfil) | Aberto ([VISION.md](VISION.md) §7) |
@@ -78,9 +78,9 @@ Archive · Perfil do Alter Ego · persistência em banco · multiusuário.
 
 ## 6. Próximos passos
 
-1. **Rodar o MVP de ponta a ponta nesta máquina:** instalar `pywinpty`, subir `the-orb --cwd <projeto>`
+1. **Rodar o MVP de ponta a ponta nesta máquina** (`pywinpty` já instalado): subir `the-orb --cwd <projeto>`
    e usar o `claude` hospedado pelo painel (fecha S1 `/slash`, S4 e S6).
 2. **Amadurecer o Alter Ego / Perfil** (retomada, fork, `/clear`, várias sessões por realm).
 3. **Testar o risco R7** com o Lucas acompanhando.
-4. Codex e Hermes hospedados e validados ao vivo no mesmo painel; modo Observar.
+4. Codex, Hermes e opencode hospedados e validados ao vivo no mesmo painel; modo Observar.
 5. Cliente Godot: sala 3D com o terminal como monitor (R6).

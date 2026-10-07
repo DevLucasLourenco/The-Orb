@@ -34,6 +34,7 @@ def test_resolve_provider_from_model_name():
     assert resolve_provider(model="Sonnet 5.5") == "claude"
     assert resolve_provider(model="gpt-5.6-luna") == "codex"
     assert resolve_provider(model="hermes-3") == "hermes"
+    assert resolve_provider(provider="opencode") == "opencode"
     assert resolve_provider(provider="codex", model="claude-x") == "codex"       # explícito vence
     with pytest.raises(UnknownProvider):
         resolve_provider(model="modelo-desconhecido")
@@ -48,6 +49,9 @@ def test_launch_lines_only_from_controlled_values():
     assert Launch("codex", model="gpt-5.6-luna").line() == "codex -m gpt-5.6-luna"
     assert Launch("codex", remote_url="ws://127.0.0.1:8780").line() == "codex --remote ws://127.0.0.1:8780"
     assert Launch("hermes").line() == "hermes"
+    assert Launch("opencode").line() == "opencode"
+    assert Launch("opencode", session_id="ses_0b41e888fffek0I7").line() == "opencode --session ses_0b41e888fffek0I7"
+    assert Launch("opencode", model="anthropic/x").line() == "opencode"        # TUI sem flag de modelo
     with pytest.raises(UnknownProvider):
         Launch("calc.exe & del *").line()
 
@@ -58,6 +62,7 @@ def test_launch_lines_only_from_controlled_values():
     Launch("claude", session_name="a b"),
     Launch("claude", session_id="nao-e-uuid"),
     Launch("codex", remote_url="ws://evil.example:80"),
+    Launch("opencode", session_id="ses_x; rm -rf /"),
 ])
 def test_injection_attempts_are_refused(launch):
     with pytest.raises(InvalidLaunchValue):
@@ -99,7 +104,8 @@ def test_invalid_launch_never_opens_a_process():
 def test_not_installed_provider_is_reported(monkeypatch):
     import orb.terminal_host.terminal as terminal_module
 
-    monkeypatch.setattr(terminal_module, "available_providers", lambda: {"claude": True, "codex": True, "hermes": False})
+    monkeypatch.setattr(terminal_module, "available_providers",
+                        lambda: {"claude": True, "codex": True, "hermes": False, "opencode": True})
     opened = []
     with pytest.raises(ProviderNotInstalled):
         HostedTerminal(cwd=".", launch=Launch("hermes"), pty_factory=lambda *a: opened.append(a)).start()
@@ -107,7 +113,7 @@ def test_not_installed_provider_is_reported(monkeypatch):
 
 
 def test_available_providers_reports_every_known_cli():
-    assert set(available_providers()) == {"claude", "codex", "hermes"}
+    assert set(available_providers()) == {"claude", "codex", "hermes", "opencode"}
 
 
 def test_real_terminal_opens_shell_without_cli():

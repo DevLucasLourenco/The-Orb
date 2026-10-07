@@ -26,6 +26,7 @@ from ..adapters._shared import realm_id_for
 from ..adapters.claude import TranscriptReader
 from ..adapters.codex import RolloutReader
 from ..adapters.hermes import StateDbReader
+from ..adapters.opencode import OpencodeDbReader
 from ..core import World
 from ..protocol import validate
 from ..terminal_host import (HostedTerminal, InvalidLaunchValue, Launch, ProviderNotInstalled,
@@ -67,6 +68,9 @@ def telemetry_reader(provider: str | None, config: GatewayConfig, session_id: st
     if provider == "hermes":
         hermes_home = config.home / "hermes" if config.home else None
         return StateDbReader(config.cwd, realm=config.realm_id, since=since, home=hermes_home)
+    if provider == "opencode":
+        data_dir = config.home / "opencode" if config.home else None
+        return OpencodeDbReader(config.cwd, realm=config.realm_id, since=since, data_dir=data_dir)
     return None
 
 
