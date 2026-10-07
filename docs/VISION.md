@@ -81,7 +81,9 @@ The Orb  (o mundo: uma cidade conceitual)
 Cada projeto real é um realm, e cada realm é um prédio. **Os realms são detectados pelos
 providers**: a cidade se monta sozinha a partir das sessões que Claude, Codex, Hermes e opencode já
 registram; o Lucas não informa caminhos (regra R3; como, em [ARCHITECTURE.md](ARCHITECTURE.md),
-Detecção de realms). Pode ter aparência temática própria (ex.:
+Detecção de realms). Entram **todos os projetos que algum CLI já registrou**; sessões fora de
+projeto (pasta do usuário, pastas temporárias) são ignoradas; e o Lucas pode **esconder** realms
+desmarcando-os numa lista, sem que nada mude nos providers. Pode ter aparência temática própria (ex.:
 TriSafe como centro industrial, CLARA como biblioteca, UTC CONECTA+ como estação de comunicação).
 O objetivo é reconhecer onde há trabalho só olhando a cidade.
 
@@ -114,7 +116,8 @@ Room tem as cinco áreas do Environment, sem exceção, mesmo que o realm nunca 
 - A Team só fica parada quando **nenhum** subagente está ativo: o fim do turno do líder não
   encerra a Team (verificado no Claude: a ferramenta `Agent` é assíncrona).
 - O Alter Ego **persiste** depois que o terminal fecha, porque a sessão fica gravada pelo provider.
-  Reabri-lo é retomar a sessão num terminal novo.
+  Reabri-lo é retomar a sessão num terminal novo. **Sessões encerradas não são excluídas do mundo**
+  (regra R28); como mostrá-las sem lotar as salas está em [VISUAL.md](VISUAL.md), V-PEND-2.
 - Stats e nível (XP), quando existirem, vêm só de histórico real (testes, PRs, retrabalho,
   tokens, tempo). Nunca inventados.
 
@@ -158,7 +161,8 @@ Nos dois modos a telemetria é a mesma (adapter → eventos nativos + sinais de 
 Tudo abaixo é visualização de dados reais, somente leitura (princípio 5).
 
 - **Andares e janelas acesas.** Andares = módulos/diretórios de primeiro nível (respeitando o
-  `.gitignore`). Janelas acendem onde houve edição recente e esmaecem com o tempo.
+  `.gitignore`). Janelas acendem onde houve alteração recente e esmaecem com o tempo; **a cor da
+  janela é a cor do tipo de alteração no git** (inserção, modificação, remoção…), regra R20a.
 - **Weather.** CI passando = céu limpo; CI falhando = tempestade; testes falhando =
   rachaduras/andaimes; realm parado = noite.
 - **Chronicle.** Arrastar a linha do tempo e ver a cidade como era. Funciona porque o estado do
@@ -207,8 +211,8 @@ com o zoom (realm → personagens → card detalhado).
   várias sessões)? Se sim, o personagem é a sessão ou o Perfil?
 - Retomada (`resume`), bifurcação (`fork`), `/clear` e compactação: mesmo Alter Ego ou um novo?
   Depende de o id da sessão mudar em cada provider (a verificar).
-- O que acontece com o personagem quando a sessão termina: some, dorme no Rooftop Room, vai para
-  um memorial?
+- ~~O que acontece com o personagem quando a sessão termina?~~ **Decidido: não é excluído (R28).**
+  Em aberto: onde ficam as encerradas e as antigas (VISUAL.md, V-PEND-2).
 - O Gate escrevendo para um Alter Ego cuja sessão está fechada: recusa, ou reabre a sessão?
 
 **Mundo e interface:**
@@ -216,7 +220,8 @@ com o zoom (realm → personagens → card detalhado).
 - Escala da altura (linear, raiz, log) para o skyline não ficar ilegível; linhas em branco e
   comentários contam? Lockfiles versionados entram? Frequência de recálculo; como expor o filtro.
 - Rooftop Room: nome definitivo; como o layout acomoda muitos Alter Egos e subagentes.
-- Estilo visual de cada realm; como o Inner World aparece no 3D.
+- Estilo visual de cada realm; como o Inner World aparece no 3D. Cenário é permitido quando
+  declarado (R12a). Decisões visuais pendentes: [VISUAL.md](VISUAL.md).
 - Como a UI avisa que um terminal está parado num diálogo esperando o Lucas.
 
 **Telemetria:**

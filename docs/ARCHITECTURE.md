@@ -163,11 +163,12 @@ projeto.
 
 | Id | Pergunta |
 |---|---|
-| D-REALM-1 | **Quais realms aparecem:** só os com sessão recente (janela de quanto tempo?), ou todo projeto que algum provider já registrou? O histórico do Claude e do Codex tem dezenas de pastas antigas. |
-| D-REALM-2 | **Sessões fora de projeto** (pasta do usuário, `Temp`, `Downloads`): viram realm, ficam num "realm sem projeto", ou são ignoradas? |
-| D-REALM-3 | **Realm sem sessões há muito tempo:** some da cidade, apaga as luzes, ou fica para sempre? |
-| D-REALM-4 | **Esconder/fixar um realm** pelo Lucas: existe? (sem exigir que ele informe caminhos) |
-| D-REALM-5 | **Persistência da cidade:** o Orb guarda a lista de realms vistos (para a posição dos prédios ser estável entre execuções) ou recalcula tudo a cada início? |
+| D-REALM-1 | ~~Quais realms aparecem?~~ **Decidido (2026-10-07): todos os projetos que algum CLI já registrou (R3a).** Nesta máquina: ~40 pastas (Codex 33, Claude 7, Hermes 7, opencode 2, com sobreposição). Consequência: a descoberta de realms lê os **metadados** de todo o histórico (pasta de cada sessão), não o conteúdo; o conteúdo continua lido de forma incremental. |
+| D-REALM-2 | ~~Sessões fora de projeto?~~ **Decidido: ignoradas (R3b).** Em aberto: o critério do que é "fora de projeto". Proposta: a pasta do usuário em si e pastas de sistema/temporárias (`AppData`, `Temp`, `Downloads`) são ignoradas; qualquer outra pasta é projeto. |
+| D-REALM-3 | **Realm sem sessões há muito tempo:** pela D-REALM-1 ele continua na cidade; o Lucas o esconde pela lista (R3c). Em aberto: aparência de um realm parado há muito tempo (luzes apagadas? "noite", como na camada Weather?). |
+| D-REALM-4 | ~~Esconder/fixar um realm?~~ **Decidido: uma lista com todos os realms, com marcação; desmarcar esconde (R3c).** Fixar não foi pedido. |
+| D-REALM-5 | **Persistência local do Orb:** a lista de realms escondidos (R3c) precisa ser guardada; o Orb ganha um arquivo de preferências **próprio** (nunca dos providers). Em aberto: onde fica (proposta: `%LOCALAPPDATA%\the-orb\` ou `~/.the-orb/`) e se também guarda a posição dos prédios (V-PEND-5). |
+| D-REALM-6 | **Pasta de projeto que não existe mais no disco** (projeto apagado ou movido, mas ainda no histórico dos CLIs): aparece? Sem a pasta não há altura (linhas de código). |
 
 ## 4. Robustez
 

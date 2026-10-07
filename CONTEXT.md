@@ -26,7 +26,14 @@ _Evite_: população, frota
 Um projeto real (um repositório), desenhado no Orb como um prédio. É **detectado pelos providers**:
 existe porque algum CLI tem sessões naquele projeto, sem o Lucas informar caminhos. A altura do
 prédio é a quantidade de linhas de código do projeto, sempre ignorando o que o `.gitignore` ignora.
+Todo projeto que algum CLI já registrou é um realm; sessões fora de projeto (pasta do usuário,
+pastas temporárias) não formam realm.
 _Evite_: projeto (no contexto do mundo), prédio (como nome do conceito), workspace
+
+**Realm escondido**:
+Um realm que o Lucas desmarcou na lista de realms: continua detectado, só não aparece na cidade. A
+escolha é do Orb e não muda nada nos providers.
+_Evite_: realm removido, realm apagado
 
 **Rooftop Room** *(nome provisório)*:
 O quartinho no teto de cada prédio onde os Alter Egos daquele realm trabalham. Todo Rooftop
@@ -44,7 +51,8 @@ _Evite_: cenário, mapa
 **Alter Ego**:
 Uma **sessão** de um CLI de IA (Claude Code, Codex, Hermes, opencode) em um realm, desenhada como um
 personagem: o **líder** da sua Team. Uma sessão é um Alter Ego; duas sessões são dois Alter
-Egos. O provider e o modelo pertencem à sessão e não mudam.
+Egos. O provider e o modelo pertencem à sessão e não mudam. Quando a sessão termina, o Alter Ego
+**não é excluído**.
 _Evite_: agente principal, persona do provider, bot
 
 **Perfil** *(em aberto)*:
