@@ -1,0 +1,86 @@
+# The Orb — MVP
+
+> Escopo do primeiro MVP, critérios de sucesso, riscos e decisões. Visão: [VISION.md](VISION.md) ·
+> Resultados dos spikes: [SPIKES.md](SPIKES.md) · Ideias fora do MVP: [IDEAS.md](IDEAS.md).
+
+Última atualização: 2026-10-07
+
+## 1. Objetivo
+
+Provar a tese do Orb pelo menor caminho:
+
+> **Abrir o CLI real de uma IA dentro do Orb, usar normalmente, e ver em tempo real, de forma
+> confiável, o que aquela sessão (o Alter Ego) e os subagentes dela estão fazendo, sem alterar em
+> nada o comportamento do agente.**
+
+O MVP é a **fundação** que o 3D vai renderizar depois.
+
+## 2. Escopo
+
+### Dentro
+
+1. **Inner World com terminal real:** abrir o `claude` (CLI real) numa pseudo-console, no
+   diretório de um realm; digitar, usar `/slash`, redimensionar.
+2. **Um realm, um provider (Claude), nível 0:** ler o transcript em tempo real, sem instalar nada.
+3. **Protocol 0.2:** evento nativo intacto + sinal de mundo + entrada de Inner World.
+4. **Core:** mundo Realm → Alter Ego (sessão) → Subagentes → Atividade.
+5. **Painel 2D** (página web com xterm.js): o terminal, a árvore do mundo e a linha do tempo do
+   Inner World com a origem de cada entrada.
+
+### Já existe, mas fora dos critérios do MVP
+
+Os adapters do **Codex** (rollouts e observador do app-server) e do **Hermes** (`state.db`) foram
+promovidos e funcionam sobre dados reais, e o Gateway já os usa no nível 0. Eles não fazem parte do
+critério de aceite do MVP: ficam para a etapa seguinte do roadmap, com validação ao vivo.
+
+### Fora (por enquanto)
+
+3D/Godot além do terminal · hooks (nível 1) · Gate, Team visual, Chronicle, Weather, Energy,
+Archive · Perfil do Alter Ego · persistência em banco · multiusuário.
+
+## 3. Critérios de sucesso
+
+| # | Critério | Como medir | Status |
+|---|---|---|---|
+| S1 | A TUI do `claude` roda hospedada: cores, redimensionamento, entrada, `/slash`, sem corromper a tela | Teste manual + captura | ✅ Spike 1 (`/slash` não exercitado) |
+| S2 | O CLI hospedado se comporta **igual** a fora do Orb | Nenhum arquivo do projeto/config alterado pelo Orb | ✅ com ressalvas (ambiente limpo, nível 1 só por sessão) |
+| S3 | Eventos chegam ao painel em < 1 s | Medir latência | ✅ ~270–470 ms |
+| S4 | Subagentes aparecem na Team do Alter Ego certo | Sessão com subagentes | ◐ Hooks ao vivo (Spike 3) e transcripts reais de subagentes lidos pelo adapter; falta ver na TUI hospedada |
+| S5 | O que o Lucas escreve aparece no Inner World como origem humana, e o que o sistema injeta não | Enviar prompt; provocar `<task-notification>` | ✅ Regra testada (9 formas de entrada) |
+| S6 | Falha de um módulo não derruba os outros | Matar adapter/terminal e observar | ◐ Validação na borda e isolamento da telemetria testados; teste de caos pendente |
+
+## 4. Riscos
+
+| # | Risco | Status |
+|---|---|---|
+| **R1** | Hospedar a TUI real em pseudo-console no Windows | ✅ Validado (Spike 1) |
+| R2 | Telemetria em tempo real pelo transcript | ✅ Validado (Claude, ~270–470 ms) |
+| R3 | Terminal no cliente 3D (Godot) | ✅ Validado (Spike 2) |
+| R4 | Hooks ao vivo (nível 1) | ✅ Com restrição: um Orb travado atrasa o agente; mitigado |
+| R5 | Formatos de Codex e Hermes | ✅ Codex validado (Spike 4 + rollouts reais); Hermes lido no código e no `state.db`, sem execução ao vivo |
+| R6 | Desempenho e legibilidade do 3D em escala | Pendente (cliente 3D) |
+| **R7** | Observador do Codex ignorando um pedido de aprovação | **Aberto**, prioridade alta ([adapters/CODEX.md](adapters/CODEX.md) §10) |
+| R8 | O modelo "Alter Ego = sessão" não bastar (Perfil) | Aberto ([VISION.md](VISION.md) §7) |
+
+## 5. Decisões tomadas
+
+| # | Decisão | Registro |
+|---|---|---|
+| D1 | Alter Ego é uma sessão; o Perfil fica em aberto | [ADR 0001](adr/0001-alter-ego-e-uma-sessao.md) |
+| D2 | Cada provider aparece como ele é; o mundo usa sinais derivados | [ADR 0002](adr/0002-eventos-nativos-por-provider.md) |
+| D3 | Inner World une o terminal e o pensamento (sai "Intrusive Thoughts") | [ADR 0003](adr/0003-inner-world-une-terminal-e-pensamento.md) |
+| D4 | Terminal real + CLI chamado dentro dele; um Terminal Host em Python; clientes só exibem | [ADR 0004](adr/0004-terminal-host-unico-em-python.md) |
+| D5 | Nível 0 por padrão; nível 1 por sessão (`claude --settings`; app-server próprio do Codex) | [ADR 0005](adr/0005-nivel-zero-de-pegada-por-padrao.md) |
+| D6 | O Orb nunca responde diálogos do Lucas nem pedidos do servidor | [ADR 0006](adr/0006-o-orb-nunca-responde-dialogos.md) |
+| D7 | O Orb atribui `--session-id` e `-n` ao `claude` hospedado e limpa o ambiente herdado | [SPIKES.md](SPIKES.md) Spike 1 |
+| D8 | Segurança do Gateway: loopback, token, `Origin`, lista fixa, linha de comando validada | [ARCHITECTURE.md](ARCHITECTURE.md) §3 |
+| D9 | Cliente do MVP: página web com xterm.js; backend Python (FastAPI) | — |
+
+## 6. Próximos passos
+
+1. **Rodar o MVP de ponta a ponta nesta máquina:** instalar `pywinpty`, subir `the-orb --cwd <projeto>`
+   e usar o `claude` hospedado pelo painel (fecha S1 `/slash`, S4 e S6).
+2. **Amadurecer o Alter Ego / Perfil** (retomada, fork, `/clear`, várias sessões por realm).
+3. **Testar o risco R7** com o Lucas acompanhando.
+4. Codex e Hermes hospedados e validados ao vivo no mesmo painel; modo Observar.
+5. Cliente Godot: sala 3D com o terminal como monitor (R6).
