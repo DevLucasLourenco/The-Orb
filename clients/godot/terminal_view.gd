@@ -1,8 +1,9 @@
 extends Control
-## Spike 2 (opção B): o Terminal do Godot só EXIBE bytes; o PTY continua no Terminal Host em Python.
-## Conecta no servidor do Spike 1 por WebSocket (mesmo protocolo da página web).
+## The Orb — terminal do Inner World no Godot. O Terminal (godot-xterm) só EXIBE bytes; o terminal
+## real e o CLI vivem no Terminal Host em Python (ADR 0004). Conecta no Gateway por WebSocket, com o
+## mesmo protocolo da página web (docs/PROTOCOL.md §9-§10).
 ##
-## Rodar:  godot --path . res://bridge.tscn -- --url=ws://127.0.0.1:8766/ws --token=XXX --provider=shell|claude
+## Rodar:  godot --path . -- --url=ws://127.0.0.1:8765/ws --token=XXX --provider=shell|claude|auto [--model=...]
 ## Autoteste: --autotest --wait=6 --out=resultado.json --shot=captura.png
 
 var args := {}
@@ -11,6 +12,7 @@ var ws := WebSocketPeer.new()
 var connected := false
 var received_bytes := 0
 var events: Array = []
+var world: Dictionary = {}
 
 
 func _ready() -> void:
@@ -25,7 +27,7 @@ func _ready() -> void:
 	terminal.size_changed.connect(func(_s) -> void: _send_resize())
 	await get_tree().process_frame
 	await get_tree().process_frame
-	var url := "%s?token=%s&provider=%s" % [args.get("url", "ws://127.0.0.1:8766/ws"), args.get("token", ""), args.get("provider", "shell")]
+	var url := "%s?token=%s&provider=%s&model=%s" % [args.get("url", "ws://127.0.0.1:8765/ws"), args.get("token", "").uri_encode(), args.get("provider", "shell").uri_encode(), args.get("model", "").uri_encode()]
 	# O servidor exige Origin local (proteção contra páginas de terceiros).
 	ws.handshake_headers = PackedStringArray(["Origin: http://127.0.0.1"])
 	var err := ws.connect_to_url(url)
@@ -58,7 +60,9 @@ func _on_message(raw: String) -> void:
 			received_bytes += bytes.size()
 			terminal.write(bytes)
 		"event":
-			events.append(msg["event"]["type"])
+			events.append(msg["event"]["native"]["kind"])
+		"world":
+			world = msg["world"]
 		"system":
 			print("[servidor] ", msg.get("info", msg.get("error", "")))
 

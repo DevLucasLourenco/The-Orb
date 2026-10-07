@@ -40,12 +40,9 @@ func _ready() -> void:
 	# Espera o layout para o terminal ter colunas/linhas reais antes de abrir o PTY.
 	await get_tree().process_frame
 	await get_tree().process_frame
-	var shell: String = args.get("shell", POWERSHELL)
-	var shell_args := PackedStringArray()
-	if args.has("shellargs"):
-		shell_args = PackedStringArray(String(args["shellargs"]).split(" ", false))
-	elif shell == POWERSHELL:
-		shell_args = PackedStringArray(["-NoLogo"])
+	# Só o PowerShell: nenhum executável vem de argumento (lista fixa, como no Terminal Host).
+	var shell: String = POWERSHELL
+	var shell_args := PackedStringArray(["-NoLogo"])
 	var cwd: String = args.get("cwd", ProjectSettings.globalize_path("res://"))
 	print("[spike] fork shell=%s args=%s cwd=%s cols=%d rows=%d" % [shell, shell_args, cwd, terminal.get_cols(), terminal.get_rows()])
 	var err := pty.fork(shell, shell_args, cwd, terminal.get_cols(), terminal.get_rows())

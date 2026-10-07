@@ -3,8 +3,9 @@
 - App-server EFÊMERO e próprio do Orb (loopback, porta 8781). Não toca no config.toml do usuário.
 - Cliente A conduz uma conversa (thread/start + turn/start), sandbox read-only, aprovação "never",
   thread `ephemeral` (não grava histórico).
-- Cliente B só OBSERVA (é o papel do futuro adapter): vê as notificações da thread do A?
-- Qualquer ServerRequest (pedido de aprovação etc.) é RECUSADO por padrão.
+- Cliente B só OBSERVA (é o papel do adapter, src/orb/adapters/codex): vê as notificações da thread
+  do A? O observador NUNCA responde a um ServerRequest, nem para recusar (ADR 0006).
+- Só o cliente A (que conduz o teste, com aprovação "never") recusa pedidos do servidor, por segurança.
 
 Saída: fixtures/codex-<versão>/<método>.json (1 amostra por método) e resumo no terminal.
 """
@@ -22,8 +23,8 @@ import websockets
 
 HERE = Path(__file__).parent
 PORT = 8781
-CWD = str(HERE.parent.parent.parent)          # ...\Github Repo (pasta já confiável no config.toml do Lucas)
-PROMPT = "Leia o arquivo 'Orb IA/MVP.md' e diga so o nome da secao 1."
+CWD = str(HERE.parent.parent)                 # raiz do The Orb
+PROMPT = "Leia o arquivo docs/MVP.md e diga so o nome da secao 1."
 TIMEOUT = 120
 
 t0 = time.time()
@@ -47,8 +48,9 @@ def wait_port(port: int, timeout: float = 30) -> bool:
 
 
 class Client:
-    def __init__(self, name: str):
+    def __init__(self, name: str, observer: bool = False):
         self.name = name
+        self.observer = observer          # observador: nunca responde ao servidor
         self.ws = None
         self.next_id = 0
         self.pending: dict[int, asyncio.Future] = {}
@@ -57,7 +59,7 @@ class Client:
     async def connect(self):
         self.ws = await websockets.connect(f"ws://127.0.0.1:{PORT}", max_size=None)
         asyncio.create_task(self._reader())
-        res = await self.request("initialize", {"clientInfo": {"name": f"orb-{self.name}", "title": "Orb IA", "version": "0.0.1"}})
+        res = await self.request("initialize", {"clientInfo": {"name": f"orb-{self.name}", "title": "The Orb", "version": "0.0.1"}})
         await self.notify("initialized")
         return res
 
@@ -82,7 +84,9 @@ class Client:
             async for raw in self.ws:
                 msg = json.loads(raw)
                 logs[self.name].append({"t": stamp(), "msg": msg})
-                if "id" in msg and "method" in msg:              # ServerRequest: recusar por padrão
+                if "id" in msg and "method" in msg:              # ServerRequest
+                    if self.observer:
+                        continue                                 # é do Lucas: o observador não responde
                     await self.ws.send(json.dumps({"jsonrpc": "2.0", "id": msg["id"],
                                                    "error": {"code": -32601, "message": "orb spike: recusado"}}))
                 elif "id" in msg and msg["id"] in self.pending:
@@ -101,7 +105,7 @@ async def main() -> None:
     try:
         assert wait_port(PORT), "app-server não subiu"
         print(f"codex {version}; app-server efêmero na porta {PORT}")
-        b = Client("B")
+        b = Client("B", observer=True)
         await b.connect()                                  # observador conecta ANTES
         a = Client("A")
         await a.connect()

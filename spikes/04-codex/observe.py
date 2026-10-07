@@ -24,7 +24,7 @@ HERE = Path(__file__).parent
 PORT = 8780
 PROJECT = str(HERE.parent.parent)
 ATTACH = "--attach" in sys.argv
-PROMPT = "Leia o arquivo MVP.md e responda só com o título da seção 1."
+PROMPT = "Leia o arquivo docs/MVP.md e responda só com o título da seção 1."
 
 log: list[dict] = []
 t0 = time.time()
@@ -57,7 +57,7 @@ async def observer(stop: asyncio.Event) -> None:
                 msg["params"] = params
             await ws.send(json.dumps(msg))
 
-        await send("initialize", {"clientInfo": {"name": "orb-observer", "title": "Orb IA", "version": "0.0.1"}}, id_=1)
+        await send("initialize", {"clientInfo": {"name": "orb-observer", "title": "The Orb", "version": "0.0.1"}}, id_=1)
         await send("initialized")
         attached: set[str] = set()
         next_id = 100
@@ -90,12 +90,13 @@ def screen_text(chunks: list[str]) -> str:
     return re.sub(r"\x1b\[[0-9;?]*[ -/]*[@-~]|\x1b\][^\x07]*\x07|\x1b[()][A-Z0-9]", "", raw).replace("\r", "")
 
 
-# A TUI só é usada onde o Lucas já confia (pasta-mãe, listada no config.toml dele). O Orb nunca
-# aceita diálogos de confiança/atualização por ele, e este script NUNCA digita sem checar a tela.
-TRUSTED_CWD = str(Path(PROJECT).parent)
+# A TUI abre na raiz do The Orb. Se o Codex ainda não confia nesta pasta, o diálogo de confiança
+# aparece e o script ABORTA (o Orb nunca aceita diálogos de confiança/atualização pelo Lucas, e este
+# script NUNCA digita sem checar a tela).
+TRUSTED_CWD = PROJECT
 UPDATE_OFF = ["--strict-config", "-c", "check_for_update_on_startup=false"]   # só desta sessão
 # Sem a letra "t": evita qualquer chance de acionar o atalho "t = trust all" de uma tela de revisão.
-PROMPT_TUI = "Leia o arquivo 'Orb IA/MVP.md' e diga so o nome da secao 1."
+PROMPT_TUI = "Leia o arquivo docs/MVP.md e diga so o nome da secao 1."
 
 
 def run_tui() -> str:

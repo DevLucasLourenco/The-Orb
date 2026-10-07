@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Orb — Painel</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@xterm/xterm@5.5.0/css/xterm.css">
+<style>
+  :root { --bg:#0e1116; --panel:#161b22; --line:#2a313c; --fg:#d6dde6; --dim:#8b95a3; --accent:#6aa9ff; --ok:#56d364; --warn:#e3b341; --err:#f85149; --human:#e3b341; }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; background: var(--bg); color: var(--fg); font: 13px/1.4 system-ui, sans-serif; }
+  .app { display: grid; grid-template-columns: 1fr 420px; grid-template-rows: 40px 1fr; height: 100%; }
+  header { grid-column: 1 / -1; display: flex; align-items: center; gap: 10px; padding: 0 12px; background: var(--panel); border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+  header b { color: var(--accent); }
+  .pill { padding: 2px 8px; border-radius: 10px; background: var(--bg); border: 1px solid var(--line); color: var(--dim); }
+  .pill.ok { color: var(--ok); } .pill.err { color: var(--err); }
+  #term { padding: 6px; overflow: hidden; min-height: 0; }
+  aside { border-left: 1px solid var(--line); background: var(--panel); display: flex; flex-direction: column; min-height: 0; }
+  aside h2 { margin: 0; padding: 8px 12px; font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--dim); border-bottom: 1px solid var(--line); }
+  #world { padding: 8px 12px; border-bottom: 1px solid var(--line); max-height: 40%; overflow: auto; }
+  .realm { color: var(--accent); font-weight: 600; margin-top: 4px; }
+  .ego { margin: 4px 0 4px 10px; } .sub { margin-left: 22px; color: var(--dim); }
+  .state { color: var(--ok); } .state.WAITING, .state.ERROR, .state.NO_SIGNAL { color: var(--warn); }
+  #inner { flex: 1; overflow: auto; padding: 4px 0; font-family: ui-monospace, Consolas, monospace; font-size: 12px; }
+  .entry { padding: 3px 12px; border-bottom: 1px solid #1d232c; word-break: break-word; white-space: pre-wrap; }
+  .entry .meta { color: var(--dim); } .entry .kind { color: var(--accent); }
+  .entry.human { border-left: 3px solid var(--human); } .entry.human .kind { color: var(--human); }
+  .entry.thought { font-style: italic; } .entry.result { color: var(--dim); }
+  select, button, input { background: var(--bg); color: var(--fg); border: 1px solid var(--line); border-radius: 4px; padding: 3px 8px; }
+  @media (max-width: 800px) { .app { grid-template-columns: 1fr; grid-template-rows: 40px 55% 1fr; } aside { border-left: 0; border-top: 1px solid var(--line); } }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <b>THE ORB</b>
+    <select id="cmd" aria-label="provider"></select>
+    <input id="model" placeholder="modelo (auto)" size="16" aria-label="modelo">
+    <button id="open">Abrir Inner World</button>
+    <span id="realm" class="pill"></span>
+    <span id="status" class="pill">desconectado</span>
+    <span id="lat" class="pill">latência —</span>
+  </header>
+  <div id="term"></div>
+  <aside>
+    <h2>Mundo (Realm → Alter Ego → Team)</h2>
+    <div id="world">sem dados ainda</div>
+    <h2>Inner World</h2>
+    <div id="inner"></div>
+  </aside>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@xterm/xterm@5.5.0/lib/xterm.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@xterm/addon-fit@0.10.0/lib/addon-fit.js"></script>
+<script>
+// Cliente burro por desenho: o estado do mundo vem do Core (canal "world"); este arquivo só
+// desenha. Todo texto vindo do servidor entra por textContent (nunca innerHTML).
+const token = new URLSearchParams(location.search).get("token") || "";
+const $ = (id) => document.getElementById(id);
+const term = new Terminal({ fontFamily: "Consolas, monospace", fontSize: 14, cursorBlink: true, scrollback: 5000, theme: { background: "#0e1116" } });
+const fit = new FitAddon.FitAddon();
+term.loadAddon(fit);
+term.open($("term"));
+fit.fit();
+let ws = null;
+
+function el(tag, cls, text) {
+  const node = document.createElement(tag);
+  if (cls) node.className = cls;
+  if (text !== undefined && text !== null) node.textContent = String(text);
+  return node;
+}
+function setStatus(text, cls) { const s = $("status"); s.textContent = text; s.className = "pill " + (cls || ""); }
+
+function renderWorld(world) {
+  const box = $("world");
+  box.replaceChildren();
+  if (!world.realms.length) { box.textContent = "sem dados ainda"; return; }
+  for (const realm of world.realms) {
+    box.append(el("div", "realm", realm.id));
+    for (const ego of realm.alter_egos) {
+      const row = el("div", "ego");
+      row.append(el("b", null, `${ego.provider} · ${ego.title || ego.session.slice(0, 8)}`), " ",
+                 el("span", "state " + ego.state, ego.state), " ",
+                 el("span", "pill", ego.area || "—"), " ",
+                 el("span", "pill", `${ego.events} ev · ${ego.human_inputs} do Lucas`));
+      if (ego.target) row.append(el("div", "sub", ego.target));
+      for (const w of ego.waiting) row.append(el("div", "sub", `⏳ esperando o Lucas: ${w.action || w.request}`));
+      box.append(row);
+      for (const sub of ego.team) {
+        box.append(el("div", "sub", `↳ ${sub.kind || "subagente"} ${sub.id.slice(0, 8)} — ${sub.state}${sub.target ? " · " + sub.target : ""}`));
+      }
+    }
+  }
+}
+
+function onEvent(ev, receivedAt) {
+  if (ev.ts) { $("lat").textContent = `latência ~${Math.max(0, Math.round(receivedAt * 1000 - Date.parse(ev.ts)))} ms`; }
+  if (!ev.inner) return;                       // só entradas de Inner World viram linha
+  const entry = el("div", `entry ${ev.inner.origin} ${ev.inner.role}`);
+  const who = ev.inner.origin === "human" ? "Lucas" : (ev.agent ? `sub ${ev.agent.slice(0, 8)}` : "líder");
+  const fidelity = ev.inner.fidelity ? ` [${ev.inner.fidelity}]` : "";
+  entry.append(el("span", "meta", `${(ev.ts || "").slice(11, 19)} ${who} `), el("span", "kind", ev.native.kind + fidelity),
+               document.createTextNode(" " + ev.inner.text));
+  const box = $("inner");
+  const stick = box.scrollTop + box.clientHeight >= box.scrollHeight - 40;
+  box.append(entry);
+  while (box.childElementCount > 2000) box.firstElementChild.remove();
+  if (stick) box.scrollTop = box.scrollHeight;
+}
+
+function connect() {
+  if (ws) ws.close();
+  term.reset(); $("inner").replaceChildren();
+  const q = new URLSearchParams({ token, provider: $("cmd").value, model: $("model").value });
+  ws = new WebSocket(`ws://${location.host}/ws?${q}`);
+  ws.onopen = () => { setStatus("conectado", "ok"); fit.fit(); ws.send(JSON.stringify({ type: "resize", cols: term.cols, rows: term.rows })); term.focus(); };
+  ws.onclose = () => setStatus("desconectado", "err");
+  ws.onmessage = (m) => {
+    const msg = JSON.parse(m.data);
+    if (msg.channel === "term") term.write(msg.data);
+    else if (msg.channel === "event") onEvent(msg.event, msg.t);
+    else if (msg.channel === "world") renderWorld(msg.world);
+    else if (msg.channel === "exit") setStatus("processo terminou (" + msg.code + ")", "err");
+    else if (msg.channel === "system") setStatus(msg.error || msg.info, msg.error ? "err" : "ok");
+  };
+}
+
+term.onData((data) => { if (ws && ws.readyState === 1) ws.send(JSON.stringify({ type: "input", data })); });
+window.addEventListener("resize", () => { fit.fit(); if (ws && ws.readyState === 1) ws.send(JSON.stringify({ type: "resize", cols: term.cols, rows: term.rows })); });
+$("open").onclick = connect;
+
+fetch("/config").then(r => r.json()).then(c => {
+  $("realm").textContent = `${c.realm} — ${c.cwd}`;
+  const select = $("cmd");
+  for (const name of ["auto", "shell", ...Object.keys(c.providers)]) {
+    const label = name in c.providers && !c.providers[name] ? `${name} (não instalado)` : name;
+    const option = el("option", null, label);
+    option.value = name;
+    select.append(option);
+  }
+  select.value = "claude";
+});
+</script>
+</body>
+</html>

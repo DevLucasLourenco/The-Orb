@@ -19,14 +19,14 @@ import uvicorn
 from fastapi import FastAPI, Request, Response
 
 HERE = Path(__file__).parent
-sys.path.insert(0, str(HERE.parent / "01-terminal-host"))
-from terminal_host import clean_env  # noqa: E402  (limpa marcadores herdados do Claude)
+sys.path.insert(0, str(HERE.parent.parent / "src"))
+from orb.terminal_host import clean_env  # noqa: E402  (limpa marcadores herdados do Claude)
 
 PORT = 8770
 DEAD_PORT = 8799          # nada escuta aqui: simula o Orb fora do ar
 HANG_PORT = 8798          # aceita a conexão e NUNCA responde: simula o Orb travado
 TOKEN = uuid.uuid4().hex
-PROJECT = str(HERE.parent.parent)   # raiz do projeto Orb IA (cwd das sessões de teste)
+PROJECT = str(HERE.parent.parent)   # raiz do The Orb (cwd das sessões de teste)
 
 # Eventos de hook documentados que interessam ao Orb.
 EVENTS = [
@@ -131,7 +131,7 @@ def run_claude(prompt: str, settings: Path, extra: list[str] | None = None, time
 
 SCENARIOS = {
     "A": ("basico: ler um arquivo",
-          "Leia o arquivo MVP.md e responda apenas com o título da seção 1, nada mais.", []),
+          "Leia o arquivo docs/MVP.md e responda apenas com o título da seção 1, nada mais.", []),
     "B": ("subagente",
           "Use a ferramenta Agent com subagent_type Explore para contar quantos arquivos .md existem "
           "na pasta atual (sem subpastas) e me responda só com o número.", []),

@@ -1,0 +1,19 @@
+; Engine configuration file.
+; The Orb — cliente Godot. Hoje: o terminal do Inner World exibido a partir do Gateway (Python).
+
+config_version=5
+
+[application]
+
+config/name="The Orb"
+run/main_scene="res://terminal_view.tscn"
+config/features=PackedStringArray("4.7")
+
+[display]
+
+window/size/viewport_width=1000
+window/size/viewport_height=600
+
+[rendering]
+
+renderer/rendering_method="forward_plus"

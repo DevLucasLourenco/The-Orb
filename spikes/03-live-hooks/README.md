@@ -1,8 +1,10 @@
-# Spike 3 — Hooks ao vivo do Claude Code
+# Spike 3 — Hooks ao vivo do Claude Code (experimento)
 
 Responde: os hooks do Claude Code entregam ao Orb o que as docs dizem, sem tocar na
-configuração do usuário e sem atrapalhar o agente? Resultado: [MVP.md](../../MVP.md) §8 e
-[ADAPTER-CLAUDE.md](../../ADAPTER-CLAUDE.md) §6.
+configuração do usuário e sem atrapalhar o agente? Resultado: [SPIKES.md](../../docs/SPIKES.md) e
+[adapters/CLAUDE.md](../../docs/adapters/CLAUDE.md) §6. O formato de settings por sessão escolhido
+(hook `command` assíncrono + `curl`) foi promovido para `src/orb/adapters/claude/hooks.py`; este
+experimento continua aqui para regenerar as fixtures reais e repetir as medições.
 
 ## Arquivos
 

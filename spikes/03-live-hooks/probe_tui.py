@@ -34,7 +34,7 @@ proc.write(f'claude --session-id {sid} -n orb-hooks-tui --model haiku --settings
 time.sleep(12)                                    # TUI sobe
 started = {c["event"] for c in CAPTURES if c["scenario"] == "TUI"}
 print("depois de subir a TUI (sem prompt):", sorted(started) or "nenhum evento")
-proc.write("Leia o arquivo MVP.md e responda só com o título da seção 1.")
+proc.write("Leia o arquivo docs/MVP.md e responda só com o título da seção 1.")
 time.sleep(0.5)
 proc.write("\r")
 time.sleep(25)
