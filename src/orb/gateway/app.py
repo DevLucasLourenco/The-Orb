@@ -1,15 +1,22 @@
-"""Gateway: liga terminal (Inner World) + adapter do provider + Core e distribui por WebSocket.
+"""Gateway: o servidor local do The Orb.
 
-Uso:  the-orb --cwd PASTA [--port 8765]   (ou: python -m orb.gateway.app ...)
-Abra a URL com token que o servidor imprime. Escuta SOMENTE em 127.0.0.1.
+- Observa os realms (cada pasta de projeto, os 4 providers ao mesmo tempo) e mantém o mundo (Core).
+- `/world`: o mundo para o cliente 3D — snapshot, depois deltas e as linhas de Inner World.
+- `/ws`: o terminal real de um Inner World (abre uma sessão nova do CLI num realm).
+- `/`: o cliente 3D (clients/web).
 
-Segurança (o servidor abre um shell): loopback, token por execução, `Origin` local obrigatória,
+Uso:  the-orb --realm PASTA [--realm OUTRA ...] [--port 8765] [--lookback 30]
+      (ou: python -m orb.gateway.app ...). Abra a URL com token que o servidor imprime.
+
+Segurança (o servidor abre shells): só 127.0.0.1, token por execução, `Origin` local obrigatória,
 lista fixa de executáveis, linha de comando validada (orb.terminal_host.launch).
 """
 from __future__ import annotations
 
 import argparse
 import asyncio
+import contextlib
+import json
 import os
 import secrets
 import time
@@ -21,35 +28,31 @@ from urllib.parse import urlparse
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.responses import FileResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
 
-from ..adapters._shared import realm_id_for
-from ..adapters.claude import TranscriptReader
-from ..adapters.codex import RolloutReader
-from ..adapters.hermes import StateDbReader
-from ..adapters.opencode import OpencodeDbReader
+from ..adapters._shared import alter_ego_id
 from ..core import World
 from ..protocol import validate
 from ..terminal_host import (HostedTerminal, InvalidLaunchValue, Launch, ProviderNotInstalled,
                              UnknownProvider, available_providers, resolve_provider, winpty_factory)
 from .messages import handle_client_message
+from .realms import Feed, RealmObserver, build_observers
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
-WEB_PANEL = REPO_ROOT / "clients" / "web_panel" / "index.html"
+WEB_CLIENT = REPO_ROOT / "clients" / "web"
 ALLOWED_HOSTS = frozenset({"127.0.0.1", "localhost"})
-POLL_SECONDS = 0.25
+POLL_SECONDS = 0.5
+CLIENT_QUEUE = 2000            # mensagens pendentes por cliente do mundo; além disso, só o snapshot
+FEED_ON_CONNECT = 80           # linhas de Inner World por sessão enviadas a quem acabou de conectar
 
 
 @dataclass
 class GatewayConfig:
-    cwd: str
+    realms: list[str]                      # pastas dos projetos (cada uma é um realm)
     token: str = field(default_factory=lambda: secrets.token_urlsafe(24))
-    realm: str | None = None
-    home: Path | None = None            # raiz das pastas dos providers (testes)
+    home: Path | None = None               # raiz das pastas dos providers (testes)
     poll_seconds: float = POLL_SECONDS
-
-    @property
-    def realm_id(self) -> str:
-        return self.realm or realm_id_for(self.cwd)
+    lookback_minutes: float = 30.0
 
 
 def authorized(token: str, query_token: str | None, origin: str | None) -> bool:
@@ -59,42 +62,133 @@ def authorized(token: str, query_token: str | None, origin: str | None) -> bool:
     return origin is not None and urlparse(origin).hostname in ALLOWED_HOSTS
 
 
-def telemetry_reader(provider: str | None, config: GatewayConfig, session_id: str | None, since: float):
-    """Leitor de nível 0 do provider da sessão hospedada (ou None para um shell puro)."""
-    if provider == "claude":
-        return TranscriptReader(config.cwd, realm=config.realm_id, session_id=session_id, since=since, home=config.home)
-    if provider == "codex":
-        return RolloutReader(config.cwd, realm=config.realm_id, since=since, home=config.home)
-    if provider == "hermes":
-        hermes_home = config.home / "hermes" if config.home else None
-        return StateDbReader(config.cwd, realm=config.realm_id, since=since, home=hermes_home)
-    if provider == "opencode":
-        data_dir = config.home / "opencode" if config.home else None
-        return OpencodeDbReader(config.cwd, realm=config.realm_id, since=since, data_dir=data_dir)
-    return None
+class Hub:
+    """O mundo vivo: observa os realms, aplica no Core e distribui aos clientes do mundo."""
+
+    def __init__(self, observers: list[RealmObserver]) -> None:
+        self.observers = {obs.id: obs for obs in observers}
+        self.world = World()
+        self.feed = Feed()
+        self.clients: set[asyncio.Queue[dict[str, Any]]] = set()
+
+    def realms(self) -> list[dict[str, Any]]:
+        return [obs.describe() for obs in self.observers.values()]
+
+    def snapshot(self) -> dict[str, Any]:
+        world = self.world.snapshot()
+        known = {realm["id"] for realm in world["realms"]}
+        # Todo realm configurado existe na cidade, mesmo sem nenhuma sessão ainda.
+        world["realms"] += [{"id": rid, "alter_egos": []} for rid in self.observers if rid not in known]
+        info = {obs.id: obs.describe() for obs in self.observers.values()}
+        for realm in world["realms"]:
+            realm.update({k: v for k, v in info.get(realm["id"], {}).items() if k != "id"})
+        world["realms"].sort(key=lambda r: r["id"])
+        return world
+
+    def poll_once(self) -> tuple[list[dict[str, Any]], bool]:
+        """Lê todos os realms (chamado fora do loop). Devolve (eventos aplicados, mudou?)."""
+        applied: list[dict[str, Any]] = []
+        for obs in self.observers.values():
+            for event in obs.poll():
+                if validate(event) is None and self.world.apply(event):
+                    applied.append(event)
+                    self.feed.add(event)
+        return applied, bool(applied)
+
+    def publish(self, message: dict[str, Any]) -> None:
+        for queue in list(self.clients):
+            if queue.full():
+                continue           # cliente lento: recebe o próximo snapshot, não trava os outros
+            queue.put_nowait(message)
+
+    async def run(self, poll_seconds: float) -> None:
+        while True:
+            try:
+                applied, changed = await asyncio.to_thread(self.poll_once)
+            except Exception:  # noqa: BLE001 - observação nunca derruba o servidor
+                applied, changed = [], False
+            for event in applied:
+                if event.get("inner"):
+                    self.publish({"channel": "event", "event": event})
+            if changed:
+                self.publish({"channel": "world", "world": self.snapshot()})
+            await asyncio.sleep(poll_seconds)
 
 
 def create_app(config: GatewayConfig, *, pty_factory: Callable = winpty_factory,
-               check_installed: bool = True) -> FastAPI:
-    app = FastAPI(title="The Orb")
-    world = World()
-    app.state.world = world
+               check_installed: bool = True, observers: list[RealmObserver] | None = None) -> FastAPI:
+    hub = Hub(observers if observers is not None else
+              build_observers(config.realms, lookback_minutes=config.lookback_minutes, home=config.home))
+
+    @contextlib.asynccontextmanager
+    async def lifespan(_app: FastAPI):
+        task = asyncio.create_task(hub.run(config.poll_seconds))
+        try:
+            yield
+        finally:
+            task.cancel()
+
+    app = FastAPI(title="The Orb", lifespan=lifespan)
+    app.state.hub = hub
     app.state.config = config
+    if WEB_CLIENT.is_dir():
+        app.mount("/static", StaticFiles(directory=WEB_CLIENT), name="static")
 
     @app.get("/")
     async def index():
-        return FileResponse(WEB_PANEL)
+        return FileResponse(WEB_CLIENT / "index.html")
 
     @app.get("/config")
     async def get_config():
-        return JSONResponse({"cwd": config.cwd, "realm": config.realm_id, "providers": available_providers()})
+        return JSONResponse({"realms": hub.realms(), "providers": available_providers()})
 
-    @app.websocket("/ws")
-    async def session(ws: WebSocket):
+    @app.websocket("/world")
+    async def world_stream(ws: WebSocket):
         if not authorized(config.token, ws.query_params.get("token"), ws.headers.get("origin")):
             await ws.close(code=4401)
             return
         await ws.accept()
+        queue: asyncio.Queue[dict[str, Any]] = asyncio.Queue(maxsize=CLIENT_QUEUE)
+        await ws.send_json({"channel": "world", "world": hub.snapshot()})
+        for realm in hub.world.realms.values():
+            for ego_id in realm:
+                lines = hub.feed.history(ego_id, FEED_ON_CONNECT)
+                if lines:
+                    await ws.send_json({"channel": "feed", "alter_ego": ego_id, "events": lines})
+        hub.clients.add(queue)
+
+        async def pump():
+            while True:
+                await ws.send_json(await queue.get())
+
+        sender = asyncio.create_task(pump())
+        try:
+            while True:
+                raw = await ws.receive_text()
+                try:
+                    msg = json.loads(raw)
+                except json.JSONDecodeError:
+                    continue
+                if isinstance(msg, dict) and msg.get("type") == "feed" and isinstance(msg.get("alter_ego"), str):
+                    await queue.put({"channel": "feed", "alter_ego": msg["alter_ego"],
+                                     "events": hub.feed.history(msg["alter_ego"])})
+        except WebSocketDisconnect:
+            pass
+        finally:
+            hub.clients.discard(queue)
+            sender.cancel()
+
+    @app.websocket("/ws")
+    async def terminal_session(ws: WebSocket):
+        if not authorized(config.token, ws.query_params.get("token"), ws.headers.get("origin")):
+            await ws.close(code=4401)
+            return
+        await ws.accept()
+        realm = hub.observers.get(ws.query_params.get("realm") or "") or next(iter(hub.observers.values()), None)
+        if realm is None:
+            await ws.send_json({"channel": "system", "error": "nenhum realm configurado"})
+            await ws.close()
+            return
         loop = asyncio.get_running_loop()
         out: asyncio.Queue[tuple[str, Any]] = asyncio.Queue()
         mode = ws.query_params.get("provider", "auto")       # "shell" | provider | "auto"
@@ -111,20 +205,17 @@ def create_app(config: GatewayConfig, *, pty_factory: Callable = winpty_factory,
             await ws.send_json({"channel": "system", "error": f"não foi possível abrir: {exc}"})
             await ws.close()
             return
+
         def from_pty_thread(channel: str, payload: Any) -> None:
-            """Chamado pela thread da PTY. Depois que a conexão fecha o loop pode não existir mais:
-            descartar é o certo (não há para quem entregar)."""
+            """Chamado pela thread da PTY; depois que a conexão fecha não há para quem entregar."""
             try:
                 loop.call_soon_threadsafe(out.put_nowait, (channel, payload))
             except RuntimeError:
                 pass
 
-        term = HostedTerminal(
-            cwd=config.cwd, launch=launch, pty_factory=pty_factory, check_installed=check_installed,
-            on_output=lambda data: from_pty_thread("term", data),
-            on_exit=lambda code: from_pty_thread("exit", code),
-        )
-        started = time.time()
+        term = HostedTerminal(cwd=realm.cwd, launch=launch, pty_factory=pty_factory, check_installed=check_installed,
+                              on_output=lambda data: from_pty_thread("term", data),
+                              on_exit=lambda code: from_pty_thread("exit", code))
         try:
             term.start()
         except ProviderNotInstalled as exc:
@@ -135,46 +226,21 @@ def create_app(config: GatewayConfig, *, pty_factory: Callable = winpty_factory,
             await ws.send_json({"channel": "system", "error": f"falha ao abrir terminal: {exc}"})
             await ws.close()
             return
-        await ws.send_json({"channel": "system", "info": f"provider={provider or 'shell'}",
-                            "realm": config.realm_id, "session": session_id})
-        await ws.send_json({"channel": "world", "world": world.snapshot()})
-        reader = telemetry_reader(provider, config, session_id, started)
-
-        async def pump_telemetry():
-            while reader is not None:
-                try:
-                    events = await asyncio.to_thread(reader.poll)
-                except Exception as exc:  # noqa: BLE001 - telemetria nunca derruba o terminal
-                    await out.put(("system", f"telemetria: {exc}"))
-                    events = []
-                changed = False
-                for event in events:
-                    problem = validate(event)
-                    if problem:
-                        await out.put(("system", f"evento descartado: {problem}"))
-                        continue
-                    if world.apply(event):           # repetido não é reenviado
-                        changed = True
-                        await out.put(("event", event))
-                if changed:
-                    await out.put(("world", world.snapshot()))
-                await asyncio.sleep(config.poll_seconds)
+        # Com Claude o Orb escolhe o id da sessão: o cliente já sabe qual personagem é este terminal.
+        await ws.send_json({"channel": "system", "info": f"provider={provider or 'shell'}", "realm": realm.id,
+                            "alter_ego": alter_ego_id(provider, session_id) if session_id and provider else None})
 
         async def pump_out():
             while True:
                 channel, payload = await out.get()
                 if channel == "term":
                     await ws.send_json({"channel": "term", "data": payload})
-                elif channel == "event":
-                    await ws.send_json({"channel": "event", "event": payload, "t": time.time()})
-                elif channel == "world":
-                    await ws.send_json({"channel": "world", "world": payload})
                 elif channel == "exit":
                     await ws.send_json({"channel": "exit", "code": payload})
                 else:
                     await ws.send_json({"channel": "system", "error": payload})
 
-        tasks = [asyncio.create_task(pump_telemetry()), asyncio.create_task(pump_out())]
+        sender = asyncio.create_task(pump_out())
         try:
             while True:
                 problem = handle_client_message(term, await ws.receive_text())
@@ -183,24 +249,27 @@ def create_app(config: GatewayConfig, *, pty_factory: Callable = winpty_factory,
         except WebSocketDisconnect:
             pass
         finally:
-            for task in tasks:
-                task.cancel()
+            sender.cancel()
             term.close()
 
     return app
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="The Orb — Gateway (terminal + telemetria)")
-    parser.add_argument("--cwd", default=os.getcwd(), help="pasta do projeto (o realm)")
+    parser = argparse.ArgumentParser(description="The Orb — o mundo das suas sessões de IA")
+    parser.add_argument("--realm", action="append", default=[], help="pasta de um projeto (repita para vários)")
+    parser.add_argument("--cwd", action="append", default=[], help="o mesmo que --realm")
     parser.add_argument("--port", type=int, default=8765)
-    parser.add_argument("--realm", default=None, help="id do realm (padrão: nome da pasta)")
+    parser.add_argument("--lookback", type=float, default=30.0, help="minutos: sessões ativas nesse intervalo já aparecem")
     args = parser.parse_args()
     import uvicorn
 
-    config = GatewayConfig(cwd=str(Path(args.cwd).resolve()), realm=args.realm)
-    print(f"\nThe Orb — realm {config.realm_id} ({config.cwd})")
-    print(f"Abra: http://127.0.0.1:{args.port}/?token={config.token}\n", flush=True)
+    folders = [str(Path(p).resolve()) for p in (args.realm + args.cwd)] or [os.getcwd()]
+    config = GatewayConfig(realms=folders, lookback_minutes=args.lookback)
+    print("\nThe Orb — realms:")
+    for folder in folders:
+        print(f"  · {folder}")
+    print(f"\nAbra: http://127.0.0.1:{args.port}/?token={config.token}\n", flush=True)
     uvicorn.run(create_app(config), host="127.0.0.1", port=args.port, log_level="warning")
 
 

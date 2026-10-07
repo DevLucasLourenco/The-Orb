@@ -24,8 +24,8 @@ O MVP é a **fundação** que o 3D vai renderizar depois.
 2. **Um realm, um provider (Claude), nível 0:** ler o transcript em tempo real, sem instalar nada.
 3. **Protocol 0.2:** evento nativo intacto + sinal de mundo + entrada de Inner World.
 4. **Core:** mundo Realm → Alter Ego (sessão) → Subagentes → Atividade.
-5. **Painel 2D** (página web com xterm.js): o terminal, a árvore do mundo e a linha do tempo do
-   Inner World.
+5. **Mundo 3D** (página web com Three.js e xterm.js; [ADR 0007](adr/0007-cliente-3d-na-web.md)): a
+   cidade com os realms, os personagens, o overview do realm, o Inner World e o terminal.
 
 ### Já existe, mas fora dos critérios do MVP
 
@@ -35,7 +35,7 @@ critério de aceite do MVP: ficam para a etapa seguinte do roadmap, com validaç
 
 ### Fora (por enquanto)
 
-3D/Godot além do terminal · hooks (nível 1) · Gate, Team visual, Chronicle, Weather, Energy,
+Cliente Godot · hooks (nível 1) · Gate, Team visual, Chronicle, Weather, Energy,
 Archive · Perfil do Alter Ego · persistência em banco · multiusuário.
 
 ## 3. Critérios de sucesso
@@ -74,13 +74,14 @@ Archive · Perfil do Alter Ego · persistência em banco · multiusuário.
 | D6 | O Orb nunca responde diálogos do Lucas nem pedidos do servidor | [ADR 0006](adr/0006-o-orb-nunca-responde-dialogos.md) |
 | D7 | O Orb atribui `--session-id` e `-n` ao `claude` hospedado e limpa o ambiente herdado | [SPIKES.md](SPIKES.md) Spike 1 |
 | D8 | Segurança do Gateway: loopback, token, `Origin`, lista fixa, linha de comando validada | [ARCHITECTURE.md](ARCHITECTURE.md) §3 |
-| D9 | Cliente do MVP: página web com xterm.js; backend Python (FastAPI) | — |
+| D9 | Cliente: mundo 3D na web (Three.js) servido pelo backend Python (FastAPI) | [ADR 0007](adr/0007-cliente-3d-na-web.md) |
+| D10 | Um observador por realm acompanha os 4 providers ao mesmo tempo; cada Alter Ego carrega o seu provider | [ARCHITECTURE.md](ARCHITECTURE.md) §3 |
 
 ## 6. Próximos passos
 
-1. **Rodar o MVP de ponta a ponta nesta máquina** (`pywinpty` já instalado): subir `the-orb --cwd <projeto>`
+1. **Usar o mundo 3D no dia a dia** (`python -m orb.gateway.app --realm <projeto> …`)
    e usar o `claude` hospedado pelo painel (fecha S1 `/slash`, S4 e S6).
 2. **Amadurecer o Alter Ego / Perfil** (retomada, fork, `/clear`, várias sessões por realm).
 3. **Testar o risco R7** com o Lucas acompanhando.
 4. Codex, Hermes e opencode hospedados e validados ao vivo no mesmo painel; modo Observar.
-5. Cliente Godot: sala 3D com o terminal como monitor (R6).
+5. Sala 3D mais rica e desempenho com muitos realms e sessões (R6).

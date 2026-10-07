@@ -22,6 +22,7 @@ ALL_STATES: frozenset[str] = ACTIVITIES | DERIVED_STATES
 SIGNAL_FIELDS: dict[str, frozenset[str]] = {
     "session.started": frozenset(),
     "session.ended": frozenset(),
+    "session.updated": frozenset(),
     "activity": frozenset({"activity"}),
     "idle": frozenset(),
     "subagent.started": frozenset(),

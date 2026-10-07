@@ -106,6 +106,7 @@ Vocabulário **fechado**. Um tipo novo exige nova versão do protocolo.
 |---|---|---|
 | `session.started` | `cwd?`, `model?`, `title?` | O Alter Ego aparece no Rooftop Room |
 | `session.ended` | `reason?` | O Alter Ego sai de cena (continua no Chronicle) |
+| `session.updated` | `title?`, `model?`, `cwd?` | A identidade da sessão mudou (título, modelo); o estado não muda |
 | `activity` | `activity`, `target?` | O personagem vai para a área da atividade |
 | `idle` | — | Fim do turno; a Team só fica `IDLE` sem subagentes ativos |
 | `subagent.started` | `kind?`, `parent?` | Um subagente entra na Team (`agent` do envelope é o id dele) |
@@ -221,13 +222,17 @@ Fluxo inverso, separado dos eventos. Mensagens por WebSocket, validadas na borda
 Abrir o terminal é a própria conexão (`/ws?realm=…&provider=…&model=…`). **Não existe comando de
 aprovação**: aprovar é o Lucas escrevendo no terminal. Futuro: `realm.set_filters` (filtros de LOC).
 
+No canal do mundo (`/world`), o cliente pode pedir o histórico de uma sessão:
+`{"type":"feed","alter_ego":"<id>"}`.
+
 ## 10. Mensagens (Gateway → cliente)
 
 | `channel` | Conteúdo |
 |---|---|
 | `term` | Bytes do terminal (texto) |
 | `event` | Um evento do protocolo (§2) |
-| `world` | Snapshot do mundo (Core) depois de aplicar eventos |
+| `world` | Snapshot do mundo (Core) depois de aplicar eventos, com todos os realms configurados |
+| `feed` | Histórico de linhas de Inner World de uma sessão (`alter_ego`, `events`) |
 | `exit` | O processo do terminal terminou |
 | `system` | Informação ou erro do Gateway |
 

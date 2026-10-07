@@ -53,6 +53,7 @@ class _Thread:
     follower: JsonlFollower
     meta: dict[str, Any]
     announced: bool = False
+    model: str | None = None
 
 
 class RolloutReader:
@@ -129,14 +130,15 @@ class RolloutReader:
                 events.append(factory.make(f"{thread.thread_id}:meta", meta.get("timestamp"), "session_meta",
                                            meta, agent=agent, signal=signal))
             for offset, entry in thread.follower.poll():
-                event = self._translate(factory, thread.thread_id, agent, entry, offset)
+                event = self._translate(factory, thread, agent, entry, offset)
                 if event is not None:
                     events.append(event)
         return events
 
     @staticmethod
-    def _translate(factory: EventFactory, thread_id: str, agent: str | None, entry: dict[str, Any],
+    def _translate(factory: EventFactory, thread: _Thread, agent: str | None, entry: dict[str, Any],
                    offset: int) -> Event | None:
+        thread_id = thread.thread_id
         etype = entry.get("type")
         payload = entry.get("payload") if isinstance(entry.get("payload"), dict) else {}
         ptype = payload.get("type")
@@ -194,7 +196,14 @@ class RolloutReader:
                       "output_tokens": int(usage.get("output_tokens") or 0),
                       "cache_read_tokens": int(usage.get("cached_input_tokens") or 0),
                       "reasoning_tokens": int(usage.get("reasoning_output_tokens") or 0)}
+        elif etype == "turn_context" and agent is None:
+            model = payload.get("model")
+            if not isinstance(model, str) or model == thread.model:
+                return None
+            thread.model = model             # o modelo da sessão vem do contexto de cada turno
+            payload = {"model": model, "effort": payload.get("effort"), "cwd": payload.get("cwd")}
+            signal = {"type": "session.updated", "model": model}
         else:
-            return None                      # turn_context, world_state, compacted…: sem trabalho visível
+            return None                      # world_state, compacted…: sem trabalho visível
         return factory.make(key, ts, kind, payload, agent=agent, inner=inner, signal=signal)
 

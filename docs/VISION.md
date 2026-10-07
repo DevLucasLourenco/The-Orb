@@ -178,12 +178,13 @@ Ordem sugerida: janelas acesas → Gate → Chronicle → Weather → Energy →
    hooks do Claude ao vivo, observação do Codex. Ver [SPIKES.md](SPIKES.md).
 1. ✅ **Promoção dos spikes** para os módulos definitivos (2026-10-07). Ver
    [ARCHITECTURE.md](ARCHITECTURE.md).
-2. **MVP** ([MVP.md](MVP.md)): um realm, Claude hospedado, nível 0, painel 2D Realm → Alter Ego →
-   Subagente → Atividade e Inner World. *Etapa mais importante: se a árvore em tempo real estiver
-   certa, o 3D vira só um renderizador.*
+2. ✅ **Primeira versão do mundo 3D** (2026-10-07, [ADR 0007](adr/0007-cliente-3d-na-web.md)): cidade
+   navegável em Three.js, vários realms, os 4 providers observados ao mesmo tempo, overview do realm
+   (o que cada sessão faz, quem espera o Lucas, subagentes e consumo) e o Inner World com o terminal.
+   Substituiu o painel 2D de validação.
 3. Codex, Hermes e opencode validados ao vivo no mesmo painel; modo Observar.
-4. **Sala 3D** pequena, com personagens no lugar dos cards e o terminal como monitor do Rooftop
-   Room.
+4. **Sala 3D mais rica**: o terminal como monitor dentro do Rooftop Room, animações por atividade,
+   altura do prédio pela contagem de linhas, andares e janelas acesas.
 5. **Camadas vivas** e camada de jogo (mapas, movimentação, XP, quests, conquistas).
 
 Interface 3D prevista: câmera 3/4 de ~40–55°, WASD mover, scroll zoom, Q/E rotacionar, botão

@@ -20,6 +20,7 @@ from . import mapping
 
 SOURCE = "claude/transcript"
 _SEEN_MESSAGES = 2048     # ids de mensagem lembrados para não contar `usage` repetido
+_PEEK_BYTES = 256 * 1024  # fim do arquivo lido na descoberta, para achar título e modelo
 
 
 def encode_cwd(cwd: str) -> str:
@@ -47,6 +48,39 @@ class _Session:
     subagents: dict[str, _Subagent] = field(default_factory=dict)
     foreground_tools: dict[str, str] = field(default_factory=dict)   # toolUseId -> agentId
     usage_seen: "OrderedDict[str, None]" = field(default_factory=OrderedDict)
+    announced: bool = False
+    title: str | None = None
+    model: str | None = None
+
+
+def _identity(path: Path) -> tuple[str | None, str | None]:
+    """(título, modelo) mais recentes no fim do transcript: `custom-title`/`agent-name` e o
+    `message.model` do assistente. Lê só o fim do arquivo, somente leitura."""
+    title = name = model = None
+    try:
+        with open(path, "rb") as fh:
+            size = fh.seek(0, 2)
+            fh.seek(max(0, size - _PEEK_BYTES))
+            lines = fh.read().split(b"\n")
+    except OSError:
+        return None, None
+    for raw in reversed(lines):
+        if title and model:
+            break
+        try:
+            entry = json.loads(raw)
+        except (json.JSONDecodeError, UnicodeDecodeError):
+            continue
+        if not isinstance(entry, dict):
+            continue
+        if title is None and isinstance(entry.get("customTitle"), str):
+            title = entry["customTitle"]
+        if name is None and isinstance(entry.get("agentName"), str):
+            name = entry["agentName"]
+        message = entry.get("message") if isinstance(entry.get("message"), dict) else {}
+        if model is None and entry.get("type") == "assistant" and isinstance(message.get("model"), str):
+            model = message["model"]
+    return title or name, model
 
 
 class TranscriptReader:
@@ -102,6 +136,8 @@ class TranscriptReader:
         self._discover()
         events: list[Event] = []
         for session in self._sessions.values():
+            if not session.announced:
+                events.append(self._announce_session(session))
             # Anuncia subagentes novos antes de ler o líder: o resultado da ferramenta que os
             # encerra pode vir nesta mesma leitura.
             for sub in session.subagents.values():
@@ -113,6 +149,15 @@ class TranscriptReader:
                 for offset, entry in sub.follower.poll():
                     events.extend(self._translate(session, entry, offset, agent=sub.agent_id))
         return events
+
+    def _announce_session(self, session: _Session) -> Event:
+        """A sessão passa a existir no mundo assim que é encontrada, já com título e modelo."""
+        session.announced = True
+        session.title, session.model = _identity(session.follower.path)
+        body = {"sessionId": session.session_id, "customTitle": session.title, "model": session.model}
+        return session.factory.make("session", None, "transcript/session", body,
+                                    signal={"type": "session.started", "cwd": self.cwd,
+                                            "title": session.title, "model": session.model})
 
     def _announce(self, session: _Session, sub: _Subagent) -> Event:
         meta_path = sub.follower.path.with_suffix(".meta.json")
@@ -164,8 +209,19 @@ class TranscriptReader:
                 out.append(self._prompt(session, entry, "\n".join(texts), key, ts, agent))
             return out
 
+        if kind in ("custom-title", "agent-name"):
+            title = entry.get("customTitle") if kind == "custom-title" else entry.get("agentName")
+            if isinstance(title, str) and title and title != session.title and (kind == "custom-title" or session.title is None):
+                session.title = title
+                out.append(make(f"{key}#title", ts, kind, entry, signal={"type": "session.updated", "title": title}))
+            return out
         if kind != "assistant" or not isinstance(content, list):
             return out
+        model = message.get("model")
+        if agent is None and isinstance(model, str) and model != session.model and not model.startswith("<"):
+            session.model = model
+            out.append(make(f"{key}#model", ts, "assistant/model", {"model": model},
+                            signal={"type": "session.updated", "model": model}))
         for index, block in enumerate(content):
             if not isinstance(block, dict):
                 continue

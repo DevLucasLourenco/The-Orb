@@ -42,7 +42,7 @@
  └──────────────────────┬──────────────────────────┘
                         ▼
           ┌──────────────────────────────┐
-          │ Clients (web_panel, godot)   │
+          │ Clients (web 3D, godot)      │
           └──────────────────────────────┘
 ```
 
@@ -111,8 +111,16 @@ Todo adapter expõe a mesma forma (`orb.adapters._shared.base`):
 
 ### Gateway
 
-- `/ws?token=…&provider=…&model=…`: abre um terminal (um Alter Ego hospedado) e devolve
-  `term`, `event`, `world`, `exit`, `system`.
+- **Realms observados** (`orb.gateway.realms`): um `RealmObserver` por pasta de projeto roda os
+  leitores de nível 0 dos **4 providers ao mesmo tempo**. Qualquer sessão que nasça na pasta (pelo
+  Orb ou fora dele) vira um Alter Ego que carrega o seu provider. A falha de um provider não afeta
+  os outros (fica em `errors` do realm).
+- **`Hub`**: um laço único lê todos os realms (fora do loop, `to_thread`), aplica no Core, guarda as
+  últimas linhas de Inner World por sessão (`Feed`) e distribui aos clientes.
+- `/world?token=…`: o mundo para o cliente 3D — snapshot, depois `event` (linhas de Inner World),
+  `world` (snapshot quando algo muda) e `feed` (histórico de uma sessão, sob pedido).
+- `/ws?token=…&realm=…&provider=…&model=…`: abre o terminal real de uma sessão nova num realm e
+  devolve `term`, `exit`, `system` (com o `alter_ego` quando o Orb escolhe o id, no Claude).
 - Segurança: escuta só em `127.0.0.1`, token por execução, `Origin` local obrigatória, lista fixa
   de executáveis.
 - `handle_client_message(term, raw)` valida cada mensagem e **nunca levanta**.
@@ -192,8 +200,8 @@ The Orb/
 │   ├── terminal_host/   launch.py · env.py · terminal.py
 │   └── gateway/         app.py · messages.py
 ├── clients/
-│   ├── web_panel/       index.html (xterm.js + mundo + Inner World)
-│   └── godot/           terminal remoto (godot-xterm só exibe)
+│   ├── web/             o mundo 3D: index.html, styles.css, js/ (scene, realm3d, avatar, hud, innerworld, net)
+│   └── godot/           terminal remoto (alternativa; godot-xterm só exibe)
 ├── tests/
 └── spikes/              experimentos que rodam os CLIs reais (02, 03, 04)
 ```
@@ -205,7 +213,7 @@ The Orb/
 | `spikes/01-terminal-host/terminal_host.py` | `src/orb/terminal_host/` (`launch.py`, `env.py`, `terminal.py`) |
 | `spikes/01-terminal-host/transcript_tail.py` | `src/orb/adapters/claude/transcript.py` + `mapping.py` |
 | `spikes/01-terminal-host/server.py` | `src/orb/gateway/` (`app.py`, `messages.py`) |
-| `spikes/01-terminal-host/static/index.html` | `clients/web_panel/index.html` (agora sem HTML não escapado e sem lógica de estado) |
+| `spikes/01-terminal-host/static/index.html` | `clients/web/` (hoje o mundo 3D; ADR 0007) |
 | `spikes/01-terminal-host/test_spike.py` | `tests/` |
 | `spikes/02-terminal-godot/bridge.*` | `clients/godot/` |
 | `spikes/03-live-hooks/probe.py` (settings por sessão) | `src/orb/adapters/claude/hooks.py` |

@@ -48,6 +48,8 @@ def test_reads_only_new_rows_from_the_end_and_maps_them(tmp_path):
     add(conn, "S2", "user", "outra pasta")
     events = r.poll()
     assert all(validate(e) is None for e in events)
+    assert events[0]["signal"] == {"type": "session.started", "cwd": CWD, "title": "t", "model": "m"}
+    events = events[1:]
     assert [e["native"]["kind"] for e in events] == [
         "messages/user", "messages/assistant.reasoning", "messages/assistant", "messages/assistant.tool_call",
         "messages/tool", "messages/assistant", "messages/assistant.stop"]

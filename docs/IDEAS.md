@@ -26,7 +26,8 @@
 | Hooks ainda não exercitados | TaskCreated/Completed, Notification, PostToolUseFailure, PermissionDenied, StopFailure, Pre/PostCompact, CwdChanged | Pesquisa |
 | Event Protocol versionado | 0.1: vocabulário universal traduzido | **Revisto** → 0.2 (ADR 0002) |
 | Eventos nativos por provider | Cada provider aparece como ele é; o mundo usa sinais derivados | **Decidido** e **Feito** (protocolo 0.2) |
-| Painel 2D de validação | Árvore Realm → Alter Ego → Team → Atividade + Inner World | **MVP** (feito; falta rodar ponta a ponta) |
+| Painel 2D de validação | Árvore Realm → Alter Ego → Team → Atividade + Inner World | **Revisto**: substituído pelo mundo 3D (ADR 0007) |
+| Observador por realm | Os 4 providers observados ao mesmo tempo em cada projeto; sessões de fora do Orb aparecem sozinhas | **Feito** |
 | Adapter Codex | Rollouts (nível 0) + observador de um app-server próprio do Orb (nível 1) | **Feito** (validação ao vivo pendente) |
 | Adapter Hermes | `state.db` somente leitura (nível 0) | **Feito** (validação ao vivo pendente) |
 | Hermes nível 1 pelo sidecar da TUI | `HERMES_TUI_SIDECAR_URL` por lançamento, sem mudar configuração (só `--tui`) | Próximo |
@@ -54,16 +55,16 @@
 | Rooftop Room | Quartinho no teto com as 5 áreas obrigatórias | **Decidido** |
 | Estilo temático por realm | TriSafe industrial, CLARA biblioteca, UTC CONECTA+ estação de comunicação | Backlog |
 | Mapa/minimap | Visão geral rápida | Backlog |
-| Cidade/campus como hub | Tela inicial com todos os realms e contagem de Alter Egos | Próximo |
+| Cidade/campus como hub | Tela inicial com todos os realms e contagem de Alter Egos | **Feito** (v1: disco do Orb com os realms em anel) |
 
 ## 3. Câmera e controles
 
 | Ideia | Resumo | Status |
 |---|---|---|
-| Câmera 3/4 de cima, livre | ~40–55°, rotação, zoom, foco | Próximo |
-| Controles de câmera | WASD, scroll, Q/E, botão direito orbitar, F focar, duplo clique seguir, ESC, 1–9 realms | Próximo |
+| Câmera 3/4 de cima, livre | ~40–55°, rotação, zoom, foco | **Feito** |
+| Controles de câmera | WASD, scroll, Q/E, botão direito orbitar, F focar, duplo clique seguir, ESC, 1–9 realms | **Feito** (menos duplo clique seguir) |
 | FREE CAM | Sem limite de inclinação | Backlog |
-| Níveis de detalhe por zoom | Longe: realm. Médio: personagens. Perto: card e monitor com o terminal | Próximo |
+| Níveis de detalhe por zoom | Longe: realm. Médio: personagens. Perto: card e monitor com o terminal | **Feito** em parte (rótulos de perto; monitor: Próximo) |
 | Personagem "Manager" andando | Terceira pessoa (preterido pelo top-down; guardado) | Backlog |
 
 ## 4. Alter Ego e Mankind
@@ -99,8 +100,8 @@
 | Ideia | Resumo | Status |
 |---|---|---|
 | Janelas acesas e andares | Andares = módulos; janelas acendem onde houve edição recente | Próximo (1ª) |
-| Gate | Vê o que espera o Lucas e escreve a qualquer Alter Ego pelo terminal dele | Próximo (2ª) |
-| Team | Alter Ego + subagentes agrupados e endereçáveis | Próximo (dados já no Core) |
+| Gate | Vê o que espera o Lucas e escreve a qualquer Alter Ego pelo terminal dele | Próximo (2ª; a parte de **ver** já existe: feixe âmbar no prédio e contagem no topo) |
+| Team | Alter Ego + subagentes agrupados e endereçáveis | **Feito** em parte (subagentes como personagens menores na sala) |
 | Orb como centralizador de IAs | Inner World e Gate: duas portas para o mesmo terminal | **Decidido** |
 | Chronicle | Replay da cidade no tempo | Próximo (3ª) |
 | Weather | CI verde = céu limpo, falhando = tempestade… | Próximo (4ª) |
@@ -123,8 +124,8 @@
 
 | Ideia | Resumo | Status |
 |---|---|---|
-| Cliente Godot 4 (3D) | Foco do produto | Próximo (terminal remoto já em `clients/godot`) |
-| Cliente web (R3F/Three.js) | Prova rápida ou alternativa ao Godot | Pesquisa |
+| Cliente Godot 4 (3D) | Foco do produto | **Revisto**: alternativa; o mundo 3D é web (ADR 0007) |
+| Cliente web (Three.js) | O mundo 3D navegável no navegador | **Decidido** e **Feito** (v1; ADR 0007) |
 | Embutir terminal no Godot | godot-xterm exibindo bytes do Terminal Host em Python | **Decidido** (ADR 0004) |
 | Monitor 3D no Rooftop Room | O terminal como textura de um monitor (`SubViewport` num quad) | **Decidido** (validado no Spike 2) |
 | Clique do mouse no monitor 3D | Foco e seleção de texto | Pesquisa |

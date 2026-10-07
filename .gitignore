@@ -22,3 +22,6 @@ spikes/*/fixtures/
 spikes/*/report.json
 spikes/*/*.log
 spikes/03-live-hooks/orb-hooks*.settings.json
+
+# Configuração local de preview (caminhos desta máquina)
+.claude/launch.json

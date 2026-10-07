@@ -9,9 +9,9 @@ O Lucas usa os CLIs originais dentro do Orb, no **Inner World** de cada Alter Eg
 da sessão + a linha do tempo do que ela pensa e faz). O Orb só observa: não altera em nada como os
 agentes trabalham.
 
-> Estado: **fundação promovida** (2026-10-07). Os 4 spikes validaram a tese; o código útil virou os
-> módulos definitivos em `src/orb/` (protocolo, mundo, adapters, terminal, gateway), cobertos por testes automatizados.
-> Ainda não há o 3D final.
+> Estado: **primeira versão do mundo 3D** (2026-10-07). A cidade navegável mostra cada projeto como
+> um prédio e cada sessão (Claude, Codex, Hermes, opencode) como um personagem no teto, com dados
+> reais. A fundação (protocolo, mundo, adapters, terminal, servidor) está em `src/orb/`, com testes.
 
 ## Comece por aqui
 
@@ -41,7 +41,7 @@ agentes trabalham.
 
 ```
 src/orb/        protocol · core · adapters (claude, codex, hermes, opencode) · terminal_host · gateway
-clients/        web_panel (xterm.js + mundo + Inner World) · godot (terminal remoto)
+clients/        web (o mundo 3D em Three.js + overview + Inner World) · godot (terminal remoto, alternativa)
 tests/          testes automatizados (python -m pytest -q)
 spikes/         experimentos que rodam os CLIs reais (02 Godot, 03 hooks, 04 Codex)
 docs/           visão, arquitetura, protocolo, adapters, ADRs, MVP, spikes, ideias
@@ -52,10 +52,15 @@ docs/           visão, arquitetura, protocolo, adapters, ADRs, MVP, spikes, ide
 Requisitos: Python 3.12+ e os CLIs que for usar, instalados e logados.
 
 ```powershell
-pip install -e ".[dev]"          # fastapi, uvicorn, websockets, pywinpty, pytest
+pip install -e ".[dev]"          # na pasta do The Orb: fastapi, uvicorn, websockets, pywinpty, pytest
 python -m pytest -q
-the-orb --cwd "C:\caminho\do\projeto"     # imprime a URL com o token
+python -m orb.gateway.app --realm "C:\caminho\projeto-a" --realm "C:\caminho\projeto-b"
 ```
+
+Cada `--realm` é um projeto (um prédio). O servidor imprime a URL com o token; abra no navegador.
+Qualquer sessão de `claude`, `codex`, `hermes` ou `opencode` aberta na pasta de um realm (pelo Orb
+ou fora dele) aparece sozinha como um personagem com a cor do seu provider. `--lookback 30` (minutos)
+decide quão recente uma sessão precisa ser para já aparecer ao abrir.
 
 **Atenção:** o terminal hospedado roda o **CLI de verdade** e **consome cota** da conta logada. O
 Gateway abre um shell: escuta só em `127.0.0.1`, exige token e `Origin` local. Nunca envie teclas a

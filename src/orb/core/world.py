@@ -13,6 +13,7 @@ from ..protocol import Event, validate
 from . import rules
 
 _TOKEN_FIELDS = ("input_tokens", "output_tokens", "cache_read_tokens", "reasoning_tokens")
+_ACTION_CHARS = 240     # tamanho do "fazendo agora" no overview
 
 
 @dataclass
@@ -24,13 +25,14 @@ class Subagent:
     target: str | None = None
     active: bool = True
     outcome: str | None = None
+    last_action: str | None = None
     last_ts: str | None = None
 
     def snapshot(self) -> dict[str, Any]:
         state = self.base if self.active else "COMPLETED"
         return {"id": self.id, "kind": self.kind, "parent": self.parent, "state": state,
                 "area": rules.area_for(state), "target": self.target, "active": self.active,
-                "outcome": self.outcome, "last_ts": self.last_ts}
+                "outcome": self.outcome, "last_action": self.last_action, "last_ts": self.last_ts}
 
 
 @dataclass
@@ -51,6 +53,7 @@ class AlterEgo:
     usage: dict[str, float] = field(default_factory=dict)
     events: int = 0
     seq_gaps: int = 0
+    last_action: str | None = None   # a última ferramenta/ação, com o texto do provider
     last_ts: str | None = None
     _last_seq: dict[str, int] = field(default_factory=dict, repr=False)      # por fonte
     _seen: set[str] = field(default_factory=set, repr=False)
@@ -79,7 +82,8 @@ class AlterEgo:
         state = self.state()
         return {
             "id": self.id, "provider": self.provider, "session": self.session, "title": self.title,
-            "model": self.model, "state": state, "area": rules.area_for(state), "target": self.target,
+            "model": self.model, "cwd": self.cwd, "state": state, "area": rules.area_for(state),
+            "target": self.target, "last_action": self.last_action,
             "ended": self.ended, "error": self.error,
             "waiting": [{"request": r, "action": a} for r, a in self.waiting.items()],
             "events": self.events, "seq_gaps": self.seq_gaps,
@@ -116,12 +120,20 @@ class World:
         if not ego.remember(event["id"]):
             return False
         ego.events += 1
-        ego.last_ts = event["ts"]
+        if ego.last_ts is None or event["ts"] > ego.last_ts:
+            ego.last_ts = event["ts"]
         self._track_seq(ego, event)
+        inner = event.get("inner")
+        if inner and inner.get("role") == "tool":
+            action = inner["text"][:_ACTION_CHARS]
+            if event["agent"] is None:
+                ego.last_action = action
+            else:
+                self._subagent(ego, event["agent"]).last_action = action
         signal = event.get("signal")
         if signal:
             if event["agent"] is None:
-                self._apply_to_leader(ego, signal, event)
+                self._apply_to_leader(ego, signal)
             else:
                 self._apply_to_subagent(ego, event["agent"], signal, event["ts"])
         return True
@@ -135,13 +147,17 @@ class World:
             ego._last_seq[event["source"]] = event["seq"]
 
     @staticmethod
-    def _apply_to_leader(ego: AlterEgo, signal: dict[str, Any], event: Event) -> None:
+    def _apply_to_leader(ego: AlterEgo, signal: dict[str, Any]) -> None:
         kind = signal["type"]
         if kind in rules.BASE_STATE_AFTER and kind != "subagent.started":
             ego.base = rules.BASE_STATE_AFTER[kind]
             ego.target = None
         if kind == "session.started":
             ego.ended = False
+            ego.title = signal.get("title") or ego.title
+            ego.model = signal.get("model") or ego.model
+            ego.cwd = signal.get("cwd") or ego.cwd
+        elif kind == "session.updated":           # identidade da sessão (título, modelo), sem mudar estado
             ego.title = signal.get("title") or ego.title
             ego.model = signal.get("model") or ego.model
             ego.cwd = signal.get("cwd") or ego.cwd
@@ -169,10 +185,14 @@ class World:
             ego.no_signal = False
 
     @staticmethod
-    def _apply_to_subagent(ego: AlterEgo, agent_id: str, signal: dict[str, Any], ts: str) -> None:
+    def _subagent(ego: AlterEgo, agent_id: str) -> Subagent:
         sub = ego.subagents.get(agent_id)
         if sub is None:
             sub = ego.subagents[agent_id] = Subagent(id=agent_id)
+        return sub
+
+    def _apply_to_subagent(self, ego: AlterEgo, agent_id: str, signal: dict[str, Any], ts: str) -> None:
+        sub = self._subagent(ego, agent_id)
         sub.last_ts = ts
         kind = signal["type"]
         if kind == "subagent.started":

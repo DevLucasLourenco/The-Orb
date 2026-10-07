@@ -1,4 +1,7 @@
-# The Orb — cliente Godot
+# The Orb — cliente Godot (alternativa)
+
+> O mundo 3D do The Orb é web (`clients/web`, [ADR 0007](../../docs/adr/0007-cliente-3d-na-web.md)).
+> Este cliente fica como alternativa: o terminal remoto validado no Spike 2.
 
 Cliente 3D do The Orb (ainda só o começo). Hoje tem uma cena, `terminal_view.tscn`: o terminal do
 Inner World de um Alter Ego, **exibido** pelo addon `godot-xterm` a partir do Gateway em Python. O
@@ -19,7 +22,7 @@ Expand-Archive godot-xterm-v4.0.3.zip -DestinationPath .
 
 ## Rodar
 
-Suba o Gateway na raiz do repositório (`the-orb --cwd PASTA`) e use o token que ele imprime:
+Suba o Gateway (`python -m orb.gateway.app --realm PASTA`) e use o token que ele imprime:
 
 ```powershell
 & $godot --path . -- --url=ws://127.0.0.1:8765/ws --token=TOKEN --provider=claude

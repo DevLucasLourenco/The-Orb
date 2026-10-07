@@ -25,6 +25,11 @@ def kinds(events):
     return [e["native"]["kind"] for e in events]
 
 
+def work(events):
+    """Eventos de trabalho (sem o anúncio da sessão, que todo transcript novo gera)."""
+    return [e for e in events if e["native"]["kind"] != "transcript/session"]
+
+
 def test_encode_cwd_matches_claude_folder_names():
     assert encode_cwd(r"C:\Users\x\Documents\Sistemas e Projetos\The Orb") == "C--Users-x-Documents-Sistemas-e-Projetos-The-Orb"
 
@@ -46,6 +51,8 @@ def test_native_kinds_inner_and_signals(tmp_path, jsonl):
     ])
     events = reader(tmp_path).poll()
     assert all(validate(e) is None for e in events)
+    assert events[0]["signal"]["type"] == "session.started"
+    events = work(events)
     assert kinds(events) == ["user/text", "assistant/text", "assistant/tool_use", "assistant/usage",
                              "user/tool_result", "assistant/text", "assistant/stop"]
     by_kind = {e["native"]["kind"]: e for e in events}
@@ -65,7 +72,7 @@ def test_empty_thinking_is_not_a_thought_but_text_is_raw(tmp_path, jsonl):
     jsonl(session_file(tmp_path), [{"type": "assistant", "uuid": "a1", "message": {"content": [
         {"type": "thinking", "thinking": "", "signature": "x"},
         {"type": "thinking", "thinking": "pensando", "signature": "y"}]}}])
-    events = reader(tmp_path).poll()
+    events = work(reader(tmp_path).poll())
     assert len(events) == 1
     assert events[0]["inner"] == {"role": "thought", "text": "pensando", "fidelity": "raw"}
     assert "signature" not in events[0]["native"]["body"]
@@ -80,7 +87,7 @@ def test_empty_thinking_is_not_a_thought_but_text_is_raw(tmp_path, jsonl):
 def test_user_messages_appear_as_the_session_recorded_them(tmp_path, jsonl, entry):
     """O Orb não classifica quem escreveu (ADR 0003): toda mensagem `user` aparece como é."""
     jsonl(session_file(tmp_path), [{"type": "user", "uuid": "u1", **entry}])
-    (event,) = reader(tmp_path).poll()
+    (event,) = work(reader(tmp_path).poll())
     assert event["native"]["kind"] == "user/text" and event["inner"]["role"] == "prompt"
     assert event["signal"] is None
 
@@ -91,9 +98,9 @@ def test_partial_lines_invalid_json_and_incremental_reads(tmp_path):
     line = json.dumps({"type": "user", "uuid": "u1", "origin": {"kind": "human"}, "message": {"content": "oi"}}).encode()
     path.write_bytes(line[:10])
     r = reader(tmp_path)
-    assert r.poll() == []
+    assert work(r.poll()) == []
     path.write_bytes(line + b"\nlixo nao json\n")
-    assert kinds(r.poll()) == ["user/text"]
+    assert kinds(work(r.poll())) == ["user/text"]
     assert r.poll() == []                                                     # nada lido duas vezes
 
 
@@ -101,11 +108,30 @@ def test_session_id_isolates_other_sessions_and_old_files_are_ignored(tmp_path, 
     line = [{"type": "user", "uuid": "u1", "origin": {"kind": "human"}, "message": {"content": "oi"}}]
     jsonl(session_file(tmp_path), line)
     jsonl(session_file(tmp_path, "22222222-2222-4222-8222-222222222222"), line)
-    assert len(reader(tmp_path).poll()) == 1
+    assert len(work(reader(tmp_path).poll())) == 1
     observer = TranscriptReader(CWD, realm="demo", since=time.time() - 5, home=tmp_path)
     assert {e["alter_ego"] for e in observer.poll()} == {f"claude:{SID}", "claude:22222222-2222-4222-8222-222222222222"}
     future = TranscriptReader(CWD, realm="demo", since=time.time() + 100, home=tmp_path)
     assert future.poll() == []
+
+
+def test_session_identity_title_and_model(tmp_path, jsonl):
+    jsonl(session_file(tmp_path), [
+        {"type": "agent-name", "agentName": "orb-1111", "sessionId": SID},
+        {"type": "assistant", "uuid": "a1", "message": {"id": "m1", "model": "claude-opus-5-5", "content": []}},
+        {"type": "custom-title", "customTitle": "Refatorar o login", "sessionId": SID}])
+    r = reader(tmp_path, replay=True)
+    first = r.poll()
+    assert first[0]["signal"] == {"type": "session.started", "cwd": CWD, "title": "Refatorar o login",
+                                  "model": "claude-opus-5-5"}               # lido do fim do arquivo
+    jsonl(session_file(tmp_path), [{"type": "custom-title", "customTitle": "Login e testes", "sessionId": SID},
+                                   {"type": "assistant", "uuid": "a2", "message": {"id": "m2", "model": "claude-sonnet-5-5", "content": []}}],
+          append=True)
+    world = World()
+    for e in first + r.poll():
+        world.apply(e)
+    (ego,) = world.snapshot()["realms"][0]["alter_egos"]
+    assert (ego["provider"], ego["title"], ego["model"]) == ("claude", "Login e testes", "claude-sonnet-5-5")
 
 
 def test_subagent_joins_the_team_and_ends_with_foreground_result(tmp_path, jsonl):

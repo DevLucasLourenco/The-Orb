@@ -62,6 +62,7 @@ class StateDbReader:
         self.last_id: int | None = None
         self._sessions: dict[str, dict[str, Any] | None] = {}
         self._factories: dict[str, EventFactory] = {}
+        self._announced: set[str] = set()
 
     def poll(self) -> list[Event]:
         if not self.db_path.is_file():
@@ -125,14 +126,27 @@ class StateDbReader:
                                                            realm=self.realm, session=root)
         return factory
 
+    def _announce(self, session: dict[str, Any], root: str, agent: str | None, factory: EventFactory) -> Event | None:
+        """A sessão entra no mundo com o título e o modelo que o Hermes gravou."""
+        sid = str(session["id"])
+        if sid in self._announced:
+            return None
+        self._announced.add(sid)
+        body = {k: session.get(k) for k in ("id", "source", "model", "title", "cwd", "parent_session_id")}
+        signal = ({"type": "subagent.started", "kind": session.get("source")} if agent else
+                  {"type": "session.started", "cwd": session.get("cwd"), "title": session.get("title"),
+                   "model": session.get("model")})
+        return factory.make(f"{sid}:start", None, "sessions", body, agent=agent, signal=signal)
+
     def _translate(self, conn: sqlite3.Connection, session: dict[str, Any], msg: dict[str, Any]) -> list[Event]:
         root, agent = self._root_and_agent(conn, session)
         factory = self._factory(root)
+        announce = self._announce(session, root, agent, factory)
         ts = _iso(msg.get("timestamp"))
         key = f"m{msg['id']}"
         role = msg.get("role")
         content = msg.get("content") if isinstance(msg.get("content"), str) else ""
-        out: list[Event] = []
+        out: list[Event] = [announce] if announce else []
         if role == "user":
             out.append(factory.make(key, ts, "messages/user", msg, agent=agent,
                                     inner={"role": "prompt", "text": content}))

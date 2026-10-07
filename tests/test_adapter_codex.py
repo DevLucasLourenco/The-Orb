@@ -170,6 +170,8 @@ def test_rollout_reader_translates_verified_structure(tmp_path, jsonl):
         line(3, "response_item", {"type": "message", "role": "user", "content": [{"type": "input_text", "text": "leia o MVP"}]},
              metadata={"client_authored": False, "user_input_order": 1}),
         line(4, "event_msg", {"type": "task_started", "turn_id": "t1"}),
+        line(41, "turn_context", {"model": "gpt-5.6-luna", "cwd": cwd, "effort": "medium"}),
+        line(42, "turn_context", {"model": "gpt-5.6-luna", "cwd": cwd, "effort": "medium"}),   # sem mudança: nada
         line(5, "response_item", {"type": "reasoning", "summary": [{"type": "summary_text", "text": "Plano"}], "encrypted_content": "zzz"}),
         line(6, "response_item", {"type": "custom_tool_call", "name": "exec", "input": "Get-Content docs/MVP.md", "call_id": "c1"}),
         line(7, "response_item", {"type": "custom_tool_call_output", "call_id": "c1", "output": "# MVP"}),
@@ -183,11 +185,12 @@ def test_rollout_reader_translates_verified_structure(tmp_path, jsonl):
     assert all(validate(e) is None for e in events)
     assert [e["native"]["kind"] for e in events] == [
         "session_meta", "response_item/message", "response_item/message", "event_msg/task_started",
-        "response_item/reasoning", "response_item/custom_tool_call", "response_item/custom_tool_call_output",
+        "turn_context", "response_item/reasoning", "response_item/custom_tool_call", "response_item/custom_tool_call_output",
         "response_item/message", "token_usage_record", "event_msg/task_complete"]
     assert events[1]["inner"]["role"] == events[2]["inner"]["role"] == "prompt"   # como o Codex gravou
-    assert "encrypted_content" not in events[4]["native"]["body"]
-    assert events[5]["signal"]["activity"] == "READING"
+    assert events[4]["signal"] == {"type": "session.updated", "model": "gpt-5.6-luna"}
+    assert "encrypted_content" not in events[5]["native"]["body"]
+    assert events[6]["signal"]["activity"] == "READING"
     assert {e["alter_ego"] for e in events} == {f"codex:{TID}"}
 
 

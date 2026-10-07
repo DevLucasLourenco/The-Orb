@@ -24,7 +24,7 @@ Orb, usar normalmente e observar o que ela faz em tempo real, sem alterar o agen
 
 | Spike | Risco | Resultado | Hoje |
 |---|---|---|---|
-| **1 — Terminal Host** | R1, R2 | ✅ Validado | Promovido: `src/orb/terminal_host/`, `gateway/`, `adapters/claude/transcript.py`, `clients/web_panel/` |
+| **1 — Terminal Host** | R1, R2 | ✅ Validado | Promovido: `src/orb/terminal_host/`, `gateway/`, `adapters/claude/transcript.py`, `clients/web/` |
 | **2 — Terminal no Godot** | R3 | ✅ Validado | Opção B promovida para `clients/godot/`; opção A segue em `spikes/02-terminal-godot/` |
 | **3 — Hooks do Claude ao vivo** | R4 | ✅ Validado, com restrição | Settings por sessão em `src/orb/adapters/claude/hooks.py`; experimento em `spikes/03-live-hooks/` |
 | **4 — Codex** | R5 | ✅ Validado, com restrições | Observador em `src/orb/adapters/codex/`; experimento em `spikes/04-codex/` |

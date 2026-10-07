@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Orb</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@xterm/xterm@5.5.0/css/xterm.css">
+<link rel="stylesheet" href="/static/styles.css">
+<script type="importmap">
+{ "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+} }
+</script>
+</head>
+<body>
+<div id="scene"></div>
+
+<header id="topbar">
+  <div class="brand"><span class="orb-dot"></span>THE ORB</div>
+  <div id="mankind" class="stats"></div>
+  <div id="conn" class="conn">conectando…</div>
+</header>
+
+<nav id="realms" aria-label="Realms"></nav>
+
+<aside id="overview" class="panel hidden" aria-label="Overview do realm">
+  <div class="panel-head">
+    <div>
+      <div class="eyebrow">Realm</div>
+      <h2 id="ov-title"></h2>
+      <div id="ov-path" class="muted path"></div>
+    </div>
+    <button class="icon-btn" id="ov-close" title="Fechar (Esc)">✕</button>
+  </div>
+  <div id="ov-summary" class="summary"></div>
+  <div id="ov-sessions" class="sessions"></div>
+  <div class="panel-foot">
+    <select id="new-provider" aria-label="CLI da nova sessão"></select>
+    <button id="new-session" class="btn">Nova sessão neste realm</button>
+  </div>
+</aside>
+
+<section id="inner" class="drawer hidden" aria-label="Inner World">
+  <div class="drawer-head">
+    <div class="who" id="iw-who"></div>
+    <div class="tabs">
+      <button class="tab active" data-tab="timeline">Linha do tempo</button>
+      <button class="tab" data-tab="terminal">Terminal</button>
+    </div>
+    <button class="icon-btn" id="iw-close" title="Fechar">✕</button>
+  </div>
+  <div class="drawer-body">
+    <div id="iw-timeline" class="timeline"></div>
+    <div id="iw-terminal" class="terminal hidden"></div>
+  </div>
+</section>
+
+<footer id="hints">
+  <span><b>Arrastar</b> mover</span><span><b>Botão direito</b> girar</span><span><b>Scroll</b> zoom</span>
+  <span><b>WASD</b> andar</span><span><b>Q/E</b> girar</span><span><b>1–9</b> realms</span>
+  <span><b>F</b> focar</span><span><b>Esc</b> visão geral</span><span><b>Clique</b> no personagem: Inner World</span>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/@xterm/xterm@5.5.0/lib/xterm.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@xterm/addon-fit@0.10.0/lib/addon-fit.js"></script>
+<script type="module" src="/static/js/main.js"></script>
+</body>
+</html>
