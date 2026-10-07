@@ -14,7 +14,8 @@ observa, sem alterar em nada como os modelos funcionam nos projetos.
 | Documento | Para quê |
 |---|---|
 | [CONTEXT.md](CONTEXT.md) | **Visão, princípios e glossário** (Orb, Realm, Alter Ego, Inner World, Intrusive Thoughts, Gate, Team…) |
-| [MVP.md](MVP.md) | Escopo do MVP, riscos, **resultados dos spikes** e decisões tomadas |
+| [SPIKES.md](SPIKES.md) | **Resumo dos resultados dos 4 spikes**: o que provaram, o que mudou, o que falta |
+| [MVP.md](MVP.md) | Escopo do MVP, riscos, resultados detalhados dos spikes e decisões tomadas |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | Módulos, fronteiras, regras de dependência, robustez, testes |
 | [PROTOCOL.md](PROTOCOL.md) | Agent Event Protocol: envelope, eventos, estados, `fidelity`, comandos |
 | [ADAPTER-CLAUDE.md](ADAPTER-CLAUDE.md) | O que o Claude Code expõe (hooks e transcript), verificado ao vivo |

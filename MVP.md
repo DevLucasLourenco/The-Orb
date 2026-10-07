@@ -1,7 +1,8 @@
 # Orb IA — MVP
 
 > Escopo do primeiro MVP funcional e básico, registro de riscos e plano de validação.
-> Visão: [CONTEXT.md](CONTEXT.md) · Ideias fora do MVP: [IDEAS.md](IDEAS.md).
+> Visão: [CONTEXT.md](CONTEXT.md) · Ideias fora do MVP: [IDEAS.md](IDEAS.md) · Resumo dos
+> spikes: [SPIKES.md](SPIKES.md).
 
 Última atualização: 2026-10-06
 

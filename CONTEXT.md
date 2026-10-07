@@ -336,7 +336,8 @@ Detalhes e evidências: [ADAPTER-CLAUDE.md](ADAPTER-CLAUDE.md) §6 e [ADAPTER-CO
 | [PROTOCOL.md](PROTOCOL.md) | Agent Event Protocol: envelope, tipos de evento, estados, fidelity, comandos |
 | [ADAPTER-CLAUDE.md](ADAPTER-CLAUDE.md) | Hooks e transcript do Claude Code verificados, mapeamento para o protocolo, lacunas |
 | [ADAPTER-CODEX.md](ADAPTER-CODEX.md) | App-server, rollouts e hooks do Codex verificados; observador por app-server; diálogos da TUI |
-| [MVP.md](MVP.md) | Escopo do MVP, registro de riscos e resultados dos spikes 1 a 4 |
+| [SPIKES.md](SPIKES.md) | Resumo executivo dos 4 spikes: veredito, achados, incidentes, regras criadas, o que falta |
+| [MVP.md](MVP.md) | Escopo do MVP, registro de riscos e resultados detalhados dos spikes 1 a 4 |
 | [IDEAS.md](IDEAS.md) | Backlog completo de ideias, com status |
 
 - **Backend:** Python + FastAPI; Redis Streams ou NATS; PostgreSQL.
