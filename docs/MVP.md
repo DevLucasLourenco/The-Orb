@@ -90,7 +90,8 @@ Archive · Perfil do Alter Ego · persistência em banco · multiusuário.
    critério de "fora de projeto" (R3b), arquivo de preferências e tela de configurações do Orb (R29),
    projeto inexistente não entra (R3d), Histórico do realm, cores dos providers (R30), janelas por
    percentual com peso = linhas alteradas e x = 5% (R20d), áreas sem cor própria (R20c), janela só
-   acesa ou apagada (R20). O índice das que ainda faltam está em [DECISIONS.md](DECISIONS.md).
+   acesa ou apagada (R20), dormindo após 15 min (R31), subagente sem sinal em cinza (R7), cidade
+   retangular com bairros por letra (R32) e altura por percentual (R19). O índice das que ainda faltam está em [DECISIONS.md](DECISIONS.md).
 3. Criar os tickets por épico (RULES.md, "Do documento aos tickets"), **quando o Lucas pedir** (P5).
 
 Depois, pela ordem dos tickets:

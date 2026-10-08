@@ -15,10 +15,11 @@ Situação: ✅ como está · ❌ precisa mudar · ❓ precisa de decisão.
 
 | Id | Elemento | Tipo | Significado / fonte | Situação |
 |---|---|---|---|---|
-| V-CITY-1 | Disco flutuante (o Orb), borda de luz | Cenário | O chão da cidade; o raio só acompanha a quantidade de realms | ✅ (R12a) |
+| V-CITY-1 | Chão da cidade | Cenário | **Decidido (R32): retangular**, com ruas entre os bairros (§7). Hoje: disco flutuante com borda de luz | ❌ Mudar para retangular |
 | V-CITY-2 | Grade polar no chão | Cenário | Referência de profundidade para a câmera | ✅ (R12a) |
 | V-CITY-3 | Céu em degradê e estrelas | Cenário | Ambiente noturno | ✅ (R12a) |
-| V-CITY-4 | Posição de cada prédio (grade em ordem alfabética) | Heurística | Ordem arbitrária | ❓ V-PEND-5 |
+| V-CITY-4 | Posição de cada prédio | Legenda | **Decidido (R32):** bairros por letra inicial, em ordem alfabética; lotes em ordem alfabética; deslocamento e giro pela semente do nome (§7). Hoje: grade alfabética simples | ❌ Mudar para §7 |
+| V-CITY-6 | Placa do bairro (a letra) no chão | Legenda | A letra inicial dos realms daquele bairro (§7) | ⏳ |
 | V-CITY-5 | Barra superior (realms, sessões, ativas, esperando você, subagentes, tokens) | Dado | Soma do snapshot do Core | ✅ |
 
 ## 2. O prédio (Realm)
@@ -26,7 +27,8 @@ Situação: ✅ como está · ❌ precisa mudar · ❓ precisa de decisão.
 | Id | Elemento | Tipo | Significado / fonte | Situação |
 |---|---|---|---|---|
 | V-REALM-1 | Existir um prédio | Dado | Todo projeto que algum provider já registrou (R3, R3a), menos os escondidos pelo Lucas na lista (R3c) e as sessões fora de projeto (R3b) | ❌ Hoje vem de `--root`/`--realm`, inclusive pastas sem sessão |
-| V-REALM-2 | **Altura** | Dado | Linhas de código do projeto, ignorando o `.gitignore` (R19) | ❌ Altura fixa igual para todos |
+| V-REALM-2 | **Altura** | Dado | Linhas de código do projeto, ignorando o `.gitignore` (R19), em **percentual do maior realm**, com altura mínima (§8) | ❌ Altura fixa igual para todos |
+| V-REALM-12 | **Altura de cada andar** | Dado | Parcela das linhas do projeto que está naquela pasta de 1º nível (§8) | ⏳ |
 | V-REALM-3 | **Janelas: quais acendem e de que cor** | Dado | **Hoje: padrão aleatório**, sorteado pelo nome do realm, com cores quentes/frias sem significado. **Decidido:** andares = pastas de 1º nível (R20); as janelas mostram as **alterações locais** (R20b); **cada janela acesa = x% das alterações, e nenhuma alteração é dividida** (R20d, §6); **a cor é a do tipo de alteração no git**, paleta do VS Code (R20a, §5). A janela é só **acesa ou apagada**, sem esmaecer (D-043) | ❌ Viola R12 |
 | V-REALM-4 | Brilho geral das janelas | Dado | Quantidade de sessões ativas no realm (0 → apagado; 3 ou mais → máximo) | ⚠️ Correto como dado, mas aplicado sobre o padrão aleatório |
 | V-REALM-5 | Arestas de luz do Rooftop Room: azul / âmbar | Dado | Âmbar quando alguma sessão do realm espera o Lucas | ⚠️ A cor do "esperando" muda (R20c, V-PEND-7b) |
@@ -34,7 +36,7 @@ Situação: ✅ como está · ❌ precisa mudar · ❓ precisa de decisão.
 | V-REALM-7 | Rótulo: nome, "N sessões · M ativas · K esperando" | Dado | Snapshot do Core | ✅ |
 | V-REALM-8 | Cinco áreas no piso | Legenda | **Decidido (R20c):** piso neutro, cada área identificada por **ícone e nome** e um padrão no piso, sem cor própria. Hoje: Azul = Development Center · Verde = Testing Lab · Violeta = Research Center · Amarelo = Code Review · Rosa = Task Board (R21) | ❌ Mudar para R20c; ícones em V-PEND-7d |
 | V-REALM-9 | Anel no centro da sala (lobby) | Legenda | Lugar de quem não está numa área: pensando, parado, esperando, delegando | ✅ |
-| V-REALM-10 | Fileira na frente da sala | Heurística | Sessões "dormindo" (parada há mais de 15 min, ou encerrada). Encerradas **não são excluídas** (R28). **Na sala só ficam as ativas e as dos últimos 10 dias** (configurável, R28a); as demais vão para o Histórico do realm | ⚠️ Prazo decidido; limite de "dormindo" em V-PEND-2b |
+| V-REALM-10 | Fileira na frente da sala | Heurística | Sessões "dormindo" (parada há mais de 15 min, ou encerrada). Encerradas **não são excluídas** (R28). **Na sala só ficam as ativas e as dos últimos 10 dias** (configurável, R28a); as demais vão para o Histórico do realm | ✅ Prazo (R28a) e limite de 15 min (R31) decididos |
 | V-REALM-11 | Luz interna da sala, sombras | Cenário | Iluminação | ✅ (R12a) |
 
 ## 3. O personagem (Alter Ego) e os subagentes
@@ -47,10 +49,10 @@ Situação: ✅ como está · ❌ precisa mudar · ❓ precisa de decisão.
 | V-EGO-4 | Balanço do corpo, halo girando mais rápido | Dado | A sessão está trabalhando (lendo, editando, executando, testando, revisando, pesquisando) | ✅ |
 | V-EGO-5 | Três pontos orbitando a cabeça | Dado | `THINKING` | ✅ |
 | V-EGO-6 | Losango âmbar sobre a cabeça | Dado | A sessão espera o Lucas | ⚠️ A cor do "esperando" muda (R20c, V-PEND-7b) |
-| V-EGO-7 | Translúcido, cabeça baixa, sem halo | Heurística | "Dormindo" (ver V-REALM-10) | ❓ V-PEND-2 |
+| V-EGO-7 | Translúcido, cabeça baixa, sem halo | Heurística | "Dormindo": sessão recente parada há mais de 15 min (R31) | ✅ |
 | V-EGO-8 | Rótulo: provider · título; atividade · última ação | Dado | Título e modelo do próprio CLI; última ferramenta usada, com o texto do provider | ✅ |
 | V-EGO-9 | Personagem menor, mesma cor | Dado | Subagente da sessão (Team) | ✅ |
-| V-EGO-10 | Subagente some depois de 5 min sem atividade | Heurística | Contorna a falta do sinal de fim de subagente em segundo plano no nível 0 | ❓ V-PEND-3 |
+| V-EGO-10 | Subagente **cinza ("sem sinal")** | Heurística | **Decidido (R7, D-045):** quando não há sinal do fim de um subagente, ele fica cinza em vez de sumir. Hoje: some depois de 5 min sem atividade | ❌ Mudar para cinza; distinção do opencode em V-PEND-3b |
 
 ## 4. Painéis
 
@@ -136,16 +138,62 @@ V-PEND-7d.
 | V-PEND-8 | ~~**Peso de uma alteração**: linhas alteradas ou um por arquivo?~~ **Decidido (2026-10-08): linhas alteradas (D-041).** | — |
 | V-PEND-9 | ~~**Valor de x**~~ **Decidido (2026-10-08): 5%, configurável na tela do Orb (D-042).** | — |
 
+## 7. A cidade: traçado retangular (R32)
+
+**Decidido pelo Lucas (2026-10-08, D-046):** cidade **retangular**; prédios em **ordem alfabética**,
+com um ar **"aleatório", mas rastreável**, posicionados por uma **estrutura lógica** no mapa.
+
+**Traçado (definição delegada ao Claude, D-047; vale até o Lucas revisar):**
+
+1. **Bairros por letra.** A cidade é dividida por ruas em **bairros**, um para cada letra inicial
+   dos realms (A, B, C…; números e símbolos ficam num bairro "#" no começo). Só existem bairros de
+   letras que têm realms: não sobra espaço vazio para letras sem projeto.
+2. **Ordem de leitura.** Os bairros seguem a ordem alfabética como um texto: da esquerda para a
+   direita, em fileiras, de cima para baixo no mapa. O mapa é mais largo que alto (proporção perto
+   de 16:9), como a tela.
+3. **Lotes.** Dentro de cada bairro, os prédios ocupam **lotes** em grade, também em ordem
+   alfabética. O bairro tem o tamanho que precisa para os seus lotes.
+4. **O "aleatório" rastreável.** Cada prédio tem um pequeno deslocamento dentro do lote e um leve
+   giro, calculados a partir de uma **semente tirada do nome do realm** (um hash). Parece orgânico,
+   mas é **determinístico**: o mesmo realm fica sempre no mesmo lugar e do mesmo jeito, e dá para
+   explicar onde ele está ("`trisafe-enhanced`: bairro T, 2º lote").
+5. **Estabilidade.** Um projeto novo só reorganiza o seu próprio bairro, nunca a cidade inteira.
+   Um realm escondido (R3c) deixa o lote vago, para os vizinhos não andarem.
+6. **Placa do bairro.** A letra do bairro fica escrita no chão, na esquina (V-CITY-6).
+7. **Ruas** são cenário (R12a): separam os bairros e dão leitura ao mapa; não carregam dado.
+
+## 8. A altura dos prédios (R19)
+
+**Decidido pelo Lucas (2026-10-08, D-048):** a altura é **por percentual**: um projeto com poucas
+linhas é um prédio pequeno; com muitas, um prédio grande.
+
+**Escala (definição delegada ao Claude, D-049; vale até o Lucas revisar):**
+
+1. **Percentual do maior realm.** O realm com mais linhas de código tem a altura máxima (100%).
+   Cada um dos outros tem `linhas dele ÷ linhas do maior` dessa altura. É uma escala **linear**:
+   a diferença de tamanho aparece como ela é.
+2. **Altura mínima.** Nenhum prédio fica abaixo de um mínimo (um andar mais o Rooftop Room), para
+   continuar visível e clicável. Por isso um projeto de 2 mil linhas ao lado de um de 500 mil fica
+   no mínimo, e o número real de linhas aparece no rótulo e no overview.
+3. **Contagem:** linhas dos arquivos que o git acompanha, ignorando o que o `.gitignore` ignora, com
+   o filtro de tipos (ex.: incluir ou não `.md`) da regra R19.
+4. **Andares também por percentual.** Cada pasta de 1º nível é um andar, com altura proporcional à
+   sua parcela das linhas do projeto; os arquivos da raiz formam o **térreo**. Nenhum andar fica
+   mais baixo que uma fileira de janelas, para as alterações dele terem onde acender (§6).
+5. **Quando recalcular** (a cada commit, a cada edição observada, sob demanda) continua em aberto
+   ([VISION.md](VISION.md) §7).
+
 ## Decisões pendentes
 
 | Id | Pergunta | Proposta inicial |
 |---|---|---|
 | V-PEND-1 | **Janelas (V-REALM-3).** ~~Que cor significa o quê?~~ **Decidido (2026-10-07): a cor do tipo de alteração no git (R20a).** ~~(a) Qual unidade cada janela representa?~~ **Decidido (2026-10-08): um arquivo (R20b).** ~~(b) De onde vem o tipo de alteração?~~ **Decidido: das alterações locais** (estado do repositório na máquina), lido sem gravar nada no `.git` (R20b, R16). ~~E um prédio com milhares de arquivos?~~ **Decidido: janelas por percentual (R20d, §6).** ~~(c) V-PEND-1c: ela também esmaece pela recência?~~ **Decidido (2026-10-08): não; só acesa ou apagada (D-043).** | — |
-| V-PEND-2 | **"Dormindo" e sessões encerradas.** ~~Sessão encerrada some?~~ **Decidido: não é excluída (R28).** ~~Onde ficam as encerradas e as antigas (~450 sessões nesta máquina)?~~ **Decidido (2026-10-08): na sala, as ativas e as dos últimos 10 dias, prazo configurável no Orb; as demais no Histórico do realm (R28a).** **V-PEND-2b, em aberto:** dentro da sala, a partir de quanto tempo parada uma sessão aparece "dormindo"? ~~E o nome da lista?~~ **Decidido: Histórico do realm.** | 2b: dormindo depois de 15 min parada (o atual), também configurável |
-| V-PEND-3 | **Fim de subagente em segundo plano** sem o sinal no nível 0: esconder por tempo, mostrar como "sem sinal", ou exigir o nível 1? | Mostrar `NO_SIGNAL` (cinza) em vez de sumir, até haver sinal real |
+| V-PEND-2 | **"Dormindo" e sessões encerradas.** ~~Sessão encerrada some?~~ **Decidido: não é excluída (R28).** ~~Onde ficam as encerradas e as antigas (~450 sessões nesta máquina)?~~ **Decidido (2026-10-08): na sala, as ativas e as dos últimos 10 dias, prazo configurável no Orb; as demais no Histórico do realm (R28a).** ~~V-PEND-2b: a partir de quanto tempo parada uma sessão aparece "dormindo"?~~ **Decidido (2026-10-08): 15 min (R31, D-044).** ~~E o nome da lista?~~ **Decidido: Histórico do realm.** | — |
+| V-PEND-3 | ~~**Fim de subagente em segundo plano** sem o sinal no nível 0: esconder, mostrar como "sem sinal" ou exigir o nível 1?~~ **Decidido (2026-10-08): fica cinza (R7, D-045).** | — |
+| V-PEND-3b | **Cinza "sem sinal" × cinza do opencode** (apontado pela regra P2): um subagente do opencode já é cinza. Como distinguir? E depois de quanto tempo sem atividade um subagente fica "sem sinal"? | "Sem sinal" = **cinza translúcido, sem halo e com um ícone de sinal cortado** sobre a cabeça; o opencode é cinza sólido, com halo. Limite: 5 min sem atividade (o atual do cliente) |
 | V-PEND-4 | ~~Cenário é permitido?~~ **Decidido (2026-10-07): sim, declarado aqui e sem cores da legenda (R12a).** | — |
-| V-PEND-5 | **Posição dos prédios:** ordem alfabética, por atividade, por tamanho, ou fixa e escolhida pelo Lucas? | Posição estável (não muda sozinha) para a memória espacial; critério a decidir |
-| V-PEND-6 | **Escala da altura** (linear, raiz, log) para um repo de 500 mil linhas não esconder um de 2 mil. | Já listada em [VISION.md](VISION.md) §7 |
+| V-PEND-5 | ~~**Posição dos prédios**~~ **Decidido (2026-10-08): cidade retangular, ordem alfabética, "aleatório" rastreável (R32, D-046); traçado delegado (D-047, §7).** | — |
+| V-PEND-6 | ~~**Escala da altura**~~ **Decidido (2026-10-08): por percentual (R19, D-048); escala delegada (D-049, §8).** | — |
 | V-PEND-7 | **Conflito de cores (apontado pela regra P2).** As cores do git (verde = inserção, âmbar/amarelo = modificação, vermelho = remoção) já existem na legenda: verde = Testing Lab (V-REALM-8) e verde-água = Codex (V-EGO-1); amarelo = Code Review (V-REALM-8); âmbar = "esperando o Lucas" (V-REALM-5/6, V-EGO-6). ~~Qual muda? Qual a paleta do git?~~ **Decidido (2026-10-08): as janelas usam a paleta do git do VS Code; as áreas e o "esperando" trocam de cor (R20a, R20c).** | — |
 | V-PEND-7b | **As novas cores** das 5 áreas e do "esperando o Lucas", sem colidir com a paleta do git (§5). Atenção também às cores dos **providers**: o laranja do Claude fica perto do vermelho de remoção e do conflito, e o verde-água do Codex perto do verde de "não rastreado". Personagens e janelas são objetos diferentes; basta isso, ou os providers também mudam? | **Decidido (2026-10-08):** áreas em tons frios e neutros; "esperando" em magenta pulsante (R20c). Os providers **mudaram** (R30), o que reabre a escolha: V-PEND-7c. **Revisto em D-040:** áreas sem cor própria |
 | V-PEND-7c | **As cores novas dos providers (R30) colidem** (apontado pela regra P2): (a) **Hermes amarelo** × âmbar de "modificado" do git (`#E2C08D`) nas janelas; (b) **Codex azul** e **opencode cinza** × as áreas em tons frios e neutros (azul, cinza-azulado): um personagem azul sobre um piso azul some; (c) **Claude laranja** fica perto do vermelho de "apagado"/"conflito". | **Decidido (2026-10-08, D-040):** áreas sem cor própria (ícone, nome e padrão no piso); providers com as cores escolhidas, em tons saturados. |

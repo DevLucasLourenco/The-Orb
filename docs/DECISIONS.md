@@ -7,6 +7,9 @@
 
 Última atualização: 2026-10-08
 
+Quem: **Lucas** = decidido por ele · **Delegada** = o Lucas deixou a definição com o Claude; vale até
+ele revisar, e a proposta está escrita no documento do assunto.
+
 **Fase atual:** levantamento de ideias e decisões. **Ainda não há tickets** (decisão D-034); a
 implementação só volta depois deles (regra P1).
 
@@ -55,6 +58,12 @@ implementação só volta depois deles (regra P1).
 | D-041 | 2026-10-08 | **Peso de uma alteração = linhas alteradas** (inseridas + removidas; arquivo novo = linhas dele; apagado = linhas que tinha; arquivo binário = 1) | Lucas | R20d, V-PEND-8, VISUAL.md §6 |
 | D-042 | 2026-10-08 | **x = 5%** (configurável na tela do Orb, R29) | Lucas | R20d, V-PEND-9 |
 | D-043 | 2026-10-08 | **A janela só tem dois estados: acesa ou apagada.** Não esmaece com o tempo | Lucas | R20, V-PEND-1c |
+| D-044 | 2026-10-08 | Uma sessão recente aparece **"dormindo" na sala depois de 15 min parada** | Lucas | R31, V-PEND-2b, V-REALM-10, V-EGO-7 |
+| D-045 | 2026-10-08 | **Subagente sem sinal fica cinza**, em vez de sumir | Lucas | R7, V-PEND-3, V-EGO-10 |
+| D-046 | 2026-10-08 | **Cidade retangular**; os prédios aparecem em **ordem alfabética** e com um ar **"aleatório", mas rastreável**, posicionados por uma **estrutura lógica** no mapa | Lucas | R32, V-PEND-5, V-CITY-1, V-CITY-4 |
+| D-047 | 2026-10-08 | O traçado concreto da cidade (bairros por letra, lotes, semente pelo nome) | **Delegada** | R32, VISUAL.md §7 |
+| D-048 | 2026-10-08 | **Altura por percentual:** projeto com poucas linhas = prédio pequeno; com muitas = prédio grande | Lucas | R19, V-PEND-6 |
+| D-049 | 2026-10-08 | A escala concreta (percentual do maior realm, altura mínima, andares proporcionais às pastas) | **Delegada** | R19, VISUAL.md §8 |
 
 ## Decisões revistas
 
@@ -71,6 +80,8 @@ implementação só volta depois deles (regra P1).
 | D-037 | Cores anteriores dos providers (Claude laranja-coral, Codex verde-água, Hermes violeta, opencode azul) | D-037 |
 | D-036 (parte) | Áreas em tons frios e neutros | D-040: áreas sem cor própria (ícone e nome) |
 | — | Janela "esmaece com o tempo" (visão original) | D-043: só acesa ou apagada |
+| — | Subagente some depois de 5 min sem atividade (heurística da v1 do cliente) | D-045: fica cinza |
+| — | Cidade num disco flutuante, prédios em anel e depois em grade alfabética simples (v1 do cliente) | D-046 e D-047: cidade retangular com bairros por letra |
 
 ## Pendências que ainda precisam de decisão
 
@@ -79,14 +90,15 @@ Ficam no documento do assunto; aqui só o índice.
 | Id | Pergunta | Onde |
 |---|---|---|
 | V-PEND-1c | ~~A janela também esmaece pela recência?~~ Decidido em D-043: só acesa ou apagada | [VISUAL.md](VISUAL.md) |
-| V-PEND-2b | A partir de quanto tempo parada uma sessão recente aparece "dormindo" dentro da sala? | [VISUAL.md](VISUAL.md) |
+| V-PEND-2b | ~~Quando aparece "dormindo"?~~ Decidido em D-044: 15 min parada | [VISUAL.md](VISUAL.md) |
 | V-PEND-7c | ~~As novas cores dos providers colidem~~ Decidido em D-040: áreas sem cor própria | [VISUAL.md](VISUAL.md) |
 | V-PEND-7d | Os tons exatos (hex) dos providers e do magenta, e os ícones das 5 áreas | [VISUAL.md](VISUAL.md) §5 |
 | V-PEND-8 | ~~Peso de uma alteração~~ Decidido em D-041: linhas alteradas | [VISUAL.md](VISUAL.md) §6 |
 | V-PEND-9 | ~~Valor de x~~ Decidido em D-042: 5% | [VISUAL.md](VISUAL.md) §6 |
-| V-PEND-3 | Subagente sem sinal de fim no nível 0 | [VISUAL.md](VISUAL.md) |
-| V-PEND-5 | Posição dos prédios na cidade | [VISUAL.md](VISUAL.md) |
-| V-PEND-6 | Escala da altura | [VISUAL.md](VISUAL.md) |
+| V-PEND-3 | ~~Subagente sem sinal de fim no nível 0~~ Decidido em D-045: fica cinza | [VISUAL.md](VISUAL.md) |
+| V-PEND-3b | Cinza de "sem sinal" × cinza do opencode (R30): como distinguir? Depois de quanto tempo sem atividade o subagente fica "sem sinal"? | [VISUAL.md](VISUAL.md) |
+| V-PEND-5 | ~~Posição dos prédios na cidade~~ Decidido em D-046; traçado delegado (D-047) | [VISUAL.md](VISUAL.md) §7 |
+| V-PEND-6 | ~~Escala da altura~~ Decidido em D-048; escala delegada (D-049) | [VISUAL.md](VISUAL.md) §8 |
 | V-PEND-7b | ~~As novas cores das áreas e do "esperando o Lucas"~~ decidido em D-036, revisto pela V-PEND-7c | [VISUAL.md](VISUAL.md) |
 | D-REALM-3 | Aparência de um realm parado há muito tempo | [ARCHITECTURE.md](ARCHITECTURE.md) |
 | R6 | O Perfil do Alter Ego | [VISION.md](VISION.md) §7 |

@@ -88,7 +88,11 @@ providers. As preferências do Lucas ficam numa **tela de configurações do Orb
 TriSafe como centro industrial, CLARA como biblioteca, UTC CONECTA+ como estação de comunicação).
 O objetivo é reconhecer onde há trabalho só olhando a cidade.
 
-**Altura do prédio = linhas de código (LOC)** do repositório:
+**A cidade é retangular**, com os prédios em ordem alfabética por bairros de letra e uma posição
+"aleatória" mas rastreável (regra R32; traçado em [VISUAL.md](VISUAL.md) §7).
+
+**Altura do prédio = linhas de código (LOC)** do repositório, **por percentual** (o maior realm é o
+prédio mais alto; escala em [VISUAL.md](VISUAL.md) §8):
 
 - sempre ignora o que o `.gitignore` do projeto ignora (regra fixa, não configurável);
 - contagem filtrável sobre o que sobra (incluir ou não `.md` e outros tipos);
@@ -222,8 +226,9 @@ com o zoom (realm → personagens → card detalhado).
 
 **Mundo e interface:**
 
-- Escala da altura (linear, raiz, log) para o skyline não ficar ilegível; linhas em branco e
-  comentários contam? Lockfiles versionados entram? Frequência de recálculo; como expor o filtro.
+- ~~Escala da altura (linear, raiz, log)?~~ **Decidido: por percentual do maior realm, com altura
+  mínima (R19; [VISUAL.md](VISUAL.md) §8).** Ainda em aberto: linhas em branco e comentários
+  contam? Lockfiles versionados entram? Frequência de recálculo; como expor o filtro.
 - Rooftop Room: nome definitivo; como o layout acomoda muitos Alter Egos e subagentes.
 - Estilo visual de cada realm; como o Inner World aparece no 3D. Cenário é permitido quando
   declarado (R12a). Decisões visuais pendentes: [VISUAL.md](VISUAL.md).

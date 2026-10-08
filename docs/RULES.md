@@ -45,7 +45,7 @@ Situação: ✅ cumprida · ⚠️ parcial ou com heurística não decidida · �
 | R4 | Um realm pode ter sessões de **vários providers ao mesmo tempo** (ex.: Claude e Codex). | Lucas | ✅ |
 | R5 | **Alter Ego = uma sessão.** Carrega e identifica **sozinho** o seu provider, e o título e o modelo vêm do próprio CLI. | Lucas, [ADR 0001](adr/0001-alter-ego-e-uma-sessao.md) | ✅ |
 | R6 | O **Perfil** do Alter Ego (identidade além da sessão) está em aberto e **não é implementado** antes de decidido. | Lucas | ✅ (não implementado) |
-| R7 | Os **subagentes** de uma sessão aparecem junto dela, como a Team. | Lucas | ⚠️ No nível 0 o fim de um subagente em segundo plano não é observável; o cliente esconde subagentes sem atividade há 5 min, uma heurística que não foi decidida (ver VISUAL.md, V-PEND-3) |
+| R7 | Os **subagentes** de uma sessão aparecem junto dela, como a Team. Quando não há sinal do fim de um subagente (nível 0), ele **fica cinza ("sem sinal") em vez de sumir**. | Lucas; 2026-10-08 (D-045) | ⚠️ Hoje o cliente esconde o subagente após 5 min sem atividade; mudar para cinza. Distinção do cinza do opencode: V-PEND-3b |
 | R8 | Os 4 CLIs instalados são providers: **claude, codex, hermes, opencode**. | Lucas | ✅ |
 | R28 | **Sessões encerradas não são excluídas** do mundo: o Alter Ego continua existindo depois que a sessão termina. | Lucas, 2026-10-07 | ⚠️ Hoje só aparecem as sessões dos últimos `--lookback` minutos; as encerradas "dormem" na fileira da frente |
 | R28a | **Na sala ficam as sessões ativas e as recentes: últimos 10 dias**, prazo **configurável dentro do Orb** (R29). As demais ficam no **Histórico do realm** (a lista de sessões antigas), acessível pelo overview, sem sumir. | Lucas, 2026-10-08 | ❌ Hoje o prazo é `--lookback` em minutos, na linha de comando |
@@ -75,13 +75,15 @@ Situação: ✅ cumprida · ⚠️ parcial ou com heurística não decidida · �
 |---|---|---|---|
 | R17 | **Mundo 3D navegável**, o produto principal: cidade vista de cima, câmera livre (WASD, scroll, Q/E, botão direito, F, Esc, 1–9, duplo clique para seguir). | Lucas, Visão | ⚠️ Falta "duplo clique segue o personagem" |
 | R18 | **Overview por alto** de um realm: o que cada sessão faz agora, quem está esperando o Lucas, subagentes e consumo. | Lucas, 2026-10-07 | ✅ |
-| R19 | **Altura do prédio = linhas de código** do projeto, sempre ignorando o `.gitignore`, com filtro (ex.: incluir `.md`). | Visão (decidido) | ❌ Todos os prédios têm a mesma altura |
+| R19 | **Altura do prédio = linhas de código** do projeto, sempre ignorando o `.gitignore`, com filtro (ex.: incluir `.md`). A escala é **por percentual**: poucas linhas = prédio pequeno, muitas = prédio grande. Escala concreta (delegada): [VISUAL.md](VISUAL.md) §8. | Visão (decidido); Lucas, 2026-10-08 (D-048, D-049) | ❌ Todos os prédios têm a mesma altura |
 | R20 | **Andares = pastas de primeiro nível; janelas acendem onde há alteração local**, e a janela só tem dois estados: **acesa ou apagada** (~~esmaece com o tempo~~, revisto em D-043). | Visão (camadas vivas); Lucas, 2026-10-08 | ❌ As janelas atuais são decoração aleatória e contradizem esta regra |
 | R20a | **A cor de uma janela acesa é a cor do tipo de alteração no git**, com a **paleta de alterações do git do VS Code** (inserção, modificação, remoção, não rastreado, renomeado, conflito). Valores em [VISUAL.md](VISUAL.md) §5. | Lucas, 2026-10-07 e 2026-10-08 | ❌ |
 | R20b | As janelas mostram as **alterações locais** do projeto (o estado do repositório na máquina: modificado, novo, apagado…). Uma **alteração** é um arquivo com alteração local. Ler esse estado **nunca grava nada** no projeto nem no `.git` (R16). ~~Cada janela é um arquivo~~ (revisto por R20d). | Lucas, 2026-10-08 | ❌ |
 | R20d | **Janelas por percentual:** cada janela acesa representa **x% das alterações locais** do realm, com **x = 5%** (configurável no Orb), e **uma alteração nunca fica dividida entre duas janelas**. O peso de uma alteração são as **linhas alteradas**. Como as alterações viram janelas: [VISUAL.md](VISUAL.md) §6. | Lucas, 2026-10-08 (D-038, D-039, D-041, D-042) | ❌ |
 | R20c | **As áreas não têm cor própria**: piso neutro, cada área identificada por **ícone e nome** (e um padrão no piso). O sinal de **"esperando o Lucas"** é **magenta pulsante**. As cores ficam só para janelas (git), personagens (provider) e "esperando". | Lucas, 2026-10-08 (D-036, D-040) | ❌ Hoje as áreas são coloridas (Testing Lab verde, Code Review amarelo…) e "esperando" é âmbar |
 | R30 | **Cores dos providers** (corpo e halo do personagem): **Claude laranja · Codex azul · Hermes amarelo · opencode cinza**, em tons saturados. | Lucas, 2026-10-08 (D-037, D-040) | ❌ Hoje Codex é verde-água, Hermes violeta e opencode azul |
+| R31 | Uma sessão recente aparece **"dormindo"** na sala depois de **15 min parada**. | Lucas, 2026-10-08 (D-044) | ✅ É o limite atual do cliente |
+| R32 | **A cidade é retangular.** Os prédios ficam em **ordem alfabética**, com um ar **"aleatório", mas rastreável**: a posição vem de uma estrutura lógica e é sempre a mesma para o mesmo realm. Traçado concreto (delegado): [VISUAL.md](VISUAL.md) §7. | Lucas, 2026-10-08 (D-046, D-047) | ❌ Hoje o chão é um disco e a grade é alfabética simples, sem bairros |
 | R21 | Todo Rooftop Room tem as **5 áreas** do Environment, sempre. | Visão (decidido) | ✅ |
 | R22 | O personagem fica na área da **atividade real** da sessão; esperar o Lucas é visível de longe. | Visão | ✅ |
 
@@ -117,6 +119,8 @@ ARCHITECTURE.md §3 (Detecção de realms) precisam estar decididas; o índice e
 | Adapters (Claude, Codex, Hermes, opencode) | R7, R8, R13, R14 |
 | Mundo 3D: prédios (altura por LOC, andares, janelas por percentual na cor do git) | R12, R12a, R19, R20, R20a, R20b, R20c, R20d |
 | Mundo 3D: cores (providers, áreas, "esperando") | R20c, R30 |
+| Mundo 3D: cidade (traçado retangular, bairros, posição dos prédios) | R32 |
+| Mundo 3D: personagens dormindo e subagentes sem sinal | R7, R31 |
 | Mundo 3D: personagens, áreas, câmera | R17, R21, R22 |
 | Overview e camadas vivas (Gate, Energy, Weather, Chronicle, Archive) | R18 e [IDEAS.md](IDEAS.md) §6 |
 
