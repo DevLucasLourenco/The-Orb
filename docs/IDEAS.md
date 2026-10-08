@@ -92,7 +92,7 @@
 | Subagentes como unidades temporárias | Nascem na sessão, cumprem a missão, se desmobilizam | **Feito** no Core |
 | Atividades do mundo | THINKING, CODING, TESTING, WAITING, … | **Feito** |
 | Personalidade / stats / nível (XP) | Só com histórico real | Backlog |
-| Nome histórico para cada Alter Ego | Einstein, Ada Lovelace, Tesla…: sorteio sem reposição de 60 nomes | **Decidido** (R37, D-063); detalhes em Q-NAME-1 a 4 |
+| Nome histórico para cada Alter Ego | Einstein, Ada Lovelace, Tesla…: sorteio sem reposição de 60 nomes, uma vez por sessão, sacola global; subagentes sem nome | **Decidido** (R37, D-063 a D-067) |
 | Registro local do Orb (SQLite) | Base do Chronicle e dos nomes; só o que o Orb derivou | **Decidido** (R36) |
 | Leitor de diálogos | Avisa que o terminal espera o Lucas num diálogo do CLI, sem responder | **Decidido** (R34) |
 | Quests, conquistas, evolução de projeto | Camada de jogo | Backlog |

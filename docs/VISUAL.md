@@ -53,7 +53,7 @@ Situação: ✅ como está · ❌ precisa mudar · ❓ precisa de decisão.
 | V-EGO-5 | Três pontos orbitando a cabeça | Dado | `THINKING` | ✅ |
 | V-EGO-6 | Losango âmbar sobre a cabeça | Dado | A sessão espera o Lucas | ⚠️ A cor do "esperando" muda (R20c, V-PEND-7b) |
 | V-EGO-7 | Translúcido, cabeça baixa, sem halo | Heurística | "Dormindo": sessão recente parada há mais de 15 min (R31) | ✅ |
-| V-EGO-8 | Rótulo: provider · título; atividade · última ação | Dado | Título e modelo do próprio CLI; última ferramenta usada, com o texto do provider | ⚠️ Ganha o nome histórico (V-EGO-11; formato em Q-NAME-3) |
+| V-EGO-8 | Rótulo: **nome histórico em destaque**; embaixo "provider · título da sessão"; depois atividade · última ação | Dado + Identidade | Título e modelo do próprio CLI; última ferramenta usada, com o texto do provider; o nome vem de §9 (D-066) | ⚠️ Hoje sem o nome |
 | V-EGO-11 | **Nome histórico** do personagem (ex.: "Einstein") | Identidade | Sorteado sem reposição quando a sessão aparece, fica com a sessão (R37, §9) | ⏳ |
 | V-EGO-12 | Contador **"+N"** numa área | Dado | Personagens além dos 8 visíveis naquela área (R33) | ⏳ |
 | V-EGO-9 | Personagem menor, mesma cor | Dado | Subagente da sessão (Team) | ✅ |
@@ -228,7 +228,7 @@ aparece. Repetir não é problema, mas o ideal é **consumir todos os nomes ante
 **Tipo: Identidade.** O nome **não é dado** de telemetria (não diz nada sobre a sessão) e por isso
 não fere a regra R12: é o nome do personagem, e assim é apresentado.
 
-**Como funciona (proposta, ver Q-NAME-1 a 4):**
+**Como funciona (decidido em 2026-10-08, D-064 a D-067):**
 
 1. **Sacola.** Os 60 nomes abaixo entram numa sacola embaralhada. Cada sessão nova tira o próximo.
    Quando a sacola esvazia, ela é embaralhada de novo. Assim um nome só volta depois de todos os
@@ -237,7 +237,11 @@ não fere a regra R12: é o nome do personagem, e assim é apresentado.
    Orb guarda a associação sessão → nome no seu registro local (R36).
 3. **Sem gêmeos na sala:** se o nome sorteado já estiver em uso por um personagem visível na mesma
    sala, tira-se o seguinte.
-4. Só pessoas históricas **já falecidas**, de áreas e épocas variadas, com mulheres e brasileiros.
+4. **Subagentes não ganham nome histórico**: ficam com o tipo que o CLI dá a eles (Explore,
+   qa-reviewer…), porque são temporários (D-065).
+5. **Rótulo:** o nome em destaque; embaixo, "Claude · <título da sessão>" (D-066).
+6. Só pessoas históricas **já falecidas**, de áreas e épocas variadas, com mulheres e brasileiros.
+   **A lista abaixo está aprovada** (D-067).
 
 | # | Nome no personagem | Pessoa | Área |
 |---|---|---|---|

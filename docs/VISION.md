@@ -216,12 +216,14 @@ com o zoom (realm → personagens → card detalhado).
 **Alter Ego e Perfil** (a ideia ainda precisa amadurecer):
 
 - O que é o **Perfil** de um Alter Ego? ~~Nome?~~ **Decidido: um nome histórico sorteado (R37,
-  [VISUAL.md](VISUAL.md) §9).** Ainda em aberto: papel, aparência, stats; detalhes do nome em
-  Q-NAME-1 a 4 ([DECISIONS.md](DECISIONS.md)).
+  [VISUAL.md](VISUAL.md) §9), uma vez por sessão, para sempre; subagentes sem nome.** Ainda em
+  aberto: papel, aparência, stats (Q-EGO-2 em [DECISIONS.md](DECISIONS.md)).
 - Duas sessões podem compartilhar um Perfil (ex.: "o Alter Ego de revisão do TriSafe" usado em
-  várias sessões)? Se sim, o personagem é a sessão ou o Perfil?
+  várias sessões)? **O nome é por sessão (D-064)**; compartilhar outros elementos do Perfil segue em
+  aberto.
 - Retomada (`resume`), bifurcação (`fork`), `/clear` e compactação: mesmo Alter Ego ou um novo?
-  Depende de o id da sessão mudar em cada provider (a verificar).
+  Depende de o id da sessão mudar em cada provider (a verificar). Proposta em Q-EGO-1
+  ([DECISIONS.md](DECISIONS.md)).
 - ~~O que acontece com o personagem quando a sessão termina?~~ **Decidido: não é excluído (R28).**
   ~~Onde ficam as encerradas e as antigas?~~ **Decidido: na sala, as dos últimos 10 dias
   (configurável); as demais no Histórico do realm (R28a).**
@@ -235,7 +237,7 @@ com o zoom (realm → personagens → card detalhado).
   contam? Lockfiles versionados entram? Frequência de recálculo; como expor o filtro.
 - ~~Rooftop Room: nome definitivo; sala cheia?~~ **Decidido: o nome fica; até 8 por área e "+N" (R33).**
 - Estilo visual de cada realm; como o Inner World aparece no 3D. Cenário é permitido quando
-  declarado (R12a). Decisões visuais pendentes: [VISUAL.md](VISUAL.md).
+  declarado (R12a). Propostas em Q-WORLD-1 e Q-WORLD-2 ([DECISIONS.md](DECISIONS.md)).
 - ~~Como a UI avisa que um terminal está parado num diálogo?~~ **Decidido: leitor de diálogos
   próprio marca "esperando o Lucas", sem responder (R34).**
 
@@ -243,7 +245,8 @@ com o zoom (realm → personagens → card detalhado).
 
 - Observador do Codex ignorando um pedido de aprovação: o servidor bloqueia, reenvia ou decide?
   **Risco principal**, ver [adapters/CODEX.md](adapters/CODEX.md) §9.
-- Quais CLIs entram além de Claude, Codex, Hermes e opencode (qualquer CLI com sessões legíveis é candidato).
+- Quais CLIs entram além de Claude, Codex, Hermes e opencode (qualquer CLI com sessões legíveis é
+  candidato). Proposta em Q-PROV-1.
 - ~~Persistência?~~ **Decidido: registro local do Orb em SQLite, só com o que o Orb derivou (R36).**
 
 ## 8. Origem
