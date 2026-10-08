@@ -93,7 +93,9 @@ Archive · Perfil do Alter Ego · persistência em banco · multiusuário.
    acesa ou apagada (R20), dormindo após 15 min (R31), subagente sem sinal em cinza (R7), cidade
    retangular com bairros por letra (R32), altura absoluta por classes de faixa de linhas e a
    contagem de linhas (R19), sala cheia (R33), realm de "noite", leitor de diálogos (R34), Gate que
-   oferece reabrir (R35), registro local (R36) e nome histórico dos Alter Egos (R37). O índice das que ainda faltam está em [DECISIONS.md](DECISIONS.md).
+   oferece reabrir (R35), registro local (R36), nome histórico dos Alter Egos (R37), o Orb não
+   consome tokens (R38), continuidade da sessão (R39), papel derivado (R40) e forma por classe de
+   prédio (R41). O índice das que ainda faltam está em [DECISIONS.md](DECISIONS.md).
 3. Criar os tickets por épico (RULES.md, "Do documento aos tickets"), **quando o Lucas pedir** (P5).
 
 Depois, pela ordem dos tickets:

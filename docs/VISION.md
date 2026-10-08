@@ -73,6 +73,9 @@ The Orb  (o mundo: uma cidade conceitual)
     estado em memória com snapshot + deltas. Detalhes em [ARCHITECTURE.md](ARCHITECTURE.md) §5.
 11. **Lógica bem estruturada.** Domínio puro separado de I/O. Regras (atividade, altura do prédio,
     XP) são funções determinísticas, declaradas em tabelas, testáveis sem rede, disco ou UI.
+12. **O Orb não consome tokens.** Ele só monitora: nada no Orb chama modelo de IA (nem para
+    resumir, classificar ou nomear). Tudo vem da telemetria por regras e tabelas. O único consumo
+    é o do Lucas usando o CLI pelo Inner World (regra R38).
 
 ## 4. O mundo
 

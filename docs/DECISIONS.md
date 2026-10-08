@@ -82,6 +82,13 @@ implementação só volta depois deles (regra P1).
 | D-065 | 2026-10-08 | **Subagentes não ganham nome histórico**: ficam com o tipo dado pelo CLI (Explore, qa-reviewer…) | Lucas | R37, VISUAL.md §9 |
 | D-066 | 2026-10-08 | **Rótulo do personagem:** o nome em destaque ("Einstein"); embaixo, "Claude · <título da sessão>"; a cor mostra o provider | Lucas | V-EGO-8, V-EGO-11 |
 | D-067 | 2026-10-08 | **A lista dos 60 nomes** de VISUAL.md §9 está aprovada | Lucas | VISUAL.md §9 |
+| D-068 | 2026-10-08 | **Retomar** uma sessão = o mesmo Alter Ego; **bifurcar** = um Alter Ego novo, com nome novo, mostrando de quem nasceu; **`/clear` e compactação** = o mesmo Alter Ego quando o provider registra a ligação entre o id antigo e o novo, senão um novo (a confirmar por provider) | Lucas | R39, R10 |
+| D-069 | 2026-10-08 | **Papel** do Alter Ego derivado do que a sessão mais fez (ex.: mais revisão = "revisor"), por **contagem da telemetria**, sem nenhuma chamada a modelo; mostrado no overview. **Aparência** = só a cor do provider por enquanto; **stats/XP** no backlog | Lucas | R40, R6 |
+| D-070 | 2026-10-08 | **O Orb não consome tokens.** Ele só monitora: nada no Orb chama modelo de IA, nem para resumir, classificar ou nomear. O único consumo é o do Lucas usando o CLI pelo Inner World | Lucas | R38, princípio 12 (VISION.md) |
+| D-071 | 2026-10-08 | **Prédios sem tema por realm**: todos no mesmo estilo, diferindo pelos dados; um tema, se vier, é cenário escolhido pelo Lucas nas configurações | Lucas | Q-WORLD-1, R41 |
+| D-072 | 2026-10-08 | **Quanto maior o prédio, outro design**: cada classe da tabela de altura (Casa a Arranha-céu) tem uma **forma arquitetônica própria**, como o CodeCity faz ao mapear métricas no **tipo** do prédio | Lucas | R41, VISUAL.md §8 |
+| D-073 | 2026-10-08 | **Inner World no 3D:** agora o painel de baixo (linha do tempo e terminal); depois o personagem a um **monitor** na sua área com o terminal na tela; o "mergulho" fica no backlog | Lucas | R9, Q-WORLD-2 |
+| D-074 | 2026-10-08 | **Nenhum CLI além dos 4** por agora; o contrato de adapter já permite incluir outro | Lucas | R8, Q-PROV-1 |
 
 ## Decisões revistas
 
@@ -151,11 +158,17 @@ uma proposta. Ao decidir, a resposta vira um D-NNN acima e a linha fica riscada.
 
 | Id | Pergunta | Proposta |
 |---|---|---|
-| Q-EGO-1 | **Retomar, bifurcar, limpar, compactar** uma sessão: é o mesmo Alter Ego (mesmo nome) ou um novo? | **Retomar** (`resume`) = o mesmo Alter Ego. **Bifurcar** (`fork`) = um Alter Ego novo, com nome novo, mostrando de quem nasceu. **`/clear` e compactação**: o mesmo Alter Ego quando o provider registra a ligação entre o id antigo e o novo; sem essa ligação, um novo. A confirmar por provider na implementação |
-| Q-EGO-2 | **O resto do Perfil** além do nome: papel, aparência, stats | **Papel** derivado do que a sessão mais fez (ex.: mais revisão = "revisor"), mostrado no overview, porque é dado real; **aparência** = só a cor do provider por enquanto; **stats/XP** continuam no backlog |
-| Q-WORLD-1 | **Estilo temático por realm** (a ideia original: TriSafe industrial, CLARA biblioteca…) | Por enquanto **todos os prédios iguais**, diferindo só pelos dados (altura, janelas, sala). Um tema por realm, se vier, é **cenário** escolhido pelo Lucas nas configurações, nunca automático |
-| Q-WORLD-2 | **Como o Inner World aparece no 3D** | Agora: o painel de baixo (linha do tempo e terminal), como na v1. Depois: o personagem senta a um **monitor** na sua área com o terminal na tela (já validado no Spike 2). O "mergulho" no personagem fica no backlog |
-| Q-PROV-1 | **Outros CLIs** além dos 4 | Nenhum agora. O contrato de adapter já permite incluir um provider novo sem mexer no resto |
+| ~~Q-EGO-1~~ D-068 | **Retomar, bifurcar, limpar, compactar** uma sessão: é o mesmo Alter Ego (mesmo nome) ou um novo? | **Retomar** (`resume`) = o mesmo Alter Ego. **Bifurcar** (`fork`) = um Alter Ego novo, com nome novo, mostrando de quem nasceu. **`/clear` e compactação**: o mesmo Alter Ego quando o provider registra a ligação entre o id antigo e o novo; sem essa ligação, um novo. A confirmar por provider na implementação |
+| ~~Q-EGO-2~~ D-069 | **O resto do Perfil** além do nome: papel, aparência, stats | **Papel** derivado do que a sessão mais fez (ex.: mais revisão = "revisor"), mostrado no overview, porque é dado real; **aparência** = só a cor do provider por enquanto; **stats/XP** continuam no backlog |
+| ~~Q-WORLD-1~~ D-071, D-072 | **Estilo temático por realm** (a ideia original: TriSafe industrial, CLARA biblioteca…) | Por enquanto **todos os prédios iguais**, diferindo só pelos dados (altura, janelas, sala). Um tema por realm, se vier, é **cenário** escolhido pelo Lucas nas configurações, nunca automático |
+| ~~Q-WORLD-2~~ D-073 | **Como o Inner World aparece no 3D** | Agora: o painel de baixo (linha do tempo e terminal), como na v1. Depois: o personagem senta a um **monitor** na sua área com o terminal na tela (já validado no Spike 2). O "mergulho" no personagem fica no backlog |
+| ~~Q-PROV-1~~ D-074 | **Outros CLIs** além dos 4 | Nenhum agora. O contrato de adapter já permite incluir um provider novo sem mexer no resto |
+
+### Próxima rodada (aberta em 2026-10-08, depois do design por classe)
+
+| Id | Pergunta | Proposta |
+|---|---|---|
+| Q-WORLD-3 | **As formas de cada classe** de prédio ([VISUAL.md](VISUAL.md) §8, tabela "Forma"): estão boas? | Proposta na tabela: da Casa (um volume baixo) ao Arranha-céu (torre esguia com recuos escalonados, coroa e antena); todas neutras, sem cor de significado, e o Rooftop Room sempre do mesmo tamanho no topo |
 
 **Fica para a fase de implementação** (não precisa de decisão agora): os tons exatos e os ícones
 das áreas (V-PEND-7d, com prévia visual para o Lucas aprovar) e o **teste do observador do Codex

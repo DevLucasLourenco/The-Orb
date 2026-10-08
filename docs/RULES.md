@@ -87,6 +87,10 @@ Situação: ✅ cumprida · ⚠️ parcial ou com heurística não decidida · �
 | R34 | **Aviso de diálogo:** nas sessões abertas pelo Orb, um módulo próprio reconhece diálogos conhecidos do CLI pelo texto da tela e marca o personagem como "esperando o Lucas". **Nunca responde** (R16, ADR 0006). | Lucas, 2026-10-08 (D-060) | ⏳ |
 | R35 | **O Gate nunca reabre sozinho** uma sessão fechada: oferece reabrir num terminal novo e espera a confirmação do Lucas. | Lucas, 2026-10-08 (D-061) | ⏳ |
 | R36 | **Registro local do Orb:** um log próprio (SQLite, na pasta de preferências do Orb) com o que o Orb derivou (eventos do mundo, nomes dos Alter Egos); o conteúdo das sessões continua só nos providers. | Lucas, 2026-10-08 (D-062) | ⏳ Hoje o mundo vive só em memória |
+| R38 | **O Orb não consome tokens.** Só monitora: nenhuma parte do Orb chama modelo de IA (nem para resumir, classificar, nomear ou derivar papel). Tudo vem da telemetria por regras e tabelas. O único consumo é o do Lucas usando o CLI pelo Inner World. | Lucas, 2026-10-08 (D-070) | ✅ Nenhum módulo chama modelo |
+| R39 | **Continuidade da sessão:** retomar = o mesmo Alter Ego (mesmo nome); bifurcar = um Alter Ego novo, com nome novo, mostrando de quem nasceu; `/clear` e compactação = o mesmo Alter Ego se o provider liga o id antigo ao novo, senão um novo. | Lucas, 2026-10-08 (D-068) | ⏳ A confirmar por provider |
+| R40 | **Papel do Alter Ego** = o que a sessão mais fez (ex.: "revisor"), por contagem das atividades observadas, mostrado no overview. Sem modelo, sem tokens (R38). | Lucas, 2026-10-08 (D-069) | ⏳ |
+| R41 | **Prédios no mesmo estilo** (sem tema por realm), mas **cada classe de tamanho tem uma forma arquitetônica própria** (Casa a Arranha-céu), como o CodeCity mapeia métricas no tipo do prédio. Um tema por realm, se vier, é cenário escolhido pelo Lucas. | Lucas, 2026-10-08 (D-071, D-072) | ❌ Hoje todos têm a mesma forma |
 | R37 | **Cada Alter Ego tem um nome histórico** (tecnologia, física, matemática, filosofia), sorteado sem reposição de uma lista de 60 ([VISUAL.md](VISUAL.md) §9), **uma vez, para sempre**, de uma sacola **global**, sem nomes iguais visíveis na mesma sala. **Subagentes não ganham nome** (ficam com o tipo do CLI). O nome é **identidade**, não dado. | Lucas, 2026-10-08 (D-063 a D-067) | ⏳ |
 | R32 | **A cidade é retangular.** Os prédios ficam em **ordem alfabética**, com um ar **"aleatório", mas rastreável**: a posição vem de uma estrutura lógica e é sempre a mesma para o mesmo realm. Traçado concreto (delegado): [VISUAL.md](VISUAL.md) §7. | Lucas, 2026-10-08 (D-046, D-047) | ❌ Hoje o chão é um disco e a grade é alfabética simples, sem bairros |
 | R21 | Todo Rooftop Room tem as **5 áreas** do Environment, sempre. | Visão (decidido) | ✅ |
@@ -118,13 +122,14 @@ ARCHITECTURE.md §3 (Detecção de realms) precisam estar decididas; o índice e
 |---|---|
 | Processo e documentação | P1, P2 |
 | Detecção de realms pelos providers e lista para esconder | R3, R3a, R3b, R3c, R3d |
-| Alter Ego e Perfil (nome histórico, sessões encerradas e recentes) | R5, R6, R10, R28, R28a, R37 |
+| Alter Ego e Perfil (nome, papel, continuidade, sessões encerradas e recentes) | R5, R6, R10, R28, R28a, R37, R39, R40 |
+| Princípio: o Orb não consome tokens (verificação em todos os épicos) | R38 |
 | Gate e avisos de diálogo | R34, R35 |
 | Registro local do Orb | R36 |
 | Configurações do Orb (tela e arquivo de preferências) | R29 |
 | Inner World (terminal + linha do tempo, retomada) | R9, R10 |
 | Adapters (Claude, Codex, Hermes, opencode) | R7, R8, R13, R14 |
-| Mundo 3D: prédios (altura por LOC, andares, janelas por percentual na cor do git) | R12, R12a, R19, R20, R20a, R20b, R20c, R20d |
+| Mundo 3D: prédios (altura por LOC, forma por classe, andares, janelas por percentual na cor do git) | R12, R12a, R19, R20, R20a, R20b, R20c, R20d, R41 |
 | Mundo 3D: cores (providers, áreas, "esperando") | R20c, R30 |
 | Mundo 3D: cidade (traçado retangular, bairros, posição dos prédios) | R32 |
 | Mundo 3D: personagens dormindo, subagentes sem sinal, sala cheia | R7, R31, R33 |

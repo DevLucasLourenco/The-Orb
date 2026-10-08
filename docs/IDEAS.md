@@ -67,7 +67,10 @@
 | Altura relativa ao maior prédio | O maior realm define a altura dos outros | **Revisto**: rejeitado pelo Lucas (D-051) |
 | Cidade retangular com bairros por letra | Prédios em ordem alfabética, posição "aleatória" mas rastreável pela semente do nome | **Decidido** (R32, D-046, D-047) |
 | Rooftop Room | Quartinho no teto com as 5 áreas obrigatórias | **Decidido** |
-| Estilo temático por realm | TriSafe industrial, CLARA biblioteca, UTC CONECTA+ estação de comunicação | Backlog |
+| Estilo temático por realm | TriSafe industrial, CLARA biblioteca, UTC CONECTA+ estação de comunicação | **Revisto**: prédios no mesmo estilo (D-071); um tema, se vier, é cenário escolhido pelo Lucas |
+| Forma arquitetônica por classe de prédio | Casa a Arranha-céu, cada classe com a sua forma, como o CodeCity mapeia métricas no tipo do prédio | **Decidido** (R41, D-072); formas em Q-WORLD-3 |
+| O Orb não consome tokens | Só monitora; nada chama modelo de IA | **Decidido** (R38, D-070) |
+| Papel do Alter Ego | O que a sessão mais fez, por contagem | **Decidido** (R40, D-069) |
 | Mapa/minimap | Visão geral rápida | Backlog |
 | Cidade/campus como hub | Tela inicial com todos os realms e contagem de Alter Egos | **Feito** (v1: disco do Orb com os realms em anel) |
 

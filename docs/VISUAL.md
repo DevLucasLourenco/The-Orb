@@ -31,6 +31,7 @@ Situação: ✅ como está · ❌ precisa mudar · ❓ precisa de decisão.
 | V-REALM-2 | **Altura** | Dado | Linhas de código do projeto, ignorando o `.gitignore` (R19), em **escala absoluta por classes** (Casa a Arranha-céu), com saltos entre as classes (§8). Não depende dos outros prédios | ❌ Altura fixa igual para todos |
 | V-REALM-12 | **Altura de cada andar** | Dado | Parcela das linhas do projeto que está naquela pasta de 1º nível; pastas pequenas demais se juntam em "demais pastas" (§8) | ⏳ |
 | V-REALM-13 | **Cintas de luz neutra no topo** (e antena no Arranha-céu) | Legenda | A classe do prédio por faixa de linhas: uma cinta a mais por classe (§8) | ⏳ |
+| V-REALM-15 | **Forma arquitetônica** do prédio | Legenda | A classe do prédio (Casa a Arranha-céu), cada uma com a sua forma (§8, R41) | ❌ Hoje todos têm a mesma forma |
 | V-REALM-3 | **Janelas: quais acendem e de que cor** | Dado | **Hoje: padrão aleatório**, sorteado pelo nome do realm, com cores quentes/frias sem significado. **Decidido:** andares = pastas de 1º nível (R20); as janelas mostram as **alterações locais** (R20b); **cada janela acesa = x% das alterações, e nenhuma alteração é dividida** (R20d, §6); **a cor é a do tipo de alteração no git**, paleta do VS Code (R20a, §5). A janela é só **acesa ou apagada**, sem esmaecer (D-043) | ❌ Viola R12 |
 | V-REALM-4 | Brilho geral das janelas | Dado | Quantidade de sessões ativas no realm (0 → apagado; 3 ou mais → máximo) | ⚠️ Correto como dado, mas aplicado sobre o padrão aleatório |
 | V-REALM-5 | Arestas de luz do Rooftop Room: azul / âmbar | Dado | Âmbar quando alguma sessão do realm espera o Lucas | ⚠️ A cor do "esperando" muda (R20c, V-PEND-7b) |
@@ -69,6 +70,7 @@ Situação: ✅ como está · ❌ precisa mudar · ❓ precisa de decisão.
 | V-HUD-4 | Inner World: terminal | Dado | Terminal real do CLI (só para sessões abertas pelo painel; R9) | ⚠️ |
 | V-HUD-5 | **Lista de realms com marcação** | Dado | Todos os realms detectados; desmarcar esconde o prédio da cidade (R3c). A escolha fica guardada pelo Orb | ⏳ |
 | V-HUD-6 | **Histórico do realm** | Dado | Sessões encerradas ou paradas há mais que o prazo (10 dias, R28a), no overview do realm; nenhuma some | ⏳ |
+| V-HUD-8 | **Papel** do Alter Ego no overview (ex.: "revisor") | Dado | O que a sessão mais fez, por contagem das atividades observadas; sem modelo, sem tokens (R40, R38) | ⏳ |
 | V-HUD-7 | **Tela de configurações do Orb** | Dado | Realms escondidos, prazo das sessões recentes e outras preferências, guardadas no arquivo próprio do Orb (R29) | ⏳ |
 
 ---
@@ -185,14 +187,19 @@ andar a cada 10 linhas), sem comparar um prédio com outro. Aqui a escala també
 1. **Classes de prédio por faixa de linhas.** A unidade de altura é o **nível** (uma fileira de
    janelas). As faixas crescem cerca de 4 a 5 vezes de uma classe para a próxima:
 
-   | Classe | Linhas de código | Altura | Marca no topo |
-   |---|---|---|---|
-   | 1. Casa | até 1 mil | 1 nível | — |
-   | 2. Sobrado | 1 mil a 5 mil | 2 a 3 níveis | 1 cinta |
-   | 3. Prédio | 5 mil a 20 mil | 5 a 8 níveis | 2 cintas |
-   | 4. Edifício | 20 mil a 100 mil | 11 a 16 níveis | 3 cintas |
-   | 5. Torre | 100 mil a 500 mil | 20 a 28 níveis | 4 cintas |
-   | 6. Arranha-céu | 500 mil ou mais | 34 níveis ou mais | 5 cintas e uma antena |
+   | Classe | Linhas de código | Altura | Marca no topo | Forma (proposta, Q-WORLD-3) |
+   |---|---|---|---|---|
+   | 1. Casa | até 1 mil | 1 nível | — | Um volume baixo, com a base do tamanho do Rooftop Room |
+   | 2. Sobrado | 1 mil a 5 mil | 2 a 3 níveis | 1 cinta | Dois volumes: base um pouco mais larga e um corpo com terraço em volta da sala |
+   | 3. Prédio | 5 mil a 20 mil | 5 a 8 níveis | 2 cintas | Bloco retangular, com marquise no térreo |
+   | 4. Edifício | 20 mil a 100 mil | 11 a 16 níveis | 3 cintas | Bloco com **um recuo** na parte de cima |
+   | 5. Torre | 100 mil a 500 mil | 20 a 28 níveis | 4 cintas | Pódio largo na base e **torre esguia** com dois recuos |
+   | 6. Arranha-céu | 500 mil ou mais | 34 níveis ou mais | 5 cintas e uma antena | Torre alta com **recuos escalonados**, coroa no topo e antena |
+
+   **Forma por classe (D-072, R41):** como o CodeCity, que mapeia métricas no **tipo** do prédio,
+   cada classe tem a sua arquitetura. As formas são **neutras** (sem cor de significado) e o
+   **Rooftop Room tem sempre o mesmo tamanho** no topo; os recuos acontecem abaixo dele, e as
+   classes maiores têm a base mais larga. As janelas (§6) acompanham as fachadas de cada forma.
 
 2. **Delimitação visível.** As faixas de altura **não se encostam**: entre uma classe e a próxima há
    um salto (3 → 5, 8 → 11, 16 → 20, 28 → 34 níveis). Dois prédios de classes vizinhas nunca ficam

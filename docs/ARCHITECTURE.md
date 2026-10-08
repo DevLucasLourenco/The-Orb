@@ -69,6 +69,8 @@
 - **Somente leitura por desenho.** Adapters e Probes só abrem arquivos do provider e do projeto
   em modo leitura. A única escrita é o Terminal Host transportando o que o Lucas digita
   ([VISION.md](VISION.md) §3, princípio 5).
+- **Nenhum módulo chama modelo de IA** (R38): o Orb não consome tokens. Papel, nomes,
+  classificações e resumos saem de regras e tabelas sobre a telemetria.
 - **Diálogos são do Lucas.** Nenhum módulo responde diálogos dos CLIs nem pedidos de servidor
   ([ADR 0006](adr/0006-o-orb-nunca-responde-dialogos.md)). Um observador de protocolo nem recusa:
   ignora e registra.

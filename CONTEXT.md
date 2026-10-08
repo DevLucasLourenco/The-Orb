@@ -59,6 +59,11 @@ _Evite_: agente principal, persona do provider, bot
 O que dá identidade a um Alter Ego além da sessão. Começa pelo **nome histórico**; papel,
 aparência e histórico entre sessões seguem em aberto ([docs/VISION.md](docs/VISION.md)).
 
+**Papel**:
+O que um Alter Ego mais faz na sua sessão (ex.: revisor, pesquisador), contado a partir das
+atividades observadas. Derivado da telemetria, sem modelo de IA.
+_Evite_: função, cargo
+
 **Nome histórico**:
 O nome do personagem de um Alter Ego: uma figura famosa da tecnologia, física, matemática ou
 filosofia (ex.: Einstein, Ada Lovelace, Tesla), sorteada quando a sessão aparece, sem repetir
