@@ -35,7 +35,7 @@ Um realm que o Lucas desmarcou na lista de realms: continua detectado, só não 
 escolha é do Orb e não muda nada nos providers.
 _Evite_: realm removido, realm apagado
 
-**Rooftop Room** *(nome provisório)*:
+**Rooftop Room**:
 O quartinho no teto de cada prédio onde os Alter Egos daquele realm trabalham. Todo Rooftop
 Room tem as mesmas cinco áreas do Environment.
 _Evite_: escritório, sala
@@ -55,9 +55,15 @@ Egos. O provider e o modelo pertencem à sessão e não mudam. Quando a sessão 
 **não é excluído**: fica na sala enquanto for recente e depois no **Histórico do realm**.
 _Evite_: agente principal, persona do provider, bot
 
-**Perfil** *(em aberto)*:
-O que dá identidade a um Alter Ego além da sessão (nome, papel, aparência, histórico). O
-conceito ainda não está maduro: ver as questões em aberto de [docs/VISION.md](docs/VISION.md).
+**Perfil** *(em construção)*:
+O que dá identidade a um Alter Ego além da sessão. Começa pelo **nome histórico**; papel,
+aparência e histórico entre sessões seguem em aberto ([docs/VISION.md](docs/VISION.md)).
+
+**Nome histórico**:
+O nome do personagem de um Alter Ego: uma figura famosa da tecnologia, física, matemática ou
+filosofia (ex.: Einstein, Ada Lovelace, Tesla), sorteada quando a sessão aparece, sem repetir
+antes de esgotar a lista. É identidade, não telemetria.
+_Evite_: apelido, codinome
 
 **Subagente**:
 Uma unidade temporária que nasce dentro da sessão de um Alter Ego para cumprir uma missão e

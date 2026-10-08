@@ -91,7 +91,9 @@ Archive · Perfil do Alter Ego · persistência em banco · multiusuário.
    projeto inexistente não entra (R3d), Histórico do realm, cores dos providers (R30), janelas por
    percentual com peso = linhas alteradas e x = 5% (R20d), áreas sem cor própria (R20c), janela só
    acesa ou apagada (R20), dormindo após 15 min (R31), subagente sem sinal em cinza (R7), cidade
-   retangular com bairros por letra (R32) e altura absoluta por classes de faixa de linhas (R19). O índice das que ainda faltam está em [DECISIONS.md](DECISIONS.md).
+   retangular com bairros por letra (R32), altura absoluta por classes de faixa de linhas e a
+   contagem de linhas (R19), sala cheia (R33), realm de "noite", leitor de diálogos (R34), Gate que
+   oferece reabrir (R35), registro local (R36) e nome histórico dos Alter Egos (R37). O índice das que ainda faltam está em [DECISIONS.md](DECISIONS.md).
 3. Criar os tickets por épico (RULES.md, "Do documento aos tickets"), **quando o Lucas pedir** (P5).
 
 Depois, pela ordem dos tickets:

@@ -180,7 +180,8 @@ Tudo abaixo é visualização de dados reais, somente leitura (princípio 5).
 - **Gate.** Duas funções: **ver** tudo o que espera o Lucas (aprovações pendentes de todos os
   realms) e **escrever** a qualquer Alter Ego sem entrar no realm. O Gate não aprova nem decide
   sozinho e não cria canal paralelo: escreve no terminal do Inner World daquele Alter Ego, como se
-  o Lucas tivesse digitado.
+  o Lucas tivesse digitado. Para uma sessão já fechada, o Gate **oferece reabrir** a sessão num
+  terminal novo e espera a confirmação do Lucas; nunca reabre sozinho (R35).
 - **Team.** O Alter Ego e os seus subagentes, agrupados, com a árvore de quem delegou o quê.
 - **Archive.** O que molda cada sessão (instruções, skills, `CLAUDE.md`, memória), só para ver:
   nunca grava nem reinjeta nada; mostra nomes, tamanhos e datas por padrão e o conteúdo só quando
@@ -214,8 +215,9 @@ com o zoom (realm → personagens → card detalhado).
 
 **Alter Ego e Perfil** (a ideia ainda precisa amadurecer):
 
-- O que é o **Perfil** de um Alter Ego? Candidatos: nome/persona, papel, aparência, título da
-  sessão, provider e modelo, stats. É gerado, escolhido pelo Lucas ou derivado da sessão?
+- O que é o **Perfil** de um Alter Ego? ~~Nome?~~ **Decidido: um nome histórico sorteado (R37,
+  [VISUAL.md](VISUAL.md) §9).** Ainda em aberto: papel, aparência, stats; detalhes do nome em
+  Q-NAME-1 a 4 ([DECISIONS.md](DECISIONS.md)).
 - Duas sessões podem compartilhar um Perfil (ex.: "o Alter Ego de revisão do TriSafe" usado em
   várias sessões)? Se sim, o personagem é a sessão ou o Perfil?
 - Retomada (`resume`), bifurcação (`fork`), `/clear` e compactação: mesmo Alter Ego ou um novo?
@@ -223,24 +225,26 @@ com o zoom (realm → personagens → card detalhado).
 - ~~O que acontece com o personagem quando a sessão termina?~~ **Decidido: não é excluído (R28).**
   ~~Onde ficam as encerradas e as antigas?~~ **Decidido: na sala, as dos últimos 10 dias
   (configurável); as demais no Histórico do realm (R28a).**
-- O Gate escrevendo para um Alter Ego cuja sessão está fechada: recusa, ou reabre a sessão?
+- ~~O Gate escrevendo para um Alter Ego cuja sessão está fechada?~~ **Decidido: oferece reabrir,
+  com confirmação (R35).**
 
 **Mundo e interface:**
 
 - ~~Escala da altura (linear, raiz, log)?~~ **Decidido: absoluta, por classes de faixa de linhas
   (R19; [VISUAL.md](VISUAL.md) §8).** Ainda em aberto: linhas em branco e comentários
   contam? Lockfiles versionados entram? Frequência de recálculo; como expor o filtro.
-- Rooftop Room: nome definitivo; como o layout acomoda muitos Alter Egos e subagentes.
+- ~~Rooftop Room: nome definitivo; sala cheia?~~ **Decidido: o nome fica; até 8 por área e "+N" (R33).**
 - Estilo visual de cada realm; como o Inner World aparece no 3D. Cenário é permitido quando
   declarado (R12a). Decisões visuais pendentes: [VISUAL.md](VISUAL.md).
-- Como a UI avisa que um terminal está parado num diálogo esperando o Lucas.
+- ~~Como a UI avisa que um terminal está parado num diálogo?~~ **Decidido: leitor de diálogos
+  próprio marca "esperando o Lucas", sem responder (R34).**
 
 **Telemetria:**
 
 - Observador do Codex ignorando um pedido de aprovação: o servidor bloqueia, reenvia ou decide?
   **Risco principal**, ver [adapters/CODEX.md](adapters/CODEX.md) §9.
 - Quais CLIs entram além de Claude, Codex, Hermes e opencode (qualquer CLI com sessões legíveis é candidato).
-- Persistência: o que vai para banco e o que fica só em memória.
+- ~~Persistência?~~ **Decidido: registro local do Orb em SQLite, só com o que o Orb derivou (R36).**
 
 ## 8. Origem
 

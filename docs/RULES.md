@@ -75,7 +75,7 @@ Situação: ✅ cumprida · ⚠️ parcial ou com heurística não decidida · �
 |---|---|---|---|
 | R17 | **Mundo 3D navegável**, o produto principal: cidade vista de cima, câmera livre (WASD, scroll, Q/E, botão direito, F, Esc, 1–9, duplo clique para seguir). | Lucas, Visão | ⚠️ Falta "duplo clique segue o personagem" |
 | R18 | **Overview por alto** de um realm: o que cada sessão faz agora, quem está esperando o Lucas, subagentes e consumo. | Lucas, 2026-10-07 | ✅ |
-| R19 | **Altura do prédio = linhas de código** do projeto, sempre ignorando o `.gitignore`, com filtro (ex.: incluir `.md`). A escala é **absoluta**: a altura depende só das linhas do próprio projeto (nunca do maior prédio), em **classes por faixa de milhares de linhas**, com um salto visível entre classes e uma marca da classe no topo, para o que é grande se destacar de verdade. Escala concreta (delegada): [VISUAL.md](VISUAL.md) §8. | Visão (decidido); Lucas, 2026-10-08 (D-051, D-052) | ❌ Todos os prédios têm a mesma altura |
+| R19 | **Altura do prédio = linhas de código** do projeto, sempre ignorando o `.gitignore`, com filtro (ex.: incluir `.md`). A escala é **absoluta**: a altura depende só das linhas do próprio projeto (nunca do maior prédio), em **classes por faixa de milhares de linhas**, com um salto visível entre classes e uma marca da classe no topo, para o que é grande se destacar de verdade. Escala concreta (delegada): [VISUAL.md](VISUAL.md) §8. **Contagem:** linhas não vazias (comentários contam); sem arquivos gerados versionados (lista visível de exclusões); padrão sem `.md`; recálculo ao abrir e quando as alterações locais mudam, até 1×/min por realm. | Visão (decidido); Lucas, 2026-10-08 (D-051 a D-056) | ❌ Todos os prédios têm a mesma altura |
 | R20 | **Andares = pastas de primeiro nível; janelas acendem onde há alteração local**, e a janela só tem dois estados: **acesa ou apagada** (~~esmaece com o tempo~~, revisto em D-043). | Visão (camadas vivas); Lucas, 2026-10-08 | ❌ As janelas atuais são decoração aleatória e contradizem esta regra |
 | R20a | **A cor de uma janela acesa é a cor do tipo de alteração no git**, com a **paleta de alterações do git do VS Code** (inserção, modificação, remoção, não rastreado, renomeado, conflito). Valores em [VISUAL.md](VISUAL.md) §5. | Lucas, 2026-10-07 e 2026-10-08 | ❌ |
 | R20b | As janelas mostram as **alterações locais** do projeto (o estado do repositório na máquina: modificado, novo, apagado…). Uma **alteração** é um arquivo com alteração local. Ler esse estado **nunca grava nada** no projeto nem no `.git` (R16). ~~Cada janela é um arquivo~~ (revisto por R20d). | Lucas, 2026-10-08 | ❌ |
@@ -83,6 +83,11 @@ Situação: ✅ cumprida · ⚠️ parcial ou com heurística não decidida · �
 | R20c | **As áreas não têm cor própria**: piso neutro, cada área identificada por **ícone e nome** (e um padrão no piso). O sinal de **"esperando o Lucas"** é **magenta pulsante**. As cores ficam só para janelas (git), personagens (provider) e "esperando". | Lucas, 2026-10-08 (D-036, D-040) | ❌ Hoje as áreas são coloridas (Testing Lab verde, Code Review amarelo…) e "esperando" é âmbar |
 | R30 | **Cores dos providers** (corpo e halo do personagem): **Claude laranja · Codex azul · Hermes amarelo · opencode cinza**, em tons saturados. | Lucas, 2026-10-08 (D-037, D-040) | ❌ Hoje Codex é verde-água, Hermes violeta e opencode azul |
 | R31 | Uma sessão recente aparece **"dormindo"** na sala depois de **15 min parada**. | Lucas, 2026-10-08 (D-044) | ✅ É o limite atual do cliente |
+| R33 | **Sala cheia:** o Rooftop Room não cresce; cada área mostra até **8 personagens** e um contador **"+N"**; o overview lista todos. | Lucas, 2026-10-08 (D-057) | ❌ |
+| R34 | **Aviso de diálogo:** nas sessões abertas pelo Orb, um módulo próprio reconhece diálogos conhecidos do CLI pelo texto da tela e marca o personagem como "esperando o Lucas". **Nunca responde** (R16, ADR 0006). | Lucas, 2026-10-08 (D-060) | ⏳ |
+| R35 | **O Gate nunca reabre sozinho** uma sessão fechada: oferece reabrir num terminal novo e espera a confirmação do Lucas. | Lucas, 2026-10-08 (D-061) | ⏳ |
+| R36 | **Registro local do Orb:** um log próprio (SQLite, na pasta de preferências do Orb) com o que o Orb derivou (eventos do mundo, nomes dos Alter Egos); o conteúdo das sessões continua só nos providers. | Lucas, 2026-10-08 (D-062) | ⏳ Hoje o mundo vive só em memória |
+| R37 | **Cada Alter Ego tem um nome histórico** (tecnologia, física, matemática, filosofia), sorteado sem reposição de uma lista de 50+ ([VISUAL.md](VISUAL.md) §9). O nome é **identidade**, não dado. | Lucas, 2026-10-08 (D-063) | ⏳ Detalhes em Q-NAME-1 a 4 |
 | R32 | **A cidade é retangular.** Os prédios ficam em **ordem alfabética**, com um ar **"aleatório", mas rastreável**: a posição vem de uma estrutura lógica e é sempre a mesma para o mesmo realm. Traçado concreto (delegado): [VISUAL.md](VISUAL.md) §7. | Lucas, 2026-10-08 (D-046, D-047) | ❌ Hoje o chão é um disco e a grade é alfabética simples, sem bairros |
 | R21 | Todo Rooftop Room tem as **5 áreas** do Environment, sempre. | Visão (decidido) | ✅ |
 | R22 | O personagem fica na área da **atividade real** da sessão; esperar o Lucas é visível de longe. | Visão | ✅ |
@@ -113,14 +118,16 @@ ARCHITECTURE.md §3 (Detecção de realms) precisam estar decididas; o índice e
 |---|---|
 | Processo e documentação | P1, P2 |
 | Detecção de realms pelos providers e lista para esconder | R3, R3a, R3b, R3c, R3d |
-| Alter Ego e Perfil (inclui sessões encerradas e recentes) | R5, R6, R10, R28, R28a |
+| Alter Ego e Perfil (nome histórico, sessões encerradas e recentes) | R5, R6, R10, R28, R28a, R37 |
+| Gate e avisos de diálogo | R34, R35 |
+| Registro local do Orb | R36 |
 | Configurações do Orb (tela e arquivo de preferências) | R29 |
 | Inner World (terminal + linha do tempo, retomada) | R9, R10 |
 | Adapters (Claude, Codex, Hermes, opencode) | R7, R8, R13, R14 |
 | Mundo 3D: prédios (altura por LOC, andares, janelas por percentual na cor do git) | R12, R12a, R19, R20, R20a, R20b, R20c, R20d |
 | Mundo 3D: cores (providers, áreas, "esperando") | R20c, R30 |
 | Mundo 3D: cidade (traçado retangular, bairros, posição dos prédios) | R32 |
-| Mundo 3D: personagens dormindo e subagentes sem sinal | R7, R31 |
+| Mundo 3D: personagens dormindo, subagentes sem sinal, sala cheia | R7, R31, R33 |
 | Mundo 3D: personagens, áreas, câmera | R17, R21, R22 |
 | Overview e camadas vivas (Gate, Energy, Weather, Chronicle, Archive) | R18 e [IDEAS.md](IDEAS.md) §6 |
 

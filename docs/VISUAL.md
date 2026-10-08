@@ -8,7 +8,8 @@
 
 Tipo: **Dado** (vem da telemetria) · **Legenda** (código fixo de cores/formas, sempre o mesmo
 significado) · **Cenário** (sem significado, só ambiente) · **Heurística** (deduzido pelo Orb;
-precisa de decisão).
+precisa de decisão) · **Identidade** (o nome do personagem: não é dado e não se apresenta como dado,
+§9).
 Situação: ✅ como está · ❌ precisa mudar · ❓ precisa de decisão.
 
 ## 1. A cidade
@@ -39,6 +40,7 @@ Situação: ✅ como está · ❌ precisa mudar · ❓ precisa de decisão.
 | V-REALM-9 | Anel no centro da sala (lobby) | Legenda | Lugar de quem não está numa área: pensando, parado, esperando, delegando | ✅ |
 | V-REALM-10 | Fileira na frente da sala | Heurística | Sessões "dormindo" (parada há mais de 15 min, ou encerrada). Encerradas **não são excluídas** (R28). **Na sala só ficam as ativas e as dos últimos 10 dias** (configurável, R28a); as demais vão para o Histórico do realm | ✅ Prazo (R28a) e limite de 15 min (R31) decididos |
 | V-REALM-11 | Luz interna da sala, sombras | Cenário | Iluminação | ✅ (R12a) |
+| V-REALM-14 | **"Noite"**: sala do teto apagada | Dado | Nenhuma sessão nos últimos 10 dias (o prazo de sessões recentes, R28a); as janelas seguem mostrando as alterações locais; acende quando surge uma sessão (D-059) | ⏳ |
 
 ## 3. O personagem (Alter Ego) e os subagentes
 
@@ -51,7 +53,9 @@ Situação: ✅ como está · ❌ precisa mudar · ❓ precisa de decisão.
 | V-EGO-5 | Três pontos orbitando a cabeça | Dado | `THINKING` | ✅ |
 | V-EGO-6 | Losango âmbar sobre a cabeça | Dado | A sessão espera o Lucas | ⚠️ A cor do "esperando" muda (R20c, V-PEND-7b) |
 | V-EGO-7 | Translúcido, cabeça baixa, sem halo | Heurística | "Dormindo": sessão recente parada há mais de 15 min (R31) | ✅ |
-| V-EGO-8 | Rótulo: provider · título; atividade · última ação | Dado | Título e modelo do próprio CLI; última ferramenta usada, com o texto do provider | ✅ |
+| V-EGO-8 | Rótulo: provider · título; atividade · última ação | Dado | Título e modelo do próprio CLI; última ferramenta usada, com o texto do provider | ⚠️ Ganha o nome histórico (V-EGO-11; formato em Q-NAME-3) |
+| V-EGO-11 | **Nome histórico** do personagem (ex.: "Einstein") | Identidade | Sorteado sem reposição quando a sessão aparece, fica com a sessão (R37, §9) | ⏳ |
+| V-EGO-12 | Contador **"+N"** numa área | Dado | Personagens além dos 8 visíveis naquela área (R33) | ⏳ |
 | V-EGO-9 | Personagem menor, mesma cor | Dado | Subagente da sessão (Team) | ✅ |
 | V-EGO-10 | Subagente **cinza ("sem sinal")** | Heurística | **Decidido (R7, D-045, D-050):** depois de **5 min sem atividade** e sem sinal do fim, o subagente fica **cinza translúcido, sem halo, com um ícone de sinal cortado** sobre a cabeça, em vez de sumir. O opencode continua cinza **sólido, com halo**. Hoje: some depois de 5 min | ❌ Mudar |
 
@@ -206,10 +210,97 @@ andar a cada 10 linhas), sem comparar um prédio com outro. Aqui a escala també
    sua parcela das linhas do projeto; os arquivos da raiz formam o **térreo**. Cada andar tem pelo
    menos um nível. Se o prédio tiver mais pastas do que níveis (ex.: uma Casa com várias pastas),
    as pastas menores se juntam num andar **"demais pastas"**, e as alterações delas acendem ali (§6).
-7. **Contagem:** linhas dos arquivos que o git acompanha, ignorando o que o `.gitignore` ignora, com
-   o filtro de tipos (ex.: incluir ou não `.md`) da regra R19. As faixas são fixas (rastreáveis).
-8. **Quando recalcular** (a cada commit, a cada edição observada, sob demanda) continua em aberto
-   ([VISION.md](VISION.md) §7).
+7. **Contagem (D-053, D-054, D-056):** linhas **não vazias** dos arquivos que o git acompanha
+   (comentários contam), ignorando o que o `.gitignore` ignora e uma **lista fixa e visível de
+   arquivos gerados** (lockfiles, `*.min.js`, saídas de build versionadas). Padrão: só código, **sem
+   `.md`**; o filtro e as exclusões mudam nas configurações do Orb (R29), por realm ou para todos.
+   As faixas são fixas (rastreáveis).
+8. **Quando recalcular (D-055):** ao abrir o Orb e quando as alterações locais do realm mudam, no
+   máximo uma vez por minuto por realm.
+
+## 9. Os nomes dos Alter Egos (R37)
+
+**Decidido pelo Lucas (2026-10-08, D-063):** o primeiro elemento do **Perfil** é um **nome histórico**:
+um nome famoso da tecnologia, física, matemática ou filosofia, **sorteado** quando a sessão
+aparece. Repetir não é problema, mas o ideal é **consumir todos os nomes antes de um se repetir**
+(sorteio sem reposição, como uma sacola).
+
+**Tipo: Identidade.** O nome **não é dado** de telemetria (não diz nada sobre a sessão) e por isso
+não fere a regra R12: é o nome do personagem, e assim é apresentado.
+
+**Como funciona (proposta, ver Q-NAME-1 a 4):**
+
+1. **Sacola.** Os 60 nomes abaixo entram numa sacola embaralhada. Cada sessão nova tira o próximo.
+   Quando a sacola esvazia, ela é embaralhada de novo. Assim um nome só volta depois de todos os
+   outros terem saído.
+2. **O nome fica com a sessão para sempre**: na sala, no Histórico do realm e ao reabrir a sessão. O
+   Orb guarda a associação sessão → nome no seu registro local (R36).
+3. **Sem gêmeos na sala:** se o nome sorteado já estiver em uso por um personagem visível na mesma
+   sala, tira-se o seguinte.
+4. Só pessoas históricas **já falecidas**, de áreas e épocas variadas, com mulheres e brasileiros.
+
+| # | Nome no personagem | Pessoa | Área |
+|---|---|---|---|
+| 1 | Einstein | Albert Einstein | física |
+| 2 | Newton | Isaac Newton | física |
+| 3 | Galileu | Galileu Galilei | física |
+| 4 | Marie Curie | Marie Curie | física |
+| 5 | Tesla | Nikola Tesla | física |
+| 6 | Oppenheimer | J. Robert Oppenheimer | física |
+| 7 | Feynman | Richard Feynman | física |
+| 8 | Bohr | Niels Bohr | física |
+| 9 | Planck | Max Planck | física |
+| 10 | Faraday | Michael Faraday | física |
+| 11 | Maxwell | James Clerk Maxwell | física |
+| 12 | Schrödinger | Erwin Schrödinger | física |
+| 13 | Heisenberg | Werner Heisenberg | física |
+| 14 | Dirac | Paul Dirac | física |
+| 15 | Fermi | Enrico Fermi | física |
+| 16 | Lise Meitner | Lise Meitner | física |
+| 17 | Hawking | Stephen Hawking | física |
+| 18 | César Lattes | César Lattes | física |
+| 19 | Kepler | Johannes Kepler | astronomia |
+| 20 | Copérnico | Nicolau Copérnico | astronomia |
+| 21 | Euler | Leonhard Euler | matemática |
+| 22 | Gauss | Carl Friedrich Gauss | matemática |
+| 23 | Emmy Noether | Emmy Noether | matemática |
+| 24 | Ramanujan | Srinivasa Ramanujan | matemática |
+| 25 | Gödel | Kurt Gödel | matemática |
+| 26 | Hilbert | David Hilbert | matemática |
+| 27 | Riemann | Bernhard Riemann | matemática |
+| 28 | Poincaré | Henri Poincaré | matemática |
+| 29 | Galois | Évariste Galois | matemática |
+| 30 | Euclides | Euclides | matemática |
+| 31 | Pitágoras | Pitágoras | matemática |
+| 32 | Arquimedes | Arquimedes | matemática |
+| 33 | Al-Khwarizmi | Al-Khwarizmi | matemática |
+| 34 | Hipátia | Hipátia de Alexandria | matemática |
+| 35 | Ada Lovelace | Ada Lovelace | computação |
+| 36 | Turing | Alan Turing | computação |
+| 37 | Babbage | Charles Babbage | computação |
+| 38 | Boole | George Boole | computação |
+| 39 | Shannon | Claude Shannon | computação |
+| 40 | Von Neumann | John von Neumann | computação |
+| 41 | Grace Hopper | Grace Hopper | computação |
+| 42 | Dijkstra | Edsger Dijkstra | computação |
+| 43 | Ritchie | Dennis Ritchie | computação |
+| 44 | McCarthy | John McCarthy | computação |
+| 45 | Katherine Johnson | Katherine Johnson | computação |
+| 46 | Hedy Lamarr | Hedy Lamarr | tecnologia |
+| 47 | Santos Dumont | Alberto Santos Dumont | tecnologia |
+| 48 | Da Vinci | Leonardo da Vinci | tecnologia |
+| 49 | Sócrates | Sócrates | filosofia |
+| 50 | Platão | Platão | filosofia |
+| 51 | Aristóteles | Aristóteles | filosofia |
+| 52 | Tales | Tales de Mileto | filosofia |
+| 53 | Descartes | René Descartes | filosofia |
+| 54 | Pascal | Blaise Pascal | filosofia |
+| 55 | Leibniz | Gottfried Leibniz | filosofia |
+| 56 | Kant | Immanuel Kant | filosofia |
+| 57 | Spinoza | Baruch Spinoza | filosofia |
+| 58 | Wittgenstein | Ludwig Wittgenstein | filosofia |
+| 59 | Confúcio | Confúcio | filosofia |
+| 60 | Simone de Beauvoir | Simone de Beauvoir | filosofia |
 
 ## Decisões pendentes
 

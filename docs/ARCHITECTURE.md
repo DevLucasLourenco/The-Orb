@@ -172,10 +172,24 @@ ticket existir.
 |---|---|
 | D-REALM-1 | ~~Quais realms aparecem?~~ **Decidido (2026-10-07): todos os projetos que algum CLI já registrou (R3a).** Nesta máquina: ~40 pastas (Codex 33, Claude 7, Hermes 7, opencode 2, com sobreposição). Consequência: a descoberta de realms lê os **metadados** de todo o histórico (pasta de cada sessão), não o conteúdo; o conteúdo continua lido de forma incremental. |
 | D-REALM-2 | ~~Sessões fora de projeto?~~ **Decidido: ignoradas (R3b).** ~~Critério?~~ **Decidido (2026-10-08): a pasta do usuário em si e pastas de sistema/temporárias (`AppData`, `Temp`, `Downloads`) são ignoradas; qualquer outra pasta é projeto.** |
-| D-REALM-3 | **Realm sem sessões há muito tempo:** pela D-REALM-1 ele continua na cidade; o Lucas o esconde pela lista (R3c). Em aberto: aparência de um realm parado há muito tempo (luzes apagadas? "noite", como na camada Weather?). |
+| D-REALM-3 | **Realm sem sessões há muito tempo:** pela D-REALM-1 ele continua na cidade; o Lucas o esconde pela lista (R3c). ~~Aparência?~~ **Decidido (2026-10-08, D-059): "noite", a sala do teto apagada quando não há sessão nos últimos 10 dias.** |
 | D-REALM-4 | ~~Esconder/fixar um realm?~~ **Decidido: uma lista com todos os realms, com marcação; desmarcar esconde (R3c).** Fixar não foi pedido. |
 | D-REALM-5 | ~~Persistência local do Orb?~~ **Decidido (2026-10-08): um arquivo de preferências próprio do Orb (R29)**, nunca dos providers, editado pela tela de configurações do Orb: realms escondidos (R3c), prazo das sessões recentes (R28a) e o que vier. Local proposto: `%LOCALAPPDATA%\the-orb\` no Windows (`~/.the-orb/` nos outros). Em aberto: se também guarda a posição dos prédios (V-PEND-5). |
 | D-REALM-6 | ~~Pasta de projeto que não existe mais no disco?~~ **Decidido (2026-10-08): não entra (R3d).** |
+
+### Módulos novos decididos (2026-10-08), ainda sem implementação
+
+- **Leitor de diálogos** (R34, D-060): separado do Terminal Host (que só transporta bytes e não
+  interpreta o que o CLI imprime). Só nas sessões abertas pelo Orb, lê a tela do terminal e
+  reconhece diálogos **conhecidos** (tabela por provider: atualização, confiança de diretório,
+  revisão de hooks…). Ao reconhecer, emite um sinal de espera; **nunca envia teclas**
+  ([ADR 0006](adr/0006-o-orb-nunca-responde-dialogos.md)).
+- **Registro local do Orb** (R36, D-062): SQLite na pasta de preferências do Orb, com o que o Orb
+  derivou (eventos do mundo para o Chronicle, associação sessão → nome histórico, preferências).
+  Nada do conteúdo das sessões é copiado; ele continua nos providers.
+- **Contador de linhas** (R19, D-053 a D-056): faz parte dos Probes; conta linhas não vazias dos
+  arquivos acompanhados pelo git, sem os ignorados e sem os gerados da lista de exclusões, e
+  recalcula ao abrir e quando as alterações locais mudam (até 1×/min por realm). Somente leitura.
 
 ## 4. Robustez
 
