@@ -108,3 +108,22 @@ Ficam no documento do assunto; aqui só o índice.
 | D-REALM-3 | Aparência de um realm parado há muito tempo | [ARCHITECTURE.md](ARCHITECTURE.md) |
 | R6 | O Perfil do Alter Ego | [VISION.md](VISION.md) §7 |
 | — | Questões de [VISION.md](VISION.md) §7 e dos adapters ([CODEX.md](adapters/CODEX.md) §10, risco do observador com aprovações) | — |
+
+### Próxima rodada (aberta em 2026-10-08)
+
+Perguntas levantadas a partir de [VISION.md](VISION.md) §7 e das decisões já tomadas, cada uma com
+uma proposta. Ao decidir, a resposta vira um D-NNN acima e a linha fica riscada.
+
+| Id | Pergunta | Proposta |
+|---|---|---|
+| Q-LOC-1 | **O que conta como linha** para a altura (R19): linhas em branco e comentários contam? | Contam as linhas **não vazias**; comentários contam (separá-los exigiria entender cada linguagem) |
+| Q-LOC-2 | **Arquivos gerados que estão no git** (lockfiles como `package-lock.json`, `*.min.js`, saídas de build versionadas) entram? | Não: uma lista fixa e visível de exclusões conhecidas, além do `.gitignore`, ajustável nas configurações (R29) |
+| Q-LOC-3 | **Quando recalcular** as linhas e a classe do prédio? | Ao abrir o Orb e quando as alterações locais do realm mudam, no máximo uma vez por minuto por realm |
+| Q-LOC-4 | **Filtro de tipos** (ex.: `.md`): qual o padrão e onde se muda? | Padrão: só código, sem `.md`; muda-se na tela de configurações (R29), por realm ou para todos |
+| Q-ROOM-1 | **Sala cheia:** o Rooftop Room tem tamanho fixo. Com muitos Alter Egos e subagentes numa área, o que acontece? | A sala não cresce; cada área mostra até 8 personagens e um contador "+N"; o overview lista todos |
+| Q-ROOM-2 | **Nome definitivo** do Rooftop Room (era provisório) | Manter "Rooftop Room" |
+| D-REALM-3 | **Realm parado há muito tempo** (nenhuma sessão nos últimos 10 dias): como aparece? | "Noite": a sala do teto apagada (sem personagens), as janelas continuam mostrando as alterações locais; volta a acender quando surge uma sessão |
+| Q-UI-1 | **Terminal parado num diálogo** do CLI (atualização, confiança…): como o Orb avisa, sem nunca responder (R16)? | Só nas sessões abertas pelo Orb: um módulo próprio (não o Terminal Host, que não interpreta bytes) reconhece os diálogos conhecidos pelo texto da tela e marca o personagem como "esperando o Lucas" (magenta) |
+| Q-GATE-1 | **Gate para uma sessão fechada:** escrever para um Alter Ego cuja sessão terminou | O Gate oferece **reabrir** (retomar) a sessão num terminal novo, com confirmação do Lucas; nunca reabre sozinho |
+| Q-DATA-1 | **Persistência:** o Orb guarda o próprio log de eventos (base do Chronicle) ou só lê os providers a cada início? | Um log local do Orb (SQLite, na pasta de preferências do Orb), só com o que o Orb derivou; o conteúdo continua nos providers |
+| R6 | **Perfil do Alter Ego** | Precisa da sua visão: o que você imagina que dá identidade a um personagem além da sessão? |
