@@ -51,6 +51,10 @@ implementação só volta depois deles (regra P1).
 | D-037 | 2026-10-08 | **Cores dos providers:** Claude **laranja**, Codex **azul**, Hermes **amarelo**, opencode **cinza** | Lucas | R30, V-EGO-1 |
 | D-038 | 2026-10-08 | **Janelas por percentual:** cada janela acesa representa **x% das alterações locais** do realm, para a fachada ficar harmônica | Lucas | R20d, VISUAL.md §6 |
 | D-039 | 2026-10-08 | **Uma alteração nunca fica dividida entre duas janelas** | Lucas | R20d, VISUAL.md §6 |
+| D-040 | 2026-10-08 | **Áreas sem cor própria:** piso neutro, cada área identificada por **ícone e nome** (e um padrão no piso). As cores ficam só para janelas (git), personagens (provider) e "esperando" (magenta). Os providers mantêm as cores escolhidas, em tons saturados | Lucas | R20c, V-PEND-7c, V-REALM-8 |
+| D-041 | 2026-10-08 | **Peso de uma alteração = linhas alteradas** (inseridas + removidas; arquivo novo = linhas dele; apagado = linhas que tinha; arquivo binário = 1) | Lucas | R20d, V-PEND-8, VISUAL.md §6 |
+| D-042 | 2026-10-08 | **x = 5%** (configurável na tela do Orb, R29) | Lucas | R20d, V-PEND-9 |
+| D-043 | 2026-10-08 | **A janela só tem dois estados: acesa ou apagada.** Não esmaece com o tempo | Lucas | R20, V-PEND-1c |
 
 ## Decisões revistas
 
@@ -61,10 +65,12 @@ implementação só volta depois deles (regra P1).
 | — | Painel 2D de validação como cliente do MVP | D-016 (mundo 3D) |
 | — | Godot 4 como cliente 3D | D-016 (web, Three.js); `clients/godot/` fica como alternativa |
 | — | Realms informados por caminho (`--realm`, `--root`) | D-018 (detectados pelos providers) |
-| — | Janelas "esmaecem com o tempo" após uma edição (visão original) | D-028: a janela mostra a alteração local enquanto ela existir; se ainda esmaece por recência está em V-PEND-1 |
+| — | Janelas "esmaecem com o tempo" após uma edição (visão original) | D-028 e D-043: a janela mostra a alteração local enquanto ela existir, só acesa ou apagada |
 | D-020 (parte) | Cor da janela = cor do provider que editou (proposta) | D-020 e D-026: cores do git |
 | D-028 (parte) | "Cada janela é um arquivo" | D-038 e D-039: cada janela é uma parcela de x% das alterações locais; um arquivo alterado nunca é dividido |
 | D-037 | Cores anteriores dos providers (Claude laranja-coral, Codex verde-água, Hermes violeta, opencode azul) | D-037 |
+| D-036 (parte) | Áreas em tons frios e neutros | D-040: áreas sem cor própria (ícone e nome) |
+| — | Janela "esmaece com o tempo" (visão original) | D-043: só acesa ou apagada |
 
 ## Pendências que ainda precisam de decisão
 
@@ -72,11 +78,12 @@ Ficam no documento do assunto; aqui só o índice.
 
 | Id | Pergunta | Onde |
 |---|---|---|
-| V-PEND-1c | A janela também esmaece pela recência da alteração, ou só existe acesa/apagada? (Milhares de arquivos: resolvido pelos percentuais, D-038) | [VISUAL.md](VISUAL.md) |
+| V-PEND-1c | ~~A janela também esmaece pela recência?~~ Decidido em D-043: só acesa ou apagada | [VISUAL.md](VISUAL.md) |
 | V-PEND-2b | A partir de quanto tempo parada uma sessão recente aparece "dormindo" dentro da sala? | [VISUAL.md](VISUAL.md) |
-| V-PEND-7c | As novas cores dos providers colidem: Hermes amarelo × âmbar de "modificado" do git; Codex azul e opencode cinza × áreas em tons frios | [VISUAL.md](VISUAL.md) |
-| V-PEND-8 | O que é o "tamanho" de uma alteração para os percentuais: linhas alteradas ou um por arquivo? | [VISUAL.md](VISUAL.md) §6 |
-| V-PEND-9 | O valor de x (proposta: 5%, configurável no Orb) | [VISUAL.md](VISUAL.md) §6 |
+| V-PEND-7c | ~~As novas cores dos providers colidem~~ Decidido em D-040: áreas sem cor própria | [VISUAL.md](VISUAL.md) |
+| V-PEND-7d | Os tons exatos (hex) dos providers e do magenta, e os ícones das 5 áreas | [VISUAL.md](VISUAL.md) §5 |
+| V-PEND-8 | ~~Peso de uma alteração~~ Decidido em D-041: linhas alteradas | [VISUAL.md](VISUAL.md) §6 |
+| V-PEND-9 | ~~Valor de x~~ Decidido em D-042: 5% | [VISUAL.md](VISUAL.md) §6 |
 | V-PEND-3 | Subagente sem sinal de fim no nível 0 | [VISUAL.md](VISUAL.md) |
 | V-PEND-5 | Posição dos prédios na cidade | [VISUAL.md](VISUAL.md) |
 | V-PEND-6 | Escala da altura | [VISUAL.md](VISUAL.md) |

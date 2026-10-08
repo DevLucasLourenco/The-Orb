@@ -89,7 +89,8 @@ Archive · Perfil do Alter Ego · persistência em banco · multiusuário.
    sessões dos últimos 10 dias na sala (R28a), janela = arquivo com alterações locais (R20b),
    critério de "fora de projeto" (R3b), arquivo de preferências e tela de configurações do Orb (R29),
    projeto inexistente não entra (R3d), Histórico do realm, cores dos providers (R30), janelas por
-   percentual (R20d). O índice das que ainda faltam está em [DECISIONS.md](DECISIONS.md).
+   percentual com peso = linhas alteradas e x = 5% (R20d), áreas sem cor própria (R20c), janela só
+   acesa ou apagada (R20). O índice das que ainda faltam está em [DECISIONS.md](DECISIONS.md).
 3. Criar os tickets por épico (RULES.md, "Do documento aos tickets"), **quando o Lucas pedir** (P5).
 
 Depois, pela ordem dos tickets:

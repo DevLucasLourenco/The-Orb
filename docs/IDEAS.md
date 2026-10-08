@@ -35,7 +35,7 @@
 | Tela de configurações do Orb | Preferências do Lucas (realms escondidos, prazo das sessões recentes) num arquivo próprio do Orb | **Decidido** (R29) |
 | Sessões recentes na sala, antigas no Histórico do realm | Na sala, ativas + últimos 10 dias (configurável); as demais no Histórico do realm | **Decidido** (R28a) |
 | Cores novas dos providers | Claude laranja, Codex azul, Hermes amarelo, opencode cinza | **Decidido** (R30); colisões em V-PEND-7c |
-| Áreas identificadas por ícone e nome, sem cor | Libera as cores para git (janelas), providers (personagens) e "esperando" | Pesquisa (proposta da V-PEND-7c) |
+| Áreas identificadas por ícone e nome, sem cor | Libera as cores para git (janelas), providers (personagens) e "esperando" | **Decidido** (R20c, D-040); ícones em V-PEND-7d |
 | Lista de realms com marcação | O Lucas desmarca um realm para escondê-lo da cidade; preferência guardada pelo Orb | **Decidido** (R3c); ticket a criar |
 | Sessões encerradas permanecem | O Alter Ego não é excluído quando a sessão termina | **Decidido** (R28); forma de mostrar em V-PEND-2 |
 | Cenário declarado | Céu, chão, grade, estrelas e luz são cenário, declarados em VISUAL.md | **Decidido** (R12a) |
