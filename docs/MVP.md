@@ -88,8 +88,8 @@ Archive · Perfil do Alter Ego · persistência em banco · multiusuário.
    2026-10-08: paleta do git do VS Code e troca das cores das áreas e do "esperando" (R20a, R20c),
    sessões dos últimos 10 dias na sala (R28a), janela = arquivo com alterações locais (R20b),
    critério de "fora de projeto" (R3b), arquivo de preferências e tela de configurações do Orb (R29),
-   projeto inexistente não entra (R3d). O índice das que ainda faltam está em
-   [DECISIONS.md](DECISIONS.md).
+   projeto inexistente não entra (R3d), Histórico do realm, cores dos providers (R30), janelas por
+   percentual (R20d). O índice das que ainda faltam está em [DECISIONS.md](DECISIONS.md).
 3. Criar os tickets por épico (RULES.md, "Do documento aos tickets"), **quando o Lucas pedir** (P5).
 
 Depois, pela ordem dos tickets:

@@ -46,6 +46,11 @@ implementação só volta depois deles (regra P1).
 | D-032 | 2026-10-08 | As **configurações do Orb ficam dentro do Orb** (uma tela de configurações), não em parâmetros de linha de comando | Lucas | R29 |
 | D-033 | 2026-10-08 | Toda decisão fica registrada **neste documento** e aplicada no documento do assunto | Lucas | este arquivo, P1 |
 | D-034 | 2026-10-08 | **Os tickets ainda não serão escritos**: a fase é de levantamento de ideias e decisões | Lucas | P1, [RULES.md](RULES.md) (Do documento aos tickets) |
+| D-035 | 2026-10-08 | A lista de sessões antigas de um realm se chama **Histórico do realm** | Lucas | R28a, glossário (o **Chronicle** deixa de evitar a palavra "histórico") |
+| D-036 | 2026-10-08 | **Áreas em tons frios e neutros**, e **"esperando o Lucas" em magenta pulsante** | Lucas | R20c, V-PEND-7b (revisto por V-PEND-7c) |
+| D-037 | 2026-10-08 | **Cores dos providers:** Claude **laranja**, Codex **azul**, Hermes **amarelo**, opencode **cinza** | Lucas | R30, V-EGO-1 |
+| D-038 | 2026-10-08 | **Janelas por percentual:** cada janela acesa representa **x% das alterações locais** do realm, para a fachada ficar harmônica | Lucas | R20d, VISUAL.md §6 |
+| D-039 | 2026-10-08 | **Uma alteração nunca fica dividida entre duas janelas** | Lucas | R20d, VISUAL.md §6 |
 
 ## Decisões revistas
 
@@ -58,6 +63,8 @@ implementação só volta depois deles (regra P1).
 | — | Realms informados por caminho (`--realm`, `--root`) | D-018 (detectados pelos providers) |
 | — | Janelas "esmaecem com o tempo" após uma edição (visão original) | D-028: a janela mostra a alteração local enquanto ela existir; se ainda esmaece por recência está em V-PEND-1 |
 | D-020 (parte) | Cor da janela = cor do provider que editou (proposta) | D-020 e D-026: cores do git |
+| D-028 (parte) | "Cada janela é um arquivo" | D-038 e D-039: cada janela é uma parcela de x% das alterações locais; um arquivo alterado nunca é dividido |
+| D-037 | Cores anteriores dos providers (Claude laranja-coral, Codex verde-água, Hermes violeta, opencode azul) | D-037 |
 
 ## Pendências que ainda precisam de decisão
 
@@ -65,12 +72,15 @@ Ficam no documento do assunto; aqui só o índice.
 
 | Id | Pergunta | Onde |
 |---|---|---|
-| V-PEND-1c | A janela também esmaece pela recência da alteração, ou só existe acesa/apagada? E prédios com milhares de arquivos? | [VISUAL.md](VISUAL.md) |
+| V-PEND-1c | A janela também esmaece pela recência da alteração, ou só existe acesa/apagada? (Milhares de arquivos: resolvido pelos percentuais, D-038) | [VISUAL.md](VISUAL.md) |
 | V-PEND-2b | A partir de quanto tempo parada uma sessão recente aparece "dormindo" dentro da sala? | [VISUAL.md](VISUAL.md) |
+| V-PEND-7c | As novas cores dos providers colidem: Hermes amarelo × âmbar de "modificado" do git; Codex azul e opencode cinza × áreas em tons frios | [VISUAL.md](VISUAL.md) |
+| V-PEND-8 | O que é o "tamanho" de uma alteração para os percentuais: linhas alteradas ou um por arquivo? | [VISUAL.md](VISUAL.md) §6 |
+| V-PEND-9 | O valor de x (proposta: 5%, configurável no Orb) | [VISUAL.md](VISUAL.md) §6 |
 | V-PEND-3 | Subagente sem sinal de fim no nível 0 | [VISUAL.md](VISUAL.md) |
 | V-PEND-5 | Posição dos prédios na cidade | [VISUAL.md](VISUAL.md) |
 | V-PEND-6 | Escala da altura | [VISUAL.md](VISUAL.md) |
-| V-PEND-7b | As novas cores das áreas e do "esperando o Lucas" | [VISUAL.md](VISUAL.md) |
+| V-PEND-7b | ~~As novas cores das áreas e do "esperando o Lucas"~~ decidido em D-036, revisto pela V-PEND-7c | [VISUAL.md](VISUAL.md) |
 | D-REALM-3 | Aparência de um realm parado há muito tempo | [ARCHITECTURE.md](ARCHITECTURE.md) |
 | R6 | O Perfil do Alter Ego | [VISION.md](VISION.md) §7 |
 | — | Questões de [VISION.md](VISION.md) §7 e dos adapters ([CODEX.md](adapters/CODEX.md) §10, risco do observador com aprovações) | — |

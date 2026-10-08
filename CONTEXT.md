@@ -52,7 +52,7 @@ _Evite_: cenário, mapa
 Uma **sessão** de um CLI de IA (Claude Code, Codex, Hermes, opencode) em um realm, desenhada como um
 personagem: o **líder** da sua Team. Uma sessão é um Alter Ego; duas sessões são dois Alter
 Egos. O provider e o modelo pertencem à sessão e não mudam. Quando a sessão termina, o Alter Ego
-**não é excluído**: fica na sala enquanto for recente e depois numa lista de sessões antigas do realm.
+**não é excluído**: fica na sala enquanto for recente e depois no **Histórico do realm**.
 _Evite_: agente principal, persona do provider, bot
 
 **Perfil** *(em aberto)*:
@@ -141,7 +141,12 @@ _Evite_: memória (sozinho), knowledge base
 
 **Chronicle**:
 A história do Orb reproduzível no tempo: a cidade como era em qualquer momento.
-_Evite_: histórico, log (como nome do conceito)
+_Evite_: log, linha do tempo da cidade (e não confundir com o **Histórico do realm**)
+
+**Histórico do realm**:
+A lista das sessões antigas de um realm: encerradas ou paradas há mais que o prazo de sessões
+recentes (10 dias, configurável). Nenhuma sessão some; as recentes ficam na sala.
+_Evite_: arquivo (colide com **Archive**), memorial, lixeira
 
 **Weather**:
 O clima de um realm, que mostra a saúde dele (CI e testes).

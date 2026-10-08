@@ -48,7 +48,7 @@ Situação: ✅ cumprida · ⚠️ parcial ou com heurística não decidida · �
 | R7 | Os **subagentes** de uma sessão aparecem junto dela, como a Team. | Lucas | ⚠️ No nível 0 o fim de um subagente em segundo plano não é observável; o cliente esconde subagentes sem atividade há 5 min, uma heurística que não foi decidida (ver VISUAL.md, V-PEND-3) |
 | R8 | Os 4 CLIs instalados são providers: **claude, codex, hermes, opencode**. | Lucas | ✅ |
 | R28 | **Sessões encerradas não são excluídas** do mundo: o Alter Ego continua existindo depois que a sessão termina. | Lucas, 2026-10-07 | ⚠️ Hoje só aparecem as sessões dos últimos `--lookback` minutos; as encerradas "dormem" na fileira da frente |
-| R28a | **Na sala ficam as sessões ativas e as recentes: últimos 10 dias**, prazo **configurável dentro do Orb** (R29). As demais ficam numa **lista de sessões antigas do realm** (nome a decidir: "arquivo" colide com o termo Archive), acessível pelo overview, sem sumir. | Lucas, 2026-10-08 | ❌ Hoje o prazo é `--lookback` em minutos, na linha de comando |
+| R28a | **Na sala ficam as sessões ativas e as recentes: últimos 10 dias**, prazo **configurável dentro do Orb** (R29). As demais ficam no **Histórico do realm** (a lista de sessões antigas), acessível pelo overview, sem sumir. | Lucas, 2026-10-08 | ❌ Hoje o prazo é `--lookback` em minutos, na linha de comando |
 
 ## 3. Inner World
 
@@ -78,8 +78,10 @@ Situação: ✅ cumprida · ⚠️ parcial ou com heurística não decidida · �
 | R19 | **Altura do prédio = linhas de código** do projeto, sempre ignorando o `.gitignore`, com filtro (ex.: incluir `.md`). | Visão (decidido) | ❌ Todos os prédios têm a mesma altura |
 | R20 | **Andares = pastas de primeiro nível; janelas acendem onde houve edição recente** e esmaecem com o tempo. | Visão (camadas vivas) | ❌ As janelas atuais são decoração aleatória e contradizem esta regra |
 | R20a | **A cor de uma janela acesa é a cor do tipo de alteração no git**, com a **paleta de alterações do git do VS Code** (inserção, modificação, remoção, não rastreado, renomeado, conflito). Valores em [VISUAL.md](VISUAL.md) §5. | Lucas, 2026-10-07 e 2026-10-08 | ❌ |
-| R20b | **Cada janela é um arquivo do projeto**, e ela mostra as **alterações locais** dele (o estado do repositório na máquina: modificado, novo, apagado…). Ler esse estado **nunca grava nada** no projeto nem no `.git` (R16). | Lucas, 2026-10-08 | ❌ |
-| R20c | As cores das **áreas** e do sinal de **"esperando o Lucas"** mudam para não colidir com a paleta do git (R20a). | Lucas, 2026-10-08 | ❌ Hoje Testing Lab é verde, Code Review é amarelo e "esperando" é âmbar |
+| R20b | As janelas mostram as **alterações locais** do projeto (o estado do repositório na máquina: modificado, novo, apagado…). Uma **alteração** é um arquivo com alteração local. Ler esse estado **nunca grava nada** no projeto nem no `.git` (R16). ~~Cada janela é um arquivo~~ (revisto por R20d). | Lucas, 2026-10-08 | ❌ |
+| R20d | **Janelas por percentual:** cada janela acesa representa **x% das alterações locais** do realm, para a fachada ficar harmônica, e **uma alteração nunca fica dividida entre duas janelas**. Como as alterações viram janelas: [VISUAL.md](VISUAL.md) §6. | Lucas, 2026-10-08 | ❌ |
+| R20c | As cores das **áreas** e do sinal de **"esperando o Lucas"** mudam para não colidir com a paleta do git (R20a): áreas em tons frios e neutros, "esperando" em **magenta pulsante**. As cores novas dos providers (R30) reabrem a escolha das áreas: V-PEND-7c. | Lucas, 2026-10-08 | ❌ Hoje Testing Lab é verde, Code Review é amarelo e "esperando" é âmbar |
+| R30 | **Cores dos providers** (corpo e halo do personagem): **Claude laranja · Codex azul · Hermes amarelo · opencode cinza**. | Lucas, 2026-10-08 | ❌ Hoje Codex é verde-água, Hermes violeta e opencode azul |
 | R21 | Todo Rooftop Room tem as **5 áreas** do Environment, sempre. | Visão (decidido) | ✅ |
 | R22 | O personagem fica na área da **atividade real** da sessão; esperar o Lucas é visível de longe. | Visão | ✅ |
 
@@ -113,7 +115,8 @@ ARCHITECTURE.md §3 (Detecção de realms) precisam estar decididas; o índice e
 | Configurações do Orb (tela e arquivo de preferências) | R29 |
 | Inner World (terminal + linha do tempo, retomada) | R9, R10 |
 | Adapters (Claude, Codex, Hermes, opencode) | R7, R8, R13, R14 |
-| Mundo 3D: prédios (altura por LOC, andares, janelas = arquivos na cor do git) | R12, R12a, R19, R20, R20a, R20b, R20c |
+| Mundo 3D: prédios (altura por LOC, andares, janelas por percentual na cor do git) | R12, R12a, R19, R20, R20a, R20b, R20c, R20d |
+| Mundo 3D: cores (providers, áreas, "esperando") | R20c, R30 |
 | Mundo 3D: personagens, áreas, câmera | R17, R21, R22 |
 | Overview e camadas vivas (Gate, Energy, Weather, Chronicle, Archive) | R18 e [IDEAS.md](IDEAS.md) §6 |
 

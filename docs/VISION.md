@@ -119,7 +119,7 @@ Room tem as cinco áreas do Environment, sem exceção, mesmo que o realm nunca 
 - O Alter Ego **persiste** depois que o terminal fecha, porque a sessão fica gravada pelo provider.
   Reabri-lo é retomar a sessão num terminal novo. **Sessões encerradas não são excluídas do mundo**
   (regra R28). Na sala ficam as ativas e as dos **últimos 10 dias** (configurável no Orb); as demais
-  ficam numa lista de sessões antigas do realm (regra R28a).
+  ficam no **Histórico do realm** (regra R28a).
 - Stats e nível (XP), quando existirem, vêm só de histórico real (testes, PRs, retrabalho,
   tokens, tempo). Nunca inventados.
 
@@ -163,9 +163,10 @@ Nos dois modos a telemetria é a mesma (adapter → eventos nativos + sinais de 
 Tudo abaixo é visualização de dados reais, somente leitura (princípio 5).
 
 - **Andares e janelas acesas.** Andares = módulos/diretórios de primeiro nível (respeitando o
-  `.gitignore`). **Cada janela é um arquivo** e mostra as **alterações locais** dele, na **cor do
-  tipo de alteração no git** (paleta do VS Code): regras R20a e R20b. Se também esmaece pela
-  recência está em [VISUAL.md](VISUAL.md), V-PEND-1c.
+  `.gitignore`). As janelas mostram as **alterações locais** do projeto, na **cor do tipo de
+  alteração no git** (paleta do VS Code): **cada janela acesa representa x% das alterações**, e
+  nenhuma alteração fica dividida entre duas janelas (regras R20a, R20b, R20d; detalhe em
+  [VISUAL.md](VISUAL.md) §6).
 - **Weather.** CI passando = céu limpo; CI falhando = tempestade; testes falhando =
   rachaduras/andaimes; realm parado = noite.
 - **Chronicle.** Arrastar a linha do tempo e ver a cidade como era. Funciona porque o estado do
@@ -216,7 +217,7 @@ com o zoom (realm → personagens → card detalhado).
   Depende de o id da sessão mudar em cada provider (a verificar).
 - ~~O que acontece com o personagem quando a sessão termina?~~ **Decidido: não é excluído (R28).**
   ~~Onde ficam as encerradas e as antigas?~~ **Decidido: na sala, as dos últimos 10 dias
-  (configurável); as demais numa lista do realm (R28a).**
+  (configurável); as demais no Histórico do realm (R28a).**
 - O Gate escrevendo para um Alter Ego cuja sessão está fechada: recusa, ou reabre a sessão?
 
 **Mundo e interface:**
