@@ -5,7 +5,7 @@ de um agente de IA é um personagem que trabalha nele. Se um termo muda de signi
 arquivo muda primeiro; código, protocolo e interface usam estes termos exatamente assim.
 
 Este arquivo é **só glossário**. Visão e princípios: [docs/VISION.md](docs/VISION.md). Regras:
-[docs/RULES.md](docs/RULES.md). Decisões: [docs/adr/](docs/adr/). Contratos técnicos:
+[docs/RULES.md](docs/RULES.md). Decisões em ordem: [docs/DECISIONS.md](docs/DECISIONS.md). Decisões: [docs/adr/](docs/adr/). Contratos técnicos:
 [docs/PROTOCOL.md](docs/PROTOCOL.md). O que cada elemento visual significa: [docs/VISUAL.md](docs/VISUAL.md).
 
 Última atualização: 2026-10-07
@@ -52,7 +52,7 @@ _Evite_: cenário, mapa
 Uma **sessão** de um CLI de IA (Claude Code, Codex, Hermes, opencode) em um realm, desenhada como um
 personagem: o **líder** da sua Team. Uma sessão é um Alter Ego; duas sessões são dois Alter
 Egos. O provider e o modelo pertencem à sessão e não mudam. Quando a sessão termina, o Alter Ego
-**não é excluído**.
+**não é excluído**: fica na sala enquanto for recente e depois numa lista de sessões antigas do realm.
 _Evite_: agente principal, persona do provider, bot
 
 **Perfil** *(em aberto)*:

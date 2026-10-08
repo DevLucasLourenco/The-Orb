@@ -30,7 +30,10 @@
 | Observador por realm | Os 4 providers observados ao mesmo tempo em cada projeto; sessões de fora do Orb aparecem sozinhas | **Feito** |
 | Realms configurados por caminho (`--realm`, `--root`) | O Lucas informa as pastas dos projetos | **Revisto**: viola R3; os realms são detectados pelos providers |
 | Detecção de realms pelos providers | A cidade se monta sozinha a partir das sessões que os 4 CLIs registram; entram todos os projetos já registrados | **Decidido** (R3, R3a); pendências D-REALM-2, 3, 5, 6; ticket a criar |
-| Ignorar sessões fora de projeto | Pasta do usuário, `Temp`, `Downloads` não viram realm | **Decidido** (R3b); critério em D-REALM-2 |
+| Ignorar sessões fora de projeto | Pasta do usuário, `Temp`, `Downloads` não viram realm | **Decidido** (R3b, critério incluído) |
+| Projeto apagado do disco | Pasta que não existe mais, mas está no histórico dos CLIs | **Decidido**: não entra (R3d) |
+| Tela de configurações do Orb | Preferências do Lucas (realms escondidos, prazo das sessões recentes) num arquivo próprio do Orb | **Decidido** (R29) |
+| Sessões recentes na sala, antigas numa lista | Na sala, ativas + últimos 10 dias (configurável); as demais numa lista do realm | **Decidido** (R28a) |
 | Lista de realms com marcação | O Lucas desmarca um realm para escondê-lo da cidade; preferência guardada pelo Orb | **Decidido** (R3c); ticket a criar |
 | Sessões encerradas permanecem | O Alter Ego não é excluído quando a sessão termina | **Decidido** (R28); forma de mostrar em V-PEND-2 |
 | Cenário declarado | Céu, chão, grade, estrelas e luz são cenário, declarados em VISUAL.md | **Decidido** (R12a) |
@@ -106,7 +109,7 @@
 
 | Ideia | Resumo | Status |
 |---|---|---|
-| Janelas acesas e andares | Andares = módulos; janelas acendem onde houve alteração recente, **na cor do tipo de alteração no git** | Próximo (1ª); cor decidida (R20a); hoje as janelas são aleatórias e violam R12 (V-REALM-3); conflito de paleta em V-PEND-7 |
+| Janelas acesas e andares | Andares = módulos; **cada janela é um arquivo** com as **alterações locais** dele, **na cor do tipo de alteração no git** (paleta do VS Code) | Próximo (1ª); decidido (R20, R20a, R20b, R20c); hoje as janelas são aleatórias e violam R12 (V-REALM-3) |
 | Gate | Vê o que espera o Lucas e escreve a qualquer Alter Ego pelo terminal dele | Próximo (2ª; a parte de **ver** já existe: feixe âmbar no prédio e contagem no topo) |
 | Team | Alter Ego + subagentes agrupados e endereçáveis | **Feito** em parte (subagentes como personagens menores na sala) |
 | Orb como centralizador de IAs | Inner World e Gate: duas portas para o mesmo terminal | **Decidido** |

@@ -3,9 +3,10 @@
 > Tudo o que o Lucas pediu, como **regras numeradas e verificáveis**. É a fonte dos tickets: todo
 > ticket cita as regras que cumpre, e uma regra só está "cumprida" quando a implementação a respeita
 > e existe forma de verificar. Vocabulário: [CONTEXT.md](../CONTEXT.md) · Visão: [VISION.md](VISION.md)
-> · O que cada elemento visual significa: [VISUAL.md](VISUAL.md).
+> · O que cada elemento visual significa: [VISUAL.md](VISUAL.md) · Todas as decisões, em ordem:
+> [DECISIONS.md](DECISIONS.md).
 
-Última atualização: 2026-10-07
+Última atualização: 2026-10-08
 
 ## Como usar este documento
 
@@ -27,6 +28,8 @@ Situação: ✅ cumprida · ⚠️ parcial ou com heurística não decidida · �
 | P1 | **Documentar → criar tickets → implementar**, nessa ordem. Nada é implementado sem a regra escrita e o ticket criado. | Lucas, 2026-10-07 | ❌ O mundo 3D v1, o Observatório e o `--root` foram implementados sem ticket nem especificação visual |
 | P2 | Pedido que conflita com uma regra existente é apontado **antes** de implementar, e a decisão fica registrada. | Lucas, 2026-10-07 | ⚠️ Antes: janelas aleatórias contradiziam R12 e R20 sem aviso. Agora em uso: o conflito das cores do git com a legenda foi apontado (VISUAL.md, V-PEND-7) |
 | P3 | Nenhuma ideia é apagada; muda de status com motivo. | [IDEAS.md](IDEAS.md) | ✅ |
+| P4 | **Toda decisão é registrada** em [DECISIONS.md](DECISIONS.md) (data, quem, onde se aplica) e aplicada no documento do assunto. | Lucas, 2026-10-08 | ✅ |
+| P5 | **Fase atual: levantamento de ideias e decisões.** Os tickets só são escritos quando o Lucas pedir. | Lucas, 2026-10-08 | ✅ |
 
 ## 2. Identidade e domínio
 
@@ -36,14 +39,16 @@ Situação: ✅ cumprida · ⚠️ parcial ou com heurística não decidida · �
 | R2 | **Realm = um projeto = um prédio.** | Visão | ✅ |
 | R3 | **Os realms são detectados pelos providers.** Um realm existe porque algum provider tem sessões naquele projeto; o Lucas nunca precisa informar caminhos. Detalhe em [ARCHITECTURE.md](ARCHITECTURE.md) §3 (Detecção de realms). | Lucas, 2026-10-07 | ❌ Hoje os realms vêm de `--root`/`--realm`; o `--root` ainda cria prédios para pastas sem nenhuma sessão |
 | R3a | **Todos os projetos que algum CLI já registrou** viram realms, não só os com sessão recente. | Lucas, 2026-10-07 | ❌ Hoje só pastas informadas, e sessões só dos últimos `--lookback` minutos |
-| R3b | **Sessões fora de projeto são ignoradas** (ex.: a pasta do usuário, `Temp`, `Downloads`): não viram realm. O critério do que é "fora de projeto" está em D-REALM-2 ([ARCHITECTURE.md](ARCHITECTURE.md)). | Lucas, 2026-10-07 | ⏳ |
+| R3b | **Sessões fora de projeto são ignoradas**: não viram realm. "Fora de projeto" = **a pasta do usuário em si e pastas de sistema ou temporárias** (`AppData`, `Temp`, `Downloads`); qualquer outra pasta é projeto. | Lucas, 2026-10-07 e 2026-10-08 | ⏳ |
+| R3d | **Projeto cuja pasta não existe mais no disco não entra** na cidade, mesmo que esteja no histórico dos CLIs. | Lucas, 2026-10-08 | ⏳ |
 | R3c | **O Lucas pode esconder realms**: uma lista com todos os realms detectados, cada um com uma marca; desmarcado = não aparece na cidade. A escolha é do **Orb** (guardada localmente pelo Orb) e nunca altera nada nos providers. | Lucas, 2026-10-07 | ⏳ |
 | R4 | Um realm pode ter sessões de **vários providers ao mesmo tempo** (ex.: Claude e Codex). | Lucas | ✅ |
 | R5 | **Alter Ego = uma sessão.** Carrega e identifica **sozinho** o seu provider, e o título e o modelo vêm do próprio CLI. | Lucas, [ADR 0001](adr/0001-alter-ego-e-uma-sessao.md) | ✅ |
 | R6 | O **Perfil** do Alter Ego (identidade além da sessão) está em aberto e **não é implementado** antes de decidido. | Lucas | ✅ (não implementado) |
 | R7 | Os **subagentes** de uma sessão aparecem junto dela, como a Team. | Lucas | ⚠️ No nível 0 o fim de um subagente em segundo plano não é observável; o cliente esconde subagentes sem atividade há 5 min, uma heurística que não foi decidida (ver VISUAL.md, V-PEND-3) |
 | R8 | Os 4 CLIs instalados são providers: **claude, codex, hermes, opencode**. | Lucas | ✅ |
-| R28 | **Sessões encerradas não são excluídas** do mundo: o Alter Ego continua existindo depois que a sessão termina. Como mostrá-las sem lotar as salas está em aberto (V-PEND-2). | Lucas, 2026-10-07 | ⚠️ Hoje só aparecem as sessões dos últimos `--lookback` minutos; as encerradas "dormem" na fileira da frente |
+| R28 | **Sessões encerradas não são excluídas** do mundo: o Alter Ego continua existindo depois que a sessão termina. | Lucas, 2026-10-07 | ⚠️ Hoje só aparecem as sessões dos últimos `--lookback` minutos; as encerradas "dormem" na fileira da frente |
+| R28a | **Na sala ficam as sessões ativas e as recentes: últimos 10 dias**, prazo **configurável dentro do Orb** (R29). As demais ficam numa **lista de sessões antigas do realm** (nome a decidir: "arquivo" colide com o termo Archive), acessível pelo overview, sem sumir. | Lucas, 2026-10-08 | ❌ Hoje o prazo é `--lookback` em minutos, na linha de comando |
 
 ## 3. Inner World
 
@@ -72,7 +77,9 @@ Situação: ✅ cumprida · ⚠️ parcial ou com heurística não decidida · �
 | R18 | **Overview por alto** de um realm: o que cada sessão faz agora, quem está esperando o Lucas, subagentes e consumo. | Lucas, 2026-10-07 | ✅ |
 | R19 | **Altura do prédio = linhas de código** do projeto, sempre ignorando o `.gitignore`, com filtro (ex.: incluir `.md`). | Visão (decidido) | ❌ Todos os prédios têm a mesma altura |
 | R20 | **Andares = pastas de primeiro nível; janelas acendem onde houve edição recente** e esmaecem com o tempo. | Visão (camadas vivas) | ❌ As janelas atuais são decoração aleatória e contradizem esta regra |
-| R20a | **A cor de uma janela acesa é a cor do tipo de alteração no git**, com as mesmas cores do git: inserção, modificação, remoção etc. Paleta exata, unidade da janela e fonte da alteração: V-PEND-1 e V-PEND-7 ([VISUAL.md](VISUAL.md)). | Lucas, 2026-10-07 | ❌ |
+| R20a | **A cor de uma janela acesa é a cor do tipo de alteração no git**, com a **paleta de alterações do git do VS Code** (inserção, modificação, remoção, não rastreado, renomeado, conflito). Valores em [VISUAL.md](VISUAL.md) §5. | Lucas, 2026-10-07 e 2026-10-08 | ❌ |
+| R20b | **Cada janela é um arquivo do projeto**, e ela mostra as **alterações locais** dele (o estado do repositório na máquina: modificado, novo, apagado…). Ler esse estado **nunca grava nada** no projeto nem no `.git` (R16). | Lucas, 2026-10-08 | ❌ |
+| R20c | As cores das **áreas** e do sinal de **"esperando o Lucas"** mudam para não colidir com a paleta do git (R20a). | Lucas, 2026-10-08 | ❌ Hoje Testing Lab é verde, Code Review é amarelo e "esperando" é âmbar |
 | R21 | Todo Rooftop Room tem as **5 áreas** do Environment, sempre. | Visão (decidido) | ✅ |
 | R22 | O personagem fica na área da **atividade real** da sessão; esperar o Lucas é visível de longe. | Visão | ✅ |
 
@@ -84,13 +91,15 @@ Situação: ✅ cumprida · ⚠️ parcial ou com heurística não decidida · �
 | R24 | **Robustez**: entrada validada na borda, falha isolada, degradação explícita. | Lucas | ✅ |
 | R25 | **Desempenho**: leitura incremental, cargas limitadas, nada lido duas vezes, leitores compartilhados. | Lucas | ✅ |
 | R26 | **Lógica bem descrita**: regras em tabelas declarativas e documentadas. | Lucas | ⚠️ Mesmo caso da R23 no cliente |
+| R29 | **Configurações do Orb ficam dentro do Orb**: uma tela de configurações (realms escondidos, prazo das sessões recentes…) guardada num **arquivo de preferências próprio do Orb**, nunca nos providers e sem parâmetros de linha de comando. | Lucas, 2026-10-08 | ❌ Hoje há `--root`, `--realm`, `--lookback` |
 
 ---
 
 ## Do documento aos tickets
 
-**Quando:** depois que o Lucas revisar este documento e as questões em aberto de VISUAL.md e de
-ARCHITECTURE.md §3 (Detecção de realms) estiverem decididas.
+**Quando:** só quando o Lucas pedir (P5). Antes, as questões em aberto de VISUAL.md e de
+ARCHITECTURE.md §3 (Detecção de realms) precisam estar decididas; o índice está em
+[DECISIONS.md](DECISIONS.md).
 
 **Onde:** GitHub Issues do repositório `DevLucasLourenco/The-Orb` (a confirmar).
 
@@ -99,11 +108,12 @@ ARCHITECTURE.md §3 (Detecção de realms) estiverem decididas.
 | Épico | Regras principais |
 |---|---|
 | Processo e documentação | P1, P2 |
-| Detecção de realms pelos providers e lista para esconder | R3, R3a, R3b, R3c |
-| Alter Ego e Perfil (inclui sessões encerradas) | R5, R6, R10, R28 |
+| Detecção de realms pelos providers e lista para esconder | R3, R3a, R3b, R3c, R3d |
+| Alter Ego e Perfil (inclui sessões encerradas e recentes) | R5, R6, R10, R28, R28a |
+| Configurações do Orb (tela e arquivo de preferências) | R29 |
 | Inner World (terminal + linha do tempo, retomada) | R9, R10 |
 | Adapters (Claude, Codex, Hermes, opencode) | R7, R8, R13, R14 |
-| Mundo 3D: prédios (altura por LOC, andares, janelas na cor do git) | R12, R12a, R19, R20, R20a |
+| Mundo 3D: prédios (altura por LOC, andares, janelas = arquivos na cor do git) | R12, R12a, R19, R20, R20a, R20b, R20c |
 | Mundo 3D: personagens, áreas, câmera | R17, R21, R22 |
 | Overview e camadas vivas (Gate, Energy, Weather, Chronicle, Archive) | R18 e [IDEAS.md](IDEAS.md) §6 |
 

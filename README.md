@@ -20,6 +20,7 @@ agentes trabalham.
 | [CONTEXT.md](CONTEXT.md) | **Glossário** canônico (Orb, Realm, Alter Ego, Inner World, Team, Gate…) |
 | [docs/RULES.md](docs/RULES.md) | **Regras do produto**, numeradas, com a auditoria da implementação atual; fonte dos tickets |
 | [docs/VISUAL.md](docs/VISUAL.md) | **Linguagem visual**: o que cada elemento do mundo 3D significa |
+| [docs/DECISIONS.md](docs/DECISIONS.md) | **Registro de decisões**: tudo o que foi decidido, em ordem, e onde se aplica |
 | [docs/VISION.md](docs/VISION.md) | Visão, princípios, como o mundo se organiza, roadmap e questões em aberto |
 | [docs/adr/](docs/adr/) | Decisões difíceis de reverter, e por quê |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Módulos por âmbito, contratos, robustez, desempenho, testes, pastas |

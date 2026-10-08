@@ -157,18 +157,25 @@ projeto.
    com o mesmo nome em lugares diferentes ganham sufixo. Worktrees contam para o projeto principal.
 4. **Descoberta contínua.** Os leitores dos 4 providers passam a ler **todas** as sessões (sem
    filtro por pasta). Sessão de um projeto novo cria o prédio na hora.
-5. `--root` e `--realm` saem (viram, no máximo, opções de depuração).
+5. `--root`, `--realm` e `--lookback` saem (viram, no máximo, opções de depuração); o que for
+   preferência do Lucas vai para a tela de configurações do Orb (R29).
+
+**Alterações locais dos arquivos (janelas, R20b).** O estado do repositório (arquivo modificado,
+novo, apagado…) é lido **sem gravar nada**: nem no projeto, nem no `.git` (R16). Um `git status`
+comum pode atualizar o índice; se o git for usado, só com `--no-optional-locks`. Como ler (rodar o
+git só em leitura ou ler os arquivos do `.git`) é decisão de implementação, a registrar quando o
+ticket existir.
 
 **Questões em aberto (decidir antes dos tickets):**
 
 | Id | Pergunta |
 |---|---|
 | D-REALM-1 | ~~Quais realms aparecem?~~ **Decidido (2026-10-07): todos os projetos que algum CLI já registrou (R3a).** Nesta máquina: ~40 pastas (Codex 33, Claude 7, Hermes 7, opencode 2, com sobreposição). Consequência: a descoberta de realms lê os **metadados** de todo o histórico (pasta de cada sessão), não o conteúdo; o conteúdo continua lido de forma incremental. |
-| D-REALM-2 | ~~Sessões fora de projeto?~~ **Decidido: ignoradas (R3b).** Em aberto: o critério do que é "fora de projeto". Proposta: a pasta do usuário em si e pastas de sistema/temporárias (`AppData`, `Temp`, `Downloads`) são ignoradas; qualquer outra pasta é projeto. |
+| D-REALM-2 | ~~Sessões fora de projeto?~~ **Decidido: ignoradas (R3b).** ~~Critério?~~ **Decidido (2026-10-08): a pasta do usuário em si e pastas de sistema/temporárias (`AppData`, `Temp`, `Downloads`) são ignoradas; qualquer outra pasta é projeto.** |
 | D-REALM-3 | **Realm sem sessões há muito tempo:** pela D-REALM-1 ele continua na cidade; o Lucas o esconde pela lista (R3c). Em aberto: aparência de um realm parado há muito tempo (luzes apagadas? "noite", como na camada Weather?). |
 | D-REALM-4 | ~~Esconder/fixar um realm?~~ **Decidido: uma lista com todos os realms, com marcação; desmarcar esconde (R3c).** Fixar não foi pedido. |
-| D-REALM-5 | **Persistência local do Orb:** a lista de realms escondidos (R3c) precisa ser guardada; o Orb ganha um arquivo de preferências **próprio** (nunca dos providers). Em aberto: onde fica (proposta: `%LOCALAPPDATA%\the-orb\` ou `~/.the-orb/`) e se também guarda a posição dos prédios (V-PEND-5). |
-| D-REALM-6 | **Pasta de projeto que não existe mais no disco** (projeto apagado ou movido, mas ainda no histórico dos CLIs): aparece? Sem a pasta não há altura (linhas de código). |
+| D-REALM-5 | ~~Persistência local do Orb?~~ **Decidido (2026-10-08): um arquivo de preferências próprio do Orb (R29)**, nunca dos providers, editado pela tela de configurações do Orb: realms escondidos (R3c), prazo das sessões recentes (R28a) e o que vier. Local proposto: `%LOCALAPPDATA%\the-orb\` no Windows (`~/.the-orb/` nos outros). Em aberto: se também guarda a posição dos prédios (V-PEND-5). |
+| D-REALM-6 | ~~Pasta de projeto que não existe mais no disco?~~ **Decidido (2026-10-08): não entra (R3d).** |
 
 ## 4. Robustez
 

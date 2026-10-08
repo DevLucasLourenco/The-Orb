@@ -82,8 +82,9 @@ Cada projeto real é um realm, e cada realm é um prédio. **Os realms são dete
 providers**: a cidade se monta sozinha a partir das sessões que Claude, Codex, Hermes e opencode já
 registram; o Lucas não informa caminhos (regra R3; como, em [ARCHITECTURE.md](ARCHITECTURE.md),
 Detecção de realms). Entram **todos os projetos que algum CLI já registrou**; sessões fora de
-projeto (pasta do usuário, pastas temporárias) são ignoradas; e o Lucas pode **esconder** realms
-desmarcando-os numa lista, sem que nada mude nos providers. Pode ter aparência temática própria (ex.:
+projeto (pasta do usuário, pastas temporárias) são ignoradas; projetos cuja pasta não existe mais
+não entram; e o Lucas pode **esconder** realms desmarcando-os numa lista, sem que nada mude nos
+providers. As preferências do Lucas ficam numa **tela de configurações do Orb** (regra R29). Pode ter aparência temática própria (ex.:
 TriSafe como centro industrial, CLARA como biblioteca, UTC CONECTA+ como estação de comunicação).
 O objetivo é reconhecer onde há trabalho só olhando a cidade.
 
@@ -117,7 +118,8 @@ Room tem as cinco áreas do Environment, sem exceção, mesmo que o realm nunca 
   encerra a Team (verificado no Claude: a ferramenta `Agent` é assíncrona).
 - O Alter Ego **persiste** depois que o terminal fecha, porque a sessão fica gravada pelo provider.
   Reabri-lo é retomar a sessão num terminal novo. **Sessões encerradas não são excluídas do mundo**
-  (regra R28); como mostrá-las sem lotar as salas está em [VISUAL.md](VISUAL.md), V-PEND-2.
+  (regra R28). Na sala ficam as ativas e as dos **últimos 10 dias** (configurável no Orb); as demais
+  ficam numa lista de sessões antigas do realm (regra R28a).
 - Stats e nível (XP), quando existirem, vêm só de histórico real (testes, PRs, retrabalho,
   tokens, tempo). Nunca inventados.
 
@@ -161,8 +163,9 @@ Nos dois modos a telemetria é a mesma (adapter → eventos nativos + sinais de 
 Tudo abaixo é visualização de dados reais, somente leitura (princípio 5).
 
 - **Andares e janelas acesas.** Andares = módulos/diretórios de primeiro nível (respeitando o
-  `.gitignore`). Janelas acendem onde houve alteração recente e esmaecem com o tempo; **a cor da
-  janela é a cor do tipo de alteração no git** (inserção, modificação, remoção…), regra R20a.
+  `.gitignore`). **Cada janela é um arquivo** e mostra as **alterações locais** dele, na **cor do
+  tipo de alteração no git** (paleta do VS Code): regras R20a e R20b. Se também esmaece pela
+  recência está em [VISUAL.md](VISUAL.md), V-PEND-1c.
 - **Weather.** CI passando = céu limpo; CI falhando = tempestade; testes falhando =
   rachaduras/andaimes; realm parado = noite.
 - **Chronicle.** Arrastar a linha do tempo e ver a cidade como era. Funciona porque o estado do
@@ -212,7 +215,8 @@ com o zoom (realm → personagens → card detalhado).
 - Retomada (`resume`), bifurcação (`fork`), `/clear` e compactação: mesmo Alter Ego ou um novo?
   Depende de o id da sessão mudar em cada provider (a verificar).
 - ~~O que acontece com o personagem quando a sessão termina?~~ **Decidido: não é excluído (R28).**
-  Em aberto: onde ficam as encerradas e as antigas (VISUAL.md, V-PEND-2).
+  ~~Onde ficam as encerradas e as antigas?~~ **Decidido: na sala, as dos últimos 10 dias
+  (configurável); as demais numa lista do realm (R28a).**
 - O Gate escrevendo para um Alter Ego cuja sessão está fechada: recusa, ou reabre a sessão?
 
 **Mundo e interface:**

@@ -84,10 +84,13 @@ Archive · Perfil do Alter Ego · persistência em banco · multiusuário.
 1. O Lucas revisa [RULES.md](RULES.md) e [VISUAL.md](VISUAL.md).
 2. Decidir as pendências. Já decididas em 2026-10-07: cor das janelas = cores do git (R20a), todos
    os projetos já registrados (R3a), sessões fora de projeto ignoradas (R3b), lista para esconder
-   realms (R3c), sessões encerradas não excluídas (R28), cenário permitido (R12a). Ainda abertas:
-   VISUAL.md V-PEND-1 (unidade e fonte das janelas), V-PEND-2 (onde ficam as encerradas), V-PEND-3,
-   V-PEND-5, V-PEND-6, V-PEND-7 (conflito de cores); ARCHITECTURE.md D-REALM-2 (critério), 3, 5, 6.
-3. Criar os tickets por épico (RULES.md, "Do documento aos tickets").
+   realms (R3c), sessões encerradas não excluídas (R28), cenário permitido (R12a). Decididas em
+   2026-10-08: paleta do git do VS Code e troca das cores das áreas e do "esperando" (R20a, R20c),
+   sessões dos últimos 10 dias na sala (R28a), janela = arquivo com alterações locais (R20b),
+   critério de "fora de projeto" (R3b), arquivo de preferências e tela de configurações do Orb (R29),
+   projeto inexistente não entra (R3d). O índice das que ainda faltam está em
+   [DECISIONS.md](DECISIONS.md).
+3. Criar os tickets por épico (RULES.md, "Do documento aos tickets"), **quando o Lucas pedir** (P5).
 
 Depois, pela ordem dos tickets:
 
