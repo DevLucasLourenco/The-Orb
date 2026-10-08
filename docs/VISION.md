@@ -91,8 +91,9 @@ O objetivo é reconhecer onde há trabalho só olhando a cidade.
 **A cidade é retangular**, com os prédios em ordem alfabética por bairros de letra e uma posição
 "aleatória" mas rastreável (regra R32; traçado em [VISUAL.md](VISUAL.md) §7).
 
-**Altura do prédio = linhas de código (LOC)** do repositório, **por percentual** (o maior realm é o
-prédio mais alto; escala em [VISUAL.md](VISUAL.md) §8):
+**Altura do prédio = linhas de código (LOC)** do repositório, em **escala absoluta por classes**
+(Casa, Sobrado, Prédio, Edifício, Torre, Arranha-céu): a altura depende só das linhas do próprio
+projeto, e o que é grande se destaca de verdade (escala em [VISUAL.md](VISUAL.md) §8):
 
 - sempre ignora o que o `.gitignore` do projeto ignora (regra fixa, não configurável);
 - contagem filtrável sobre o que sobra (incluir ou não `.md` e outros tipos);
@@ -226,8 +227,8 @@ com o zoom (realm → personagens → card detalhado).
 
 **Mundo e interface:**
 
-- ~~Escala da altura (linear, raiz, log)?~~ **Decidido: por percentual do maior realm, com altura
-  mínima (R19; [VISUAL.md](VISUAL.md) §8).** Ainda em aberto: linhas em branco e comentários
+- ~~Escala da altura (linear, raiz, log)?~~ **Decidido: absoluta, por classes de faixa de linhas
+  (R19; [VISUAL.md](VISUAL.md) §8).** Ainda em aberto: linhas em branco e comentários
   contam? Lockfiles versionados entram? Frequência de recálculo; como expor o filtro.
 - Rooftop Room: nome definitivo; como o layout acomoda muitos Alter Egos e subagentes.
 - Estilo visual de cada realm; como o Inner World aparece no 3D. Cenário é permitido quando

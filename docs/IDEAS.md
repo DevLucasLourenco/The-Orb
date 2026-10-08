@@ -63,7 +63,8 @@
 |---|---|---|
 | Orb como cidade | Mundo conceitual que contém os realms; o 3D é o produto | **Decidido** |
 | Realm = prédio, altura = LOC | Altura calculada, sempre ignorando o `.gitignore`, filtro de `.md` | **Decidido** (probe de LOC: Próximo) |
-| Escala comprimida (raiz/log) | Evitar skyline ilegível | **Revisto**: a altura é por percentual do maior realm, linear, com altura mínima (R19, D-048, D-049) |
+| Escala comprimida (raiz/log) | Evitar skyline ilegível | **Revisto**: escala absoluta por classes de faixa de linhas, com salto entre classes e cintas no topo (R19, D-051, D-052) |
+| Altura relativa ao maior prédio | O maior realm define a altura dos outros | **Revisto**: rejeitado pelo Lucas (D-051) |
 | Cidade retangular com bairros por letra | Prédios em ordem alfabética, posição "aleatória" mas rastreável pela semente do nome | **Decidido** (R32, D-046, D-047) |
 | Rooftop Room | Quartinho no teto com as 5 áreas obrigatórias | **Decidido** |
 | Estilo temático por realm | TriSafe industrial, CLARA biblioteca, UTC CONECTA+ estação de comunicação | Backlog |

@@ -62,8 +62,11 @@ implementação só volta depois deles (regra P1).
 | D-045 | 2026-10-08 | **Subagente sem sinal fica cinza**, em vez de sumir | Lucas | R7, V-PEND-3, V-EGO-10 |
 | D-046 | 2026-10-08 | **Cidade retangular**; os prédios aparecem em **ordem alfabética** e com um ar **"aleatório", mas rastreável**, posicionados por uma **estrutura lógica** no mapa | Lucas | R32, V-PEND-5, V-CITY-1, V-CITY-4 |
 | D-047 | 2026-10-08 | O traçado concreto da cidade (bairros por letra, lotes, semente pelo nome) | **Delegada** | R32, VISUAL.md §7 |
-| D-048 | 2026-10-08 | **Altura por percentual:** projeto com poucas linhas = prédio pequeno; com muitas = prédio grande | Lucas | R19, V-PEND-6 |
-| D-049 | 2026-10-08 | A escala concreta (percentual do maior realm, altura mínima, andares proporcionais às pastas) | **Delegada** | R19, VISUAL.md §8 |
+| D-048 | 2026-10-08 | **Altura por percentual:** projeto com poucas linhas = prédio pequeno; com muitas = prédio grande. *Revista em parte por D-051: nada de percentual do maior prédio* | Lucas | R19, V-PEND-6 |
+| D-049 | 2026-10-08 | ~~A escala concreta (percentual do maior realm, altura mínima, andares proporcionais às pastas)~~ **Revista por D-051** | **Delegada** | — |
+| D-050 | 2026-10-08 | Subagente **"sem sinal"** = **cinza translúcido, sem halo, com ícone de sinal cortado**, depois de **5 min sem atividade**; o opencode segue cinza sólido com halo | Lucas | R7, V-PEND-3b, V-EGO-10 |
+| D-051 | 2026-10-08 | **A altura não depende do maior prédio.** Cada prédio tem a altura das suas próprias linhas; **o que é grande se destaca de verdade**, com **delimitação por faixas de milhares de linhas** e algo específico que mostre a faixa | Lucas | R19, V-PEND-6 |
+| D-052 | 2026-10-08 | A escala concreta: **6 classes** (Casa, Sobrado, Prédio, Edifício, Torre, Arranha-céu) por faixa de linhas, **saltos de altura** entre classes, crescimento logarítmico dentro da classe, **cintas de luz neutra** no topo (uma por classe) e antena no Arranha-céu; andares por pasta dentro da altura, com "demais pastas" | **Delegada** | R19, VISUAL.md §8 |
 
 ## Decisões revistas
 
@@ -82,6 +85,8 @@ implementação só volta depois deles (regra P1).
 | — | Janela "esmaece com o tempo" (visão original) | D-043: só acesa ou apagada |
 | — | Subagente some depois de 5 min sem atividade (heurística da v1 do cliente) | D-045: fica cinza |
 | — | Cidade num disco flutuante, prédios em anel e depois em grade alfabética simples (v1 do cliente) | D-046 e D-047: cidade retangular com bairros por letra |
+| D-049 | Altura = percentual do maior realm (o maior prédio define o tamanho dos outros) | D-051 e D-052: escala absoluta por classes |
+| D-048 (parte) | "Altura por percentual" | D-051: a altura depende só das linhas do próprio projeto |
 
 ## Pendências que ainda precisam de decisão
 
@@ -96,9 +101,9 @@ Ficam no documento do assunto; aqui só o índice.
 | V-PEND-8 | ~~Peso de uma alteração~~ Decidido em D-041: linhas alteradas | [VISUAL.md](VISUAL.md) §6 |
 | V-PEND-9 | ~~Valor de x~~ Decidido em D-042: 5% | [VISUAL.md](VISUAL.md) §6 |
 | V-PEND-3 | ~~Subagente sem sinal de fim no nível 0~~ Decidido em D-045: fica cinza | [VISUAL.md](VISUAL.md) |
-| V-PEND-3b | Cinza de "sem sinal" × cinza do opencode (R30): como distinguir? Depois de quanto tempo sem atividade o subagente fica "sem sinal"? | [VISUAL.md](VISUAL.md) |
+| V-PEND-3b | ~~Cinza de "sem sinal" × cinza do opencode~~ Decidido em D-050 | [VISUAL.md](VISUAL.md) |
 | V-PEND-5 | ~~Posição dos prédios na cidade~~ Decidido em D-046; traçado delegado (D-047) | [VISUAL.md](VISUAL.md) §7 |
-| V-PEND-6 | ~~Escala da altura~~ Decidido em D-048; escala delegada (D-049) | [VISUAL.md](VISUAL.md) §8 |
+| V-PEND-6 | ~~Escala da altura~~ Decidido em D-051; escala delegada (D-052) | [VISUAL.md](VISUAL.md) §8 |
 | V-PEND-7b | ~~As novas cores das áreas e do "esperando o Lucas"~~ decidido em D-036, revisto pela V-PEND-7c | [VISUAL.md](VISUAL.md) |
 | D-REALM-3 | Aparência de um realm parado há muito tempo | [ARCHITECTURE.md](ARCHITECTURE.md) |
 | R6 | O Perfil do Alter Ego | [VISION.md](VISION.md) §7 |

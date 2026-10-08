@@ -27,8 +27,9 @@ Situação: ✅ como está · ❌ precisa mudar · ❓ precisa de decisão.
 | Id | Elemento | Tipo | Significado / fonte | Situação |
 |---|---|---|---|---|
 | V-REALM-1 | Existir um prédio | Dado | Todo projeto que algum provider já registrou (R3, R3a), menos os escondidos pelo Lucas na lista (R3c) e as sessões fora de projeto (R3b) | ❌ Hoje vem de `--root`/`--realm`, inclusive pastas sem sessão |
-| V-REALM-2 | **Altura** | Dado | Linhas de código do projeto, ignorando o `.gitignore` (R19), em **percentual do maior realm**, com altura mínima (§8) | ❌ Altura fixa igual para todos |
-| V-REALM-12 | **Altura de cada andar** | Dado | Parcela das linhas do projeto que está naquela pasta de 1º nível (§8) | ⏳ |
+| V-REALM-2 | **Altura** | Dado | Linhas de código do projeto, ignorando o `.gitignore` (R19), em **escala absoluta por classes** (Casa a Arranha-céu), com saltos entre as classes (§8). Não depende dos outros prédios | ❌ Altura fixa igual para todos |
+| V-REALM-12 | **Altura de cada andar** | Dado | Parcela das linhas do projeto que está naquela pasta de 1º nível; pastas pequenas demais se juntam em "demais pastas" (§8) | ⏳ |
+| V-REALM-13 | **Cintas de luz neutra no topo** (e antena no Arranha-céu) | Legenda | A classe do prédio por faixa de linhas: uma cinta a mais por classe (§8) | ⏳ |
 | V-REALM-3 | **Janelas: quais acendem e de que cor** | Dado | **Hoje: padrão aleatório**, sorteado pelo nome do realm, com cores quentes/frias sem significado. **Decidido:** andares = pastas de 1º nível (R20); as janelas mostram as **alterações locais** (R20b); **cada janela acesa = x% das alterações, e nenhuma alteração é dividida** (R20d, §6); **a cor é a do tipo de alteração no git**, paleta do VS Code (R20a, §5). A janela é só **acesa ou apagada**, sem esmaecer (D-043) | ❌ Viola R12 |
 | V-REALM-4 | Brilho geral das janelas | Dado | Quantidade de sessões ativas no realm (0 → apagado; 3 ou mais → máximo) | ⚠️ Correto como dado, mas aplicado sobre o padrão aleatório |
 | V-REALM-5 | Arestas de luz do Rooftop Room: azul / âmbar | Dado | Âmbar quando alguma sessão do realm espera o Lucas | ⚠️ A cor do "esperando" muda (R20c, V-PEND-7b) |
@@ -52,7 +53,7 @@ Situação: ✅ como está · ❌ precisa mudar · ❓ precisa de decisão.
 | V-EGO-7 | Translúcido, cabeça baixa, sem halo | Heurística | "Dormindo": sessão recente parada há mais de 15 min (R31) | ✅ |
 | V-EGO-8 | Rótulo: provider · título; atividade · última ação | Dado | Título e modelo do próprio CLI; última ferramenta usada, com o texto do provider | ✅ |
 | V-EGO-9 | Personagem menor, mesma cor | Dado | Subagente da sessão (Team) | ✅ |
-| V-EGO-10 | Subagente **cinza ("sem sinal")** | Heurística | **Decidido (R7, D-045):** quando não há sinal do fim de um subagente, ele fica cinza em vez de sumir. Hoje: some depois de 5 min sem atividade | ❌ Mudar para cinza; distinção do opencode em V-PEND-3b |
+| V-EGO-10 | Subagente **cinza ("sem sinal")** | Heurística | **Decidido (R7, D-045, D-050):** depois de **5 min sem atividade** e sem sinal do fim, o subagente fica **cinza translúcido, sem halo, com um ícone de sinal cortado** sobre a cabeça, em vez de sumir. O opencode continua cinza **sólido, com halo**. Hoje: some depois de 5 min | ❌ Mudar |
 
 ## 4. Painéis
 
@@ -164,23 +165,50 @@ com um ar **"aleatório", mas rastreável**, posicionados por uma **estrutura l�
 
 ## 8. A altura dos prédios (R19)
 
-**Decidido pelo Lucas (2026-10-08, D-048):** a altura é **por percentual**: um projeto com poucas
-linhas é um prédio pequeno; com muitas, um prédio grande.
+**Decidido pelo Lucas (2026-10-08):**
 
-**Escala (definição delegada ao Claude, D-049; vale até o Lucas revisar):**
+- ~~A altura é um percentual do maior realm~~ (D-049, **revisto**): **a altura de um prédio depende só
+  das linhas dele**. Um projeto novo, por maior que seja, nunca encolhe os outros (D-051).
+- **O que é grande se destaca de verdade**, com uma **delimitação** por faixas de milhares de linhas
+  e **algo específico** que mostre a faixa (D-051).
 
-1. **Percentual do maior realm.** O realm com mais linhas de código tem a altura máxima (100%).
-   Cada um dos outros tem `linhas dele ÷ linhas do maior` dessa altura. É uma escala **linear**:
-   a diferença de tamanho aparece como ela é.
-2. **Altura mínima.** Nenhum prédio fica abaixo de um mínimo (um andar mais o Rooftop Room), para
-   continuar visível e clicável. Por isso um projeto de 2 mil linhas ao lado de um de 500 mil fica
-   no mínimo, e o número real de linhas aparece no rótulo e no overview.
-3. **Contagem:** linhas dos arquivos que o git acompanha, ignorando o que o `.gitignore` ignora, com
-   o filtro de tipos (ex.: incluir ou não `.md`) da regra R19.
-4. **Andares também por percentual.** Cada pasta de 1º nível é um andar, com altura proporcional à
-   sua parcela das linhas do projeto; os arquivos da raiz formam o **térreo**. Nenhum andar fica
-   mais baixo que uma fileira de janelas, para as alterações dele terem onde acender (§6).
-5. **Quando recalcular** (a cada commit, a cada edição observada, sob demanda) continua em aberto
+**Escala (definição delegada ao Claude, D-052; vale até o Lucas revisar):**
+
+Referência: o *Software World*, uma das primeiras "cidades de software", usa uma escala absoluta (um
+andar a cada 10 linhas), sem comparar um prédio com outro. Aqui a escala também é absoluta, mas em
+**classes**, para a diferença entre o pequeno e o grande saltar aos olhos.
+
+1. **Classes de prédio por faixa de linhas.** A unidade de altura é o **nível** (uma fileira de
+   janelas). As faixas crescem cerca de 4 a 5 vezes de uma classe para a próxima:
+
+   | Classe | Linhas de código | Altura | Marca no topo |
+   |---|---|---|---|
+   | 1. Casa | até 1 mil | 1 nível | — |
+   | 2. Sobrado | 1 mil a 5 mil | 2 a 3 níveis | 1 cinta |
+   | 3. Prédio | 5 mil a 20 mil | 5 a 8 níveis | 2 cintas |
+   | 4. Edifício | 20 mil a 100 mil | 11 a 16 níveis | 3 cintas |
+   | 5. Torre | 100 mil a 500 mil | 20 a 28 níveis | 4 cintas |
+   | 6. Arranha-céu | 500 mil ou mais | 34 níveis ou mais | 5 cintas e uma antena |
+
+2. **Delimitação visível.** As faixas de altura **não se encostam**: entre uma classe e a próxima há
+   um salto (3 → 5, 8 → 11, 16 → 20, 28 → 34 níveis). Dois prédios de classes vizinhas nunca ficam
+   com alturas parecidas.
+3. **Dentro da classe**, a altura cresce aos poucos com as linhas (escala logarítmica dentro da
+   faixa): um projeto de 90 mil linhas é mais alto que um de 21 mil, mas os dois continuam
+   "Edifício". No Arranha-céu, o crescimento continua devagar, para um monorepo gigante não sair da
+   tela.
+4. **A marca específica de cada classe:** **cintas de luz neutra** (branca, sem cor de significado,
+   R20c) em volta do topo, logo abaixo do Rooftop Room: uma a mais a cada classe; o Arranha-céu
+   ganha também uma antena. Dá para ler a classe de longe, pela silhueta.
+5. **No rótulo e no overview:** o número real de linhas e o nome da classe (ex.:
+   "`trisafe-enhanced` · 48 mil linhas · Edifício").
+6. **Andares (R20) dentro da altura.** Cada pasta de 1º nível é um andar, com altura proporcional à
+   sua parcela das linhas do projeto; os arquivos da raiz formam o **térreo**. Cada andar tem pelo
+   menos um nível. Se o prédio tiver mais pastas do que níveis (ex.: uma Casa com várias pastas),
+   as pastas menores se juntam num andar **"demais pastas"**, e as alterações delas acendem ali (§6).
+7. **Contagem:** linhas dos arquivos que o git acompanha, ignorando o que o `.gitignore` ignora, com
+   o filtro de tipos (ex.: incluir ou não `.md`) da regra R19. As faixas são fixas (rastreáveis).
+8. **Quando recalcular** (a cada commit, a cada edição observada, sob demanda) continua em aberto
    ([VISION.md](VISION.md) §7).
 
 ## Decisões pendentes
@@ -190,10 +218,10 @@ linhas é um prédio pequeno; com muitas, um prédio grande.
 | V-PEND-1 | **Janelas (V-REALM-3).** ~~Que cor significa o quê?~~ **Decidido (2026-10-07): a cor do tipo de alteração no git (R20a).** ~~(a) Qual unidade cada janela representa?~~ **Decidido (2026-10-08): um arquivo (R20b).** ~~(b) De onde vem o tipo de alteração?~~ **Decidido: das alterações locais** (estado do repositório na máquina), lido sem gravar nada no `.git` (R20b, R16). ~~E um prédio com milhares de arquivos?~~ **Decidido: janelas por percentual (R20d, §6).** ~~(c) V-PEND-1c: ela também esmaece pela recência?~~ **Decidido (2026-10-08): não; só acesa ou apagada (D-043).** | — |
 | V-PEND-2 | **"Dormindo" e sessões encerradas.** ~~Sessão encerrada some?~~ **Decidido: não é excluída (R28).** ~~Onde ficam as encerradas e as antigas (~450 sessões nesta máquina)?~~ **Decidido (2026-10-08): na sala, as ativas e as dos últimos 10 dias, prazo configurável no Orb; as demais no Histórico do realm (R28a).** ~~V-PEND-2b: a partir de quanto tempo parada uma sessão aparece "dormindo"?~~ **Decidido (2026-10-08): 15 min (R31, D-044).** ~~E o nome da lista?~~ **Decidido: Histórico do realm.** | — |
 | V-PEND-3 | ~~**Fim de subagente em segundo plano** sem o sinal no nível 0: esconder, mostrar como "sem sinal" ou exigir o nível 1?~~ **Decidido (2026-10-08): fica cinza (R7, D-045).** | — |
-| V-PEND-3b | **Cinza "sem sinal" × cinza do opencode** (apontado pela regra P2): um subagente do opencode já é cinza. Como distinguir? E depois de quanto tempo sem atividade um subagente fica "sem sinal"? | "Sem sinal" = **cinza translúcido, sem halo e com um ícone de sinal cortado** sobre a cabeça; o opencode é cinza sólido, com halo. Limite: 5 min sem atividade (o atual do cliente) |
+| V-PEND-3b | ~~**Cinza "sem sinal" × cinza do opencode**: como distinguir? Depois de quanto tempo?~~ **Decidido (2026-10-08, D-050): cinza translúcido, sem halo e com ícone de sinal cortado; 5 min sem atividade.** | — |
 | V-PEND-4 | ~~Cenário é permitido?~~ **Decidido (2026-10-07): sim, declarado aqui e sem cores da legenda (R12a).** | — |
 | V-PEND-5 | ~~**Posição dos prédios**~~ **Decidido (2026-10-08): cidade retangular, ordem alfabética, "aleatório" rastreável (R32, D-046); traçado delegado (D-047, §7).** | — |
-| V-PEND-6 | ~~**Escala da altura**~~ **Decidido (2026-10-08): por percentual (R19, D-048); escala delegada (D-049, §8).** | — |
+| V-PEND-6 | ~~**Escala da altura**~~ **Decidido (2026-10-08): absoluta, por classes de faixa de linhas, com destaque para o grande (R19, D-051); escala delegada (D-052, §8).** ~~Percentual do maior realm (D-049)~~ revisto. | — |
 | V-PEND-7 | **Conflito de cores (apontado pela regra P2).** As cores do git (verde = inserção, âmbar/amarelo = modificação, vermelho = remoção) já existem na legenda: verde = Testing Lab (V-REALM-8) e verde-água = Codex (V-EGO-1); amarelo = Code Review (V-REALM-8); âmbar = "esperando o Lucas" (V-REALM-5/6, V-EGO-6). ~~Qual muda? Qual a paleta do git?~~ **Decidido (2026-10-08): as janelas usam a paleta do git do VS Code; as áreas e o "esperando" trocam de cor (R20a, R20c).** | — |
 | V-PEND-7b | **As novas cores** das 5 áreas e do "esperando o Lucas", sem colidir com a paleta do git (§5). Atenção também às cores dos **providers**: o laranja do Claude fica perto do vermelho de remoção e do conflito, e o verde-água do Codex perto do verde de "não rastreado". Personagens e janelas são objetos diferentes; basta isso, ou os providers também mudam? | **Decidido (2026-10-08):** áreas em tons frios e neutros; "esperando" em magenta pulsante (R20c). Os providers **mudaram** (R30), o que reabre a escolha: V-PEND-7c. **Revisto em D-040:** áreas sem cor própria |
 | V-PEND-7c | **As cores novas dos providers (R30) colidem** (apontado pela regra P2): (a) **Hermes amarelo** × âmbar de "modificado" do git (`#E2C08D`) nas janelas; (b) **Codex azul** e **opencode cinza** × as áreas em tons frios e neutros (azul, cinza-azulado): um personagem azul sobre um piso azul some; (c) **Claude laranja** fica perto do vermelho de "apagado"/"conflito". | **Decidido (2026-10-08, D-040):** áreas sem cor própria (ícone, nome e padrão no piso); providers com as cores escolhidas, em tons saturados. |
