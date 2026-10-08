@@ -187,7 +187,7 @@ andar a cada 10 linhas), sem comparar um prédio com outro. Aqui a escala també
 1. **Classes de prédio por faixa de linhas.** A unidade de altura é o **nível** (uma fileira de
    janelas). As faixas crescem cerca de 4 a 5 vezes de uma classe para a próxima:
 
-   | Classe | Linhas de código | Altura | Marca no topo | Forma (proposta, Q-WORLD-3) |
+   | Classe | Linhas de código | Altura | Marca no topo | Forma (aprovada, D-075) |
    |---|---|---|---|---|
    | 1. Casa | até 1 mil | 1 nível | — | Um volume baixo, com a base do tamanho do Rooftop Room |
    | 2. Sobrado | 1 mil a 5 mil | 2 a 3 níveis | 1 cinta | Dois volumes: base um pouco mais larga e um corpo com terraço em volta da sala |

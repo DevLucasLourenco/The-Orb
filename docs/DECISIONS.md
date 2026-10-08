@@ -89,6 +89,7 @@ implementação só volta depois deles (regra P1).
 | D-072 | 2026-10-08 | **Quanto maior o prédio, outro design**: cada classe da tabela de altura (Casa a Arranha-céu) tem uma **forma arquitetônica própria**, como o CodeCity faz ao mapear métricas no **tipo** do prédio | Lucas | R41, VISUAL.md §8 |
 | D-073 | 2026-10-08 | **Inner World no 3D:** agora o painel de baixo (linha do tempo e terminal); depois o personagem a um **monitor** na sua área com o terminal na tela; o "mergulho" fica no backlog | Lucas | R9, Q-WORLD-2 |
 | D-074 | 2026-10-08 | **Nenhum CLI além dos 4** por agora; o contrato de adapter já permite incluir outro | Lucas | R8, Q-PROV-1 |
+| D-075 | 2026-10-08 | **As formas de cada classe de prédio** (VISUAL.md §8) estão aprovadas | Lucas | R41, Q-WORLD-3 |
 
 ## Decisões revistas
 
@@ -168,8 +169,23 @@ uma proposta. Ao decidir, a resposta vira um D-NNN acima e a linha fica riscada.
 
 | Id | Pergunta | Proposta |
 |---|---|---|
-| Q-WORLD-3 | **As formas de cada classe** de prédio ([VISUAL.md](VISUAL.md) §8, tabela "Forma"): estão boas? | Proposta na tabela: da Casa (um volume baixo) ao Arranha-céu (torre esguia com recuos escalonados, coroa e antena); todas neutras, sem cor de significado, e o Rooftop Room sempre do mesmo tamanho no topo |
+| ~~Q-WORLD-3~~ D-075 | **As formas de cada classe** de prédio ([VISUAL.md](VISUAL.md) §8, tabela "Forma"): estão boas? | Proposta na tabela: da Casa (um volume baixo) ao Arranha-céu (torre esguia com recuos escalonados, coroa e antena); todas neutras, sem cor de significado, e o Rooftop Room sempre do mesmo tamanho no topo |
 
 **Fica para a fase de implementação** (não precisa de decisão agora): os tons exatos e os ícones
 das áreas (V-PEND-7d, com prévia visual para o Lucas aprovar) e o **teste do observador do Codex
 com pedidos de aprovação** (risco principal; com o Lucas acompanhando).
+
+### Próxima rodada: camadas vivas (aberta em 2026-10-08)
+
+As camadas vivas estão descritas em [VISION.md](VISION.md) §5 só como ideia. Antes de virarem
+tickets, cada uma precisa de fonte de dado, forma no mundo e limites. Todas respeitam R12
+(telemetria real), R16 (somente leitura) e R38 (sem tokens).
+
+| Id | Pergunta | Proposta |
+|---|---|---|
+| Q-LIVE-1 | **Weather (saúde do realm):** de onde vem o dado? | **Agora, só local:** o resultado dos testes que as sessões rodaram (comando de teste observado e o código de saída dele), sem rede. **Depois, opcional:** o CI do GitHub (pelo `gh`, com a conta do Lucas, só leitura), ligado nas configurações. No mundo: céu limpo sobre o prédio quando os últimos testes passaram, chuva quando falharam, nada quando não há dado |
+| Q-LIVE-2 | **Energy (tokens e custo):** o que mostrar e onde? | Tokens e custo **só quando o provider informa** (nunca estimados): por sessão e por realm no overview, e o total de **hoje** na barra de cima. Os limites de uso da conta (o Codex informa) aparecem num painel de Energy |
+| Q-LIVE-3 | **Chronicle (a cidade no tempo):** como e desde quando? | Uma **barra de tempo** no rodapé: arrastar mostra a cidade como era (prédios, personagens, janelas). Fonte: o registro local do Orb (R36), então começa no dia em que o Orb passa a registrar. Reconstruir o passado anterior pelo histórico do git fica para depois |
+| Q-LIVE-4 | **Archive (o que molda cada sessão):** o que e onde? | Uma aba **Archive** no Inner World: `CLAUDE.md`, `AGENTS.md`, skills e arquivos de memória de cada provider, só **nome, tamanho e data**; o conteúdo só quando o Lucas abrir um arquivo. Somente leitura, nada é reinjetado (já decidido em VISION.md §5) |
+| Q-LIVE-5 | **Gate:** onde fica no mundo? | Um **portão na borda da cidade**, de frente para a câmera inicial, fora dos bairros, com a contagem de quem espera o Lucas; clicar abre a lista de esperas de todos os realms e permite escrever para qualquer Alter Ego (pelo terminal dele, R35) |
+| Q-LIVE-6 | **Ordem das camadas vivas** | A de VISION.md §5: janelas acesas → Gate → Chronicle → Weather → Energy → Archive |

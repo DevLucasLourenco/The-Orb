@@ -190,7 +190,8 @@ Tudo abaixo é visualização de dados reais, somente leitura (princípio 5).
   nunca grava nem reinjeta nada; mostra nomes, tamanhos e datas por padrão e o conteúdo só quando
   o Lucas abrir explicitamente (pode haver dados pessoais).
 
-Ordem sugerida: janelas acesas → Gate → Chronicle → Weather → Energy → Archive.
+Ordem sugerida: janelas acesas → Gate → Chronicle → Weather → Energy → Archive. Fonte, forma e
+limites de cada camada estão na rodada Q-LIVE de [DECISIONS.md](DECISIONS.md).
 
 ## 6. Roadmap
 
