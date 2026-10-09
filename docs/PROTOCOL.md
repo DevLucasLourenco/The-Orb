@@ -245,7 +245,18 @@ No canal do mundo (`/world`), o cliente pode pedir o histórico de uma sessão:
 
 ## 12. Em aberto
 
-- Probes (git, CI, LOC): sinais `realm.metrics`, `ci.status`, `git.commit` ainda não definidos.
+- ~~Probes (git, CI, LOC): sinais `realm.metrics`, `ci.status`, `git.commit` ainda não definidos.~~
+  **Decidido (D-084, D-085, R49): a versão 0.3** acrescenta ao vocabulário fechado:
+
+  | `type` | Campos (proposta para o ticket) | Efeito |
+  |---|---|---|
+  | `command.result` | `ok`, `exit_code?`, `activity?` | Resultado de um comando (base do Weather e da XP). `exit_code` só quando o provider informa: Codex, Hermes e opencode sim; Claude não (só `is_error`/`interrupted`) |
+  | `realm.metrics` | `loc`, `class`, `floors?` | Linhas de código e classe do prédio (Probe de LOC, R19) |
+  | `realm.changes` | `changes[]` (caminho, tipo, linhas) | Alterações locais do git (Probe, R20b) |
+  | `account.limits` | `provider`, `limits` | Limites de uso da conta, quando o provider informa (Energy, R43) |
+
+  Eventos de realm e de mundo têm `alter_ego: null`; o Core passa a guardá-los (D-085). Os campos
+  exatos são fechados no ticket.
 - Granularidade de `inner` para streaming (deltas de texto agrupados por item ou por intervalo).
 - Formato e autorização do canal de comandos além do terminal.
 - ~~Sessão retomada/bifurcada: mesmo `alter_ego` ou novo?~~ Decidido (D-068, R39): retomar = o mesmo;

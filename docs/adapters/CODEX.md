@@ -144,7 +144,7 @@ diálogo de atualização só na sessão, mas **o Orb não o usa por padrão**: 
 | `event_msg/task_started` · `task_complete` · `turn_aborted` | `THINKING` · `idle` · `idle` |
 | `token_usage_record` (`usage`: `input_tokens`, `cached_input_tokens`, `output_tokens`, `reasoning_output_tokens`) | `usage` |
 | `event_msg/token_count`, `item_completed`, `turn_context`, `world_state`, `compacted` | Ignorados (redundantes ou sem trabalho visível). **Revisão (2026-10-09):** `event_msg/item_completed` traz `item.exit_code` dos comandos (Q-TEC-1) |
-| `response_item/agent_message`, `inter_agent_communication_metadata`, `event_msg/thread_settings_applied` | **Não mapeados** (vistos em 2026-10-09 nos rollouts desta máquina, só estrutura); ver Q-TEC-6 |
+| `response_item/agent_message`, `inter_agent_communication_metadata`, `event_msg/thread_settings_applied` | **Não mapeados** (vistos em 2026-10-09 nos rollouts desta máquina, só estrutura). **Decidido (D-089):** `agent_message` vira narração; os outros dois a avaliar |
 
 - **Desempenho:** há rollouts de 145 MB. Arquivo que já existia começa **do fim**; a primeira linha
   (`session_meta`) é lida à parte; a árvore de sessões é varrida no máximo a cada 2 s.

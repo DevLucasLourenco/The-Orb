@@ -51,7 +51,7 @@ começa do zero e mostra de quem nasceu.
 |---|---|---|---|---|---|
 | X-TEST | **Teste passou** | Comando classificado como teste (o classificador já existe) + código de saída 0 | 5 | 1 a cada 10 min por sessão (rodar o mesmo teste em laço não rende) | Confirmada na hora: o código de saída já é o mundo real |
 | X-FIX | **Vermelho → verde**: um teste falhou e depois passou, na mesma sessão | As duas execuções | 25 | 1 por falha consertada | Confirmada na hora |
-| X-COMMIT | **Commit feito pela sessão** | Comando `git commit` com saída 0 + o commit existe no `git log` do realm | 10, +1 a cada 20 linhas alteradas, teto de 40 por commit | — | **Provisória** até o commit chegar à branch principal (a padrão do remoto, senão `main`/`master`); revertido = anulada; não chegou em 30 dias = expira |
+| X-COMMIT | **Commit feito pela sessão** | Commit observado na sessão (no Claude, o campo `gitOperation`, D-090; nos outros, o comando `git commit` com `command.result` ok, D-084) + o commit existe no `git log` do realm | 10, +1 a cada 20 linhas alteradas, teto de 40 por commit | — | **Provisória** até o commit chegar à branch principal (a padrão do remoto, senão `main`/`master`); revertido = anulada; não chegou em 30 dias = expira |
 | X-DELEG | **Subagente concluído** | Sinal `subagent.ended` | 3, para o líder | Teto de 30 por sessão por dia | Confirmada na hora |
 | X-CRAFT | **Ofício**: tempo em atividade (código, teste, leitura, pesquisa, revisão) | Sinais de atividade | 1 a cada 5 min ativos | Teto de 30 por sessão por dia | Confirmada na hora |
 | X-PR | **PR mesclado** *(depois, opcional, junto do CI do Weather)* | `gh`, só leitura | 50 | — | Confirmada pelo GitHub |

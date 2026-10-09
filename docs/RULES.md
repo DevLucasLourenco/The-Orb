@@ -81,6 +81,7 @@ Situação: ✅ cumprida · ⚠️ parcial ou com heurística não decidida · �
 | R20b | As janelas mostram as **alterações locais** do projeto (o estado do repositório na máquina: modificado, novo, apagado…). Uma **alteração** é um arquivo com alteração local. Ler esse estado **nunca grava nada** no projeto nem no `.git` (R16). ~~Cada janela é um arquivo~~ (revisto por R20d). | Lucas, 2026-10-08 | ❌ |
 | R20d | **Janelas por percentual:** cada janela acesa representa **x% das alterações locais** do realm, com **x = 5%** (configurável no Orb), e **uma alteração nunca fica dividida entre duas janelas**. O peso de uma alteração são as **linhas alteradas**. Como as alterações viram janelas: [VISUAL.md](VISUAL.md) §6. | Lucas, 2026-10-08 (D-038, D-039, D-041, D-042) | ❌ |
 | R20c | **As áreas não têm cor própria**: piso neutro, cada área identificada por **ícone e nome** (e um padrão no piso). O sinal de **"esperando o Lucas"** é **magenta pulsante**. As cores ficam só para janelas (git), personagens (provider) e "esperando". | Lucas, 2026-10-08 (D-036, D-040) | ❌ Hoje as áreas são coloridas (Testing Lab verde, Code Review amarelo…) e "esperando" é âmbar |
+| R20e | **Submódulos do git não acendem janela** no projeto pai: são outro repositório. | Lucas, 2026-10-09 (D-092) | ⏳ |
 | R30 | **Cores dos providers** (corpo e halo do personagem): **Claude laranja · Codex azul · Hermes amarelo · opencode cinza**, em tons saturados. | Lucas, 2026-10-08 (D-037, D-040) | ❌ Hoje Codex é verde-água, Hermes violeta e opencode azul |
 | R31 | Uma sessão recente aparece **"dormindo"** na sala depois de **15 min parada**. | Lucas, 2026-10-08 (D-044) | ✅ É o limite atual do cliente |
 | R33 | **Sala cheia:** o Rooftop Room não cresce; cada área mostra até **8 personagens** e um contador **"+N"**; o overview lista todos. | Lucas, 2026-10-08 (D-057) | ❌ |
@@ -109,6 +110,9 @@ Situação: ✅ cumprida · ⚠️ parcial ou com heurística não decidida · �
 | R24 | **Robustez**: entrada validada na borda, falha isolada, degradação explícita. | Lucas | ✅ |
 | R25 | **Desempenho**: leitura incremental, cargas limitadas, nada lido duas vezes, leitores compartilhados. | Lucas | ✅ |
 | R26 | **Lógica bem descrita**: regras em tabelas declarativas e documentadas. | Lucas | ⚠️ Mesmo caso da R23 no cliente |
+| R47 | **O tempo é derivado num só lugar:** o Core calcula os estados que dependem do tempo (dormindo, sem sinal, noite, "hoje") em `snapshot(now)`, com a hora de quem pede e os limites numa tabela; o Core não lê relógio, e os clientes não calculam. | Lucas, 2026-10-09 (D-086) | ❌ Hoje o cliente calcula "dormindo" e o sumiço de subagentes |
+| R48 | **Histórico em duas camadas:** um índice leve de metadados de todas as sessões (cidade, sala, Histórico do realm); o conteúdo é lido incrementalmente só das sessões da sala; o passado é lido uma única vez, em segundo plano, com o ponto de parada no registro local (R36). | Lucas, 2026-10-09 (D-088) | ⏳ |
+| R49 | **Protocolo 0.3:** sinais novos `command.result` (resultado de comando: `ok`, `exit_code?`), `realm.metrics`, `realm.changes` e `account.limits`; o Core guarda estado por realm e do mundo. | Lucas, 2026-10-09 (D-084, D-085) | ⏳ Protocolo atual: 0.2 |
 | R29 | **Configurações do Orb ficam dentro do Orb**: uma tela de configurações (realms escondidos, prazo das sessões recentes…) guardada num **arquivo de preferências próprio do Orb**, nunca nos providers e sem parâmetros de linha de comando. | Lucas, 2026-10-08 | ❌ Hoje há `--root`, `--realm`, `--lookback` |
 
 ---
@@ -129,6 +133,7 @@ ARCHITECTURE.md §3 (Detecção de realms) precisam estar decididas; o índice e
 | Detecção de realms pelos providers e lista para esconder | R3, R3a, R3b, R3c, R3d |
 | Alter Ego e Perfil (nome, papel, continuidade, sessões encerradas e recentes) | R5, R6, R10, R28, R28a, R37, R39, R40 |
 | Princípio: o Orb não consome tokens (verificação em todos os épicos) | R38 |
+| Protocolo 0.3, estado por realm e do mundo, tempo no Core e histórico em duas camadas | R47, R48, R49 |
 | Gate e avisos de diálogo | R34, R35 |
 | Registro local do Orb | R36 |
 | Configurações do Orb (tela e arquivo de preferências) | R29 |

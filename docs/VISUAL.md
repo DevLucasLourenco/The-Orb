@@ -89,7 +89,7 @@ em 2026-10-09:** `contributes.colors` da extensão git do VS Code
 ([extensions/git/package.json](https://github.com/microsoft/vscode/blob/main/extensions/git/package.json)),
 ids `gitDecoration.*ResourceForeground`, valores `dark`. Os seis valores abaixo batem exatamente. O
 VS Code tem ainda `ignoredResourceForeground` (`#8C8C8C`; arquivos ignorados não têm janela, R19) e
-`submoduleResourceForeground` (`#8db9e2`; submódulos ainda sem regra, ver Q-REF-2).
+`submoduleResourceForeground` (`#8db9e2`): **submódulos não acendem janela** no projeto pai (D-092, R20e).
 
 | Tipo de alteração | Cor | Hex |
 |---|---|---|
@@ -206,7 +206,7 @@ andar a cada 10 linhas), sem comparar um prédio com outro. Aqui a escala també
 - **Consequência para o Orb:** a decisão do Lucas (D-051, "o maior prédio não define os outros") é
   exatamente o **mapeamento por limites fixos** do CodeCity, e não o por boxplot. As 6 classes da
   tabela abaixo são esse mapeamento aplicado às linhas de código; a quantidade de classes (6 em vez
-  de 5) é proposta da D-052 (Q-REF-1).
+  de 5) foi **confirmada pelo Lucas (D-091)**.
 - **Software World** (Knight e Munro, *Virtual but visible software*, IV 2000): classes Java são
   bairros e **métodos são prédios, com um andar a cada 10 linhas**; portas mostram parâmetros.
 

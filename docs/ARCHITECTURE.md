@@ -97,8 +97,12 @@ Todo adapter expõe a mesma forma (`orb.adapters._shared.base`):
 ### Core
 
 - `World.apply(event) -> bool` aplica um evento (falso se repetido ou inválido) e
-  `World.snapshot() -> dict` devolve o estado para os clientes.
-- Puro: tempo vem do `ts` dos eventos; nenhuma chamada a disco, rede ou relógio.
+  `World.snapshot() -> dict` devolve o estado para os clientes. **Decidido (D-086, R47):** passa a
+  `snapshot(now)`, que deriva os estados que dependem do tempo (dormindo, sem sinal, noite, "hoje")
+  com a hora de quem pede e os limites numa tabela de `rules.py`.
+- **Decidido (D-085):** o Core guarda também estado **por realm** (métricas, alterações locais,
+  Weather) e **do mundo** (limites da conta), vindo de eventos com `alter_ego: null` (protocolo 0.3).
+- Puro: tempo vem do `ts` dos eventos e do `now` recebido; nenhuma chamada a disco, rede ou relógio.
 - Regras em tabelas (`orb.core.rules`): atividade → área, sinais → transições, estados que
   sobrepõem outros (`WAITING`, `NO_SIGNAL`).
 
@@ -182,8 +186,8 @@ ticket existir.
 ### Módulos novos decididos (2026-10-08 e 2026-10-09), ainda sem implementação
 
 - **Weather local** (R42, D-076): deriva o resultado dos testes das sessões, a partir dos eventos
-  que os adapters já produzem (comando classificado como teste + código de saída/erro do
-  resultado). A forma de obter o código de saída varia por provider (ex.: `exitCode` no Codex,
+  que os adapters já produzem (comando classificado como teste + o sinal `command.result` do
+  protocolo 0.3, D-084). A forma de obter o código de saída varia por provider (ex.: `exitCode` no Codex,
   resultado com erro no Claude) e se confirma na implementação. Sem rede; o CI do GitHub é um
   Probe opcional, futuro, só leitura.
 - **Energy** (R43, D-077): soma no Core os `usage` que os providers informam, por sessão, realm e
@@ -228,7 +232,8 @@ ticket existir.
 | Deduplicação | Janela limitada por Alter Ego (memória constante) |
 | Deltas de streaming (`outputDelta`, `agentMessage/delta`) | Não viram eventos um a um; o item completo (`item/completed`) carrega o texto |
 | Envio ao cliente | Snapshot ao conectar, depois deltas; bytes do terminal nunca são descartados |
-| Polling (nível 0) | 250 ms por sessão hospedada (medido: ~270–470 ms ponta a ponta). **Atenção:** o servidor atual usa 500 ms (`POLL_SECONDS`); ver Q-TEC-4 |
+| Polling (nível 0) | **250 ms** para realms com sessão ativa (medido: ~270–470 ms ponta a ponta); varredura de sessões novas a cada **2 s** (D-087). Hoje o servidor usa 500 ms (`POLL_SECONDS`): a corrigir no ticket |
+| Histórico (R48, D-088) | **Duas camadas:** índice de metadados de todas as sessões (pasta, datas, título, provider), barato; conteúdo lido incrementalmente só das sessões da sala; o passado lido uma vez em segundo plano, com o ponto de parada no registro local |
 
 ## 6. Lógica bem estruturada
 

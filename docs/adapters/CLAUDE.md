@@ -59,7 +59,8 @@ camadas futuras (título da sessão, custo).
 - **`toolUseResult`** (na entrada `user` que traz o resultado; estrutura vista em 2026-10-09): para
   ferramentas de shell, `stdout`, `stderr`, `interrupted`, `isImage` e, às vezes, `returnCodeInterpretation`
   (texto), `backgroundTaskId`, `timedOutAfterMs` e **`gitOperation`** (`commit`, `push`, `branch`, `pr`).
-  **Não há código de saída**: falha = `is_error` no bloco `tool_result` (Q-TEC-1, Q-TEC-7).
+  **Não há código de saída**: falha = `is_error` no bloco `tool_result` (D-084). `gitOperation` é a
+  evidência de commit, push, branch e PR (D-090).
 
 ### 1.4 Mensagens com papel `user`
 
