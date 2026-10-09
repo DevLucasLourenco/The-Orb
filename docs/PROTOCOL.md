@@ -254,6 +254,7 @@ No canal do mundo (`/world`), o cliente pode pedir o histórico de uma sessão:
   | `realm.metrics` | `loc`, `class`, `floors?` | Linhas de código e classe do prédio (Probe de LOC, R19) |
   | `realm.changes` | `changes[]` (caminho, tipo, linhas) | Alterações locais do git (Probe, R20b) |
   | `account.limits` | `provider`, `limits` | Limites de uso da conta, quando o provider informa (Energy, R43) |
+  | `tasks.updated` | `done`, `total`, `items?` | A lista de tarefas que o CLI mantém (D-093, R50); só quando o provider grava |
 
   Eventos de realm e de mundo têm `alter_ego: null`; o Core passa a guardá-los (D-085). Os campos
   exatos são fechados no ticket.

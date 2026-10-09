@@ -107,6 +107,11 @@ implementação só volta depois deles (regra P1).
 | D-090 | 2026-10-09 | **Claude:** o campo `gitOperation` do resultado das ferramentas é a evidência de commit (e de push, branch, PR) | Lucas | Q-TEC-7, [PROGRESSION.md](PROGRESSION.md) X-COMMIT |
 | D-091 | 2026-10-09 | **6 classes de prédio** (não as 5 do CodeCity): linhas de código variam muito mais que métodos, e a 6ª classe é o destaque pedido em D-051 | Lucas | Q-REF-1, VISUAL.md §8 |
 | D-092 | 2026-10-09 | **Submódulos do git não acendem janela** no projeto pai (são outro repositório); evita também um azul confundível com o Codex | Lucas | Q-REF-2, R20e |
+| D-093 | 2026-10-09 | **Progresso da tarefa e Task Board:** mostrar a lista de tarefas que o próprio CLI mantém ("7 de 12" no overview; concluídas na área Task Board), só quando o provider grava a lista, nunca estimada. Consequência: um sinal de lista de tarefas no protocolo 0.3 | Lucas | Q-ORIG-1, R50, R49, V-HUD-15, V-REALM-17 |
+| D-094 | 2026-10-09 | **Subagente que termina caminha até o líder** e só então se desmobiliza; sem sinal de fim, segue R7 (cinza no lugar) | Lucas | Q-ORIG-2, R51, V-EGO-16 |
+| D-095 | 2026-10-09 | **Erro, bloqueio e "sem sinal" do líder** com ícones neutros sobre a cabeça: erro = triângulo branco com "!" e corpo apagado; bloqueado = cadeado; sem sinal = o ícone de sinal cortado do subagente. Sem vermelho (é do git) | Lucas | Q-ORIG-3, R52, V-EGO-15 |
+| D-096 | 2026-10-09 | **Atributos por área:** barras com a parcela do trabalho da sessão em cada área, pela mesma contagem do Papel; dado real, não pontuação | Lucas | Q-ORIG-4, R40, V-HUD-16 |
+| D-097 | 2026-10-09 | **Resumo do realm de longe:** o rótulo do prédio mostra sessões ativas, esperando você e, quando houver dado, o Weather e as tarefas abertas; sem dado, nada | Lucas | Q-ORIG-5, V-REALM-7 |
 
 ## Decisões revistas
 
@@ -267,9 +272,9 @@ tokens) e o orçamento de cores (R20c).
 
 | Id | Pergunta | Proposta |
 |---|---|---|
-| Q-ORIG-1 | **Progresso da tarefa e Task Board** | Mostrar a **lista de tarefas que o próprio CLI mantém** (TodoWrite do Claude, plano do Codex, `todowrite` do opencode): no overview, "7 de 12" e uma barra na sessão; na área **Task Board**, as tarefas concluídas. Só quando o provider grava a lista; sem lista, nada (nunca estimado). Formato de cada provider a levantar só pela estrutura |
-| Q-ORIG-2 | **Subagente que termina** | Ao receber o fim (`subagent.ended`), ele **caminha até o líder** e só então se desmobiliza. Sem sinal de fim, continua a regra R7 (fica cinza no lugar) |
-| Q-ORIG-3 | **Erro, bloqueio e "sem sinal" do líder** (hoje sem entrada em VISUAL.md) | Ícones neutros sobre a cabeça, sem cor de significado: **erro** = triângulo branco com "!" e corpo apagado; **bloqueado** = cadeado; **sem sinal** = o mesmo ícone de sinal cortado do subagente (V-EGO-10). Vermelho fica de fora (é do git) |
-| Q-ORIG-4 | **Atributos por área** | No overview de cada Alter Ego, **barras da parcela do trabalho em cada área** (Development, Testing, Research, Review), calculadas da mesma contagem do Papel (R40). É dado real e explica o Papel; não vira pontuação |
-| Q-ORIG-5 | **Resumo do realm visto de longe** | O rótulo do prédio ganha: sessões ativas, esperando você e, quando houver dado, o **Weather** e as **tarefas abertas** (de Q-ORIG-1). Nada de "saudável" inventado: sem dado, não aparece |
+| ~~Q-ORIG-1~~ D-093 | **Progresso da tarefa e Task Board** | Mostrar a **lista de tarefas que o próprio CLI mantém** (TodoWrite do Claude, plano do Codex, `todowrite` do opencode): no overview, "7 de 12" e uma barra na sessão; na área **Task Board**, as tarefas concluídas. Só quando o provider grava a lista; sem lista, nada (nunca estimado). Formato de cada provider a levantar só pela estrutura |
+| ~~Q-ORIG-2~~ D-094 | **Subagente que termina** | Ao receber o fim (`subagent.ended`), ele **caminha até o líder** e só então se desmobiliza. Sem sinal de fim, continua a regra R7 (fica cinza no lugar) |
+| ~~Q-ORIG-3~~ D-095 | **Erro, bloqueio e "sem sinal" do líder** (hoje sem entrada em VISUAL.md) | Ícones neutros sobre a cabeça, sem cor de significado: **erro** = triângulo branco com "!" e corpo apagado; **bloqueado** = cadeado; **sem sinal** = o mesmo ícone de sinal cortado do subagente (V-EGO-10). Vermelho fica de fora (é do git) |
+| ~~Q-ORIG-4~~ D-096 | **Atributos por área** | No overview de cada Alter Ego, **barras da parcela do trabalho em cada área** (Development, Testing, Research, Review), calculadas da mesma contagem do Papel (R40). É dado real e explica o Papel; não vira pontuação |
+| ~~Q-ORIG-5~~ D-097 | **Resumo do realm visto de longe** | O rótulo do prédio ganha: sessões ativas, esperando você e, quando houver dado, o **Weather** e as **tarefas abertas** (de Q-ORIG-1). Nada de "saudável" inventado: sem dado, não aparece |
 

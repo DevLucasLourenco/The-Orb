@@ -96,6 +96,9 @@ Situação: ✅ cumprida · ⚠️ parcial ou com heurística não decidida · �
 | R44 | **Chronicle** = barra de tempo que mostra a cidade como era, a partir do registro local do Orb (R36). | Lucas, 2026-10-09 (D-078) | ⏳ |
 | R45 | **Archive** = aba no Inner World com o que molda a sessão (instruções, skills, memória), só nome, tamanho e data; conteúdo só quando o Lucas abrir; somente leitura. | Lucas, 2026-10-09 (D-079) | ⏳ |
 | R46 | **O Gate é um lugar no mundo**: um portão na borda da cidade, fora dos bairros, com a contagem de quem espera o Lucas, a lista de esperas de todos os realms e a escrita para qualquer Alter Ego pelo terminal dele (R35). | Lucas, 2026-10-09 (D-080) | ⏳ Hoje só existem o feixe no prédio e a contagem no topo |
+| R50 | **Progresso da tarefa = a lista de tarefas do próprio CLI** (TodoWrite do Claude, plano do Codex, `todowrite` do opencode): "concluídas de total" no overview e as concluídas no Task Board; sem lista gravada pelo provider, nada aparece. | Lucas, 2026-10-09 (D-093) | ⏳ |
+| R51 | **Subagente que termina caminha até o líder** antes de se desmobilizar; sem sinal de fim, vale R7. | Lucas, 2026-10-09 (D-094) | ⏳ Hoje ele some depois de 5 min |
+| R52 | **Erro, bloqueio e "sem sinal" do líder** aparecem por ícones neutros sobre a cabeça, nunca em vermelho. | Lucas, 2026-10-09 (D-095) | ❌ Hoje esses estados não têm forma própria |
 | R41 | **Prédios no mesmo estilo** (sem tema por realm), mas **cada classe de tamanho tem uma forma arquitetônica própria** (Casa a Arranha-céu), como o CodeCity mapeia métricas no tipo do prédio. Um tema por realm, se vier, é cenário escolhido pelo Lucas. | Lucas, 2026-10-08 (D-071, D-072) | ❌ Hoje todos têm a mesma forma |
 | R37 | **Cada Alter Ego tem um nome histórico** (tecnologia, física, matemática, filosofia), sorteado sem reposição de uma lista de 60 ([VISUAL.md](VISUAL.md) §9), **uma vez, para sempre**, de uma sacola **global**, sem nomes iguais visíveis na mesma sala. **Subagentes não ganham nome** (ficam com o tipo do CLI). O nome é **identidade**, não dado. | Lucas, 2026-10-08 (D-063 a D-067) | ⏳ |
 | R32 | **A cidade é retangular.** Os prédios ficam em **ordem alfabética**, com um ar **"aleatório", mas rastreável**: a posição vem de uma estrutura lógica e é sempre a mesma para o mesmo realm. Traçado concreto (delegado): [VISUAL.md](VISUAL.md) §7. | Lucas, 2026-10-08 (D-046, D-047) | ❌ Hoje o chão é um disco e a grade é alfabética simples, sem bairros |
@@ -112,7 +115,7 @@ Situação: ✅ cumprida · ⚠️ parcial ou com heurística não decidida · �
 | R26 | **Lógica bem descrita**: regras em tabelas declarativas e documentadas. | Lucas | ⚠️ Mesmo caso da R23 no cliente |
 | R47 | **O tempo é derivado num só lugar:** o Core calcula os estados que dependem do tempo (dormindo, sem sinal, noite, "hoje") em `snapshot(now)`, com a hora de quem pede e os limites numa tabela; o Core não lê relógio, e os clientes não calculam. | Lucas, 2026-10-09 (D-086) | ❌ Hoje o cliente calcula "dormindo" e o sumiço de subagentes |
 | R48 | **Histórico em duas camadas:** um índice leve de metadados de todas as sessões (cidade, sala, Histórico do realm); o conteúdo é lido incrementalmente só das sessões da sala; o passado é lido uma única vez, em segundo plano, com o ponto de parada no registro local (R36). | Lucas, 2026-10-09 (D-088) | ⏳ |
-| R49 | **Protocolo 0.3:** sinais novos `command.result` (resultado de comando: `ok`, `exit_code?`), `realm.metrics`, `realm.changes` e `account.limits`; o Core guarda estado por realm e do mundo. | Lucas, 2026-10-09 (D-084, D-085) | ⏳ Protocolo atual: 0.2 |
+| R49 | **Protocolo 0.3:** sinais novos `command.result` (resultado de comando: `ok`, `exit_code?`), `realm.metrics`, `realm.changes` e `account.limits`; o Core guarda estado por realm e do mundo. | Lucas, 2026-10-09 (D-084, D-085; lista de tarefas por D-093) | ⏳ Protocolo atual: 0.2 |
 | R29 | **Configurações do Orb ficam dentro do Orb**: uma tela de configurações (realms escondidos, prazo das sessões recentes…) guardada num **arquivo de preferências próprio do Orb**, nunca nos providers e sem parâmetros de linha de comando. | Lucas, 2026-10-08 | ❌ Hoje há `--root`, `--realm`, `--lookback` |
 
 ---
@@ -134,6 +137,7 @@ ARCHITECTURE.md §3 (Detecção de realms) precisam estar decididas; o índice e
 | Alter Ego e Perfil (nome, papel, continuidade, sessões encerradas e recentes) | R5, R6, R10, R28, R28a, R37, R39, R40 |
 | Princípio: o Orb não consome tokens (verificação em todos os épicos) | R38 |
 | Protocolo 0.3, estado por realm e do mundo, tempo no Core e histórico em duas camadas | R47, R48, R49 |
+| Tarefas da sessão, subagente que volta ao líder, estados de erro do líder, atributos por área | R50, R51, R52, R40 |
 | Gate e avisos de diálogo | R34, R35 |
 | Registro local do Orb | R36 |
 | Configurações do Orb (tela e arquivo de preferências) | R29 |

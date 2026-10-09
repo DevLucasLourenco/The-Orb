@@ -38,7 +38,8 @@ Situação: ✅ como está · ❌ precisa mudar · ❓ precisa de decisão.
 | V-REALM-4 | Brilho geral das janelas | Dado | Quantidade de sessões ativas no realm (0 → apagado; 3 ou mais → máximo) | ⚠️ Correto como dado, mas aplicado sobre o padrão aleatório |
 | V-REALM-5 | Arestas de luz do Rooftop Room: azul / âmbar | Dado | Âmbar quando alguma sessão do realm espera o Lucas | ⚠️ A cor do "esperando" muda (R20c, V-PEND-7b) |
 | V-REALM-6 | Feixe âmbar subindo do prédio, anel âmbar pulsando | Dado | Alguma sessão do realm espera o Lucas (aprovação/pergunta); visível de toda a cidade | ⚠️ A cor do "esperando" muda (R20c, V-PEND-7b) |
-| V-REALM-7 | Rótulo: nome, "N sessões · M ativas · K esperando" | Dado | Snapshot do Core | ✅ |
+| V-REALM-7 | Rótulo: nome, "N sessões · M ativas · K esperando" e, quando houver dado, o **Weather** e as **tarefas abertas** (D-097) | Dado | Snapshot do Core; sem dado, a parte não aparece | ⚠️ Faltam Weather e tarefas |
+| V-REALM-17 | **Task Board com as tarefas concluídas** da lista do CLI | Dado | A lista de tarefas que o provider grava (R50, D-093) | ⏳ |
 | V-REALM-8 | Cinco áreas no piso | Legenda | **Decidido (R20c):** piso neutro, cada área identificada por **ícone e nome** e um padrão no piso, sem cor própria. Hoje: Azul = Development Center · Verde = Testing Lab · Violeta = Research Center · Amarelo = Code Review · Rosa = Task Board (R21) | ❌ Mudar para R20c; ícones em V-PEND-7d |
 | V-REALM-9 | Anel no centro da sala (lobby) | Legenda | Lugar de quem não está numa área: pensando, parado, esperando, delegando | ✅ |
 | V-REALM-10 | Fileira na frente da sala | Heurística | Sessões "dormindo" (parada há mais de 15 min, ou encerrada). Encerradas **não são excluídas** (R28). **Na sala só ficam as ativas e as dos últimos 10 dias** (configurável, R28a); as demais vão para o Histórico do realm | ✅ Prazo (R28a) e limite de 15 min (R31) decididos |
@@ -61,6 +62,8 @@ Situação: ✅ como está · ❌ precisa mudar · ❓ precisa de decisão.
 | V-EGO-12 | Contador **"+N"** numa área | Dado | Personagens além dos 8 visíveis naquela área (R33) | ⏳ |
 | V-EGO-9 | Personagem menor, mesma cor | Dado | Subagente da sessão (Team) | ✅ |
 | V-EGO-10 | Subagente **cinza ("sem sinal")** | Heurística | **Decidido (R7, D-045, D-050):** depois de **5 min sem atividade** e sem sinal do fim, o subagente fica **cinza translúcido, sem halo, com um ícone de sinal cortado** sobre a cabeça, em vez de sumir. O opencode continua cinza **sólido, com halo**. Hoje: some depois de 5 min | ❌ Mudar |
+| V-EGO-15 | **Líder em erro, bloqueado ou sem sinal**: ícone neutro sobre a cabeça (erro = triângulo branco com "!" e corpo apagado; bloqueado = cadeado; sem sinal = o ícone de sinal cortado de V-EGO-10) | Dado | Estados `ERROR`, `BLOCKED`, `NO_SIGNAL` do Core (R52, D-095); sem vermelho | ⏳ |
+| V-EGO-16 | **Subagente que termina caminha até o líder** e então sai de cena | Dado | Sinal `subagent.ended` (R51, D-094); sem o sinal, vale V-EGO-10 | ⏳ |
 
 ## 4. Painéis
 
@@ -77,6 +80,8 @@ Situação: ✅ como está · ❌ precisa mudar · ❓ precisa de decisão.
 | V-HUD-9 | **Energy**: tokens e custo por sessão e realm (overview), total de hoje (barra de cima), limites da conta (painel) | Dado | Só o que o provider informa, nunca estimado (R43) | ⚠️ Só por sessão hoje |
 | V-HUD-10 | **Chronicle**: barra de tempo no rodapé | Dado | Arrastar mostra a cidade como era, pelo registro local do Orb (R44) | ⏳ |
 | V-HUD-11 | **Archive**: aba no Inner World | Dado | Instruções, skills e memória da sessão: nome, tamanho e data; conteúdo só ao abrir (R45) | ⏳ |
+| V-HUD-15 | **Progresso da tarefa** no overview: "7 de 12" e uma barra por sessão | Dado | A lista de tarefas que o próprio CLI mantém (R50, D-093); sem lista, nada | ⏳ |
+| V-HUD-16 | **Atributos por área** no overview: barras com a parcela do trabalho em cada área | Dado | A mesma contagem do Papel (R40, D-096); não é pontuação | ⏳ |
 
 ---
 
