@@ -31,6 +31,8 @@ agentes trabalham.
 | [docs/IDEAS.md](docs/IDEAS.md) | Backlog **completo** de ideias, com status (nada é apagado) |
 | [docs/PROGRESSION.md](docs/PROGRESSION.md) | Progressão: XP, níveis e conquistas (proposta) |
 | [CLAUDE.md](CLAUDE.md) | **Guia para os agentes** que trabalham neste repositório: processo, invariantes, arquitetura, testes |
+| [AGENTS.md](AGENTS.md) | Aponta os outros CLIs (Codex, opencode, Hermes) para o `CLAUDE.md` |
+| [.scratch/](.scratch/README.md) | **Specs e tickets**, locais e versionados (a primeira spec: [the-orb-cidade-viva](.scratch/the-orb-cidade-viva/spec.md)) |
 
 ## Princípios (resumo)
 
