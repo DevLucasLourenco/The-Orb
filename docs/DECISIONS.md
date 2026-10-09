@@ -96,6 +96,8 @@ implementação só volta depois deles (regra P1).
 | D-079 | 2026-10-09 | **Archive:** aba no Inner World com `CLAUDE.md`, `AGENTS.md`, skills e memória de cada provider; só nome, tamanho e data; conteúdo só quando o Lucas abrir; somente leitura, nada reinjetado | Lucas | R45, V-HUD-11 |
 | D-080 | 2026-10-09 | **Gate no mundo:** um portão na borda da cidade, de frente para a câmera inicial e fora dos bairros, com a contagem de quem espera o Lucas; clicar abre a lista de esperas de todos os realms e permite escrever para qualquer Alter Ego pelo terminal dele | Lucas | R46, V-CITY-7 |
 | D-081 | 2026-10-09 | **Ordem das camadas vivas:** janelas acesas → Gate → Chronicle → Weather → Energy → Archive | Lucas | VISION.md §5 |
+| D-082 | 2026-10-09 | **`CLAUDE.md` na raiz**: guia para os agentes que trabalham no repositório (fontes da verdade, processo, invariantes, arquitetura, testes, git). Conteúdo em revisão (Q-DEV-1) | Lucas | [CLAUDE.md](../CLAUDE.md) |
+| D-083 | 2026-10-09 | **Progressão (pontos, níveis, conquistas)** sai do backlog e entra no levantamento, com proposta própria | Lucas | [PROGRESSION.md](PROGRESSION.md), rodada Q-XP |
 
 ## Decisões revistas
 
@@ -195,3 +197,30 @@ tickets, cada uma precisa de fonte de dado, forma no mundo e limites. Todas resp
 | ~~Q-LIVE-4~~ D-079 | **Archive (o que molda cada sessão):** o que e onde? | Uma aba **Archive** no Inner World: `CLAUDE.md`, `AGENTS.md`, skills e arquivos de memória de cada provider, só **nome, tamanho e data**; o conteúdo só quando o Lucas abrir um arquivo. Somente leitura, nada é reinjetado (já decidido em VISION.md §5) |
 | ~~Q-LIVE-5~~ D-080 | **Gate:** onde fica no mundo? | Um **portão na borda da cidade**, de frente para a câmera inicial, fora dos bairros, com a contagem de quem espera o Lucas; clicar abre a lista de esperas de todos os realms e permite escrever para qualquer Alter Ego (pelo terminal dele, R35) |
 | ~~Q-LIVE-6~~ D-081 | **Ordem das camadas vivas** | A de VISION.md §5: janelas acesas → Gate → Chronicle → Weather → Energy → Archive |
+
+### Próxima rodada: progressão (aberta em 2026-10-09)
+
+Proposta completa em [PROGRESSION.md](PROGRESSION.md). Tudo respeita R12 (telemetria real), R16
+(somente leitura) e R38 (sem tokens).
+
+| Id | Pergunta | Proposta |
+|---|---|---|
+| Q-XP-1 | **O princípio:** o que é XP no Orb? | **Recibo de trabalho confirmado**: cada ponto aponta para a evidência (teste, commit, subagente) num **extrato**; nada por tokens, custo, mensagens ou tempo esperando; nunca negativa; os agentes nunca a veem (§1) |
+| Q-XP-2 | **Fontes e pesos** (tabela v1) | Teste verde 5 (1 a cada 10 min); vermelho → verde 25; commit 10 + 1/20 linhas (teto 40); subagente concluído 3 para o líder (teto 30/dia); **ofício** 1 a cada 5 min ativos (teto 30/dia, para sessões de pesquisa e revisão não ficarem no nível 1); PR mesclado 50 depois, opcional (§3) |
+| Q-XP-3 | **Provisória → confirmada** | XP de commit é **provisória** até o commit chegar à branch principal; revertido = **anulada**; 30 dias sem chegar = expira. O nível usa só a confirmada e **pode cair** se um commit for revertido (§3, §4) |
+| Q-XP-4 | **Três escalas** | **Alter Ego**, **Realm** (soma dos seus Alter Egos) e **Mankind** (o Orb inteiro), com um **placar por provider** (§2) |
+| Q-XP-5 | **Team e continuidade** | A XP dos subagentes vai para o líder; retomar mantém a XP; bifurcar começa do zero e mostra de quem nasceu (R39) |
+| Q-XP-6 | **Commits do Lucas** fora das sessões | **Não contam**: o Orb mede os agentes. Continuam nas janelas e na altura do prédio |
+| Q-XP-7 | **Curva de níveis** | XP para o nível *n* = k · n · (n − 1), com k = 50 (Alter Ego), 500 (Realm), 2.500 (Mankind); **calibrada com o histórico real** antes do ticket, para a sessão típica ficar entre os níveis 2 e 4 (§4) |
+| Q-XP-8 | **Retroativa?** | **Sim**: no primeiro uso, o Orb calcula a XP de todas as sessões antigas em segundo plano, lendo cada uma uma única vez. Alternativa: começar do zero, como o Chronicle (§7) |
+| Q-XP-9 | **Conquistas** | 16 medalhas iniciais (Primeiro verde, Fênix, Maestro, Polímata, Cirurgião, …, Panteão), cada uma com recibo e **sem XP**, para não contar o trabalho duas vezes (§5) |
+| Q-XP-10 | **Onde aparece** | Nível ao lado do nome; anel de luz ao subir de nível; nível de Mankind na barra de cima com o painel Progressão; nível do realm e barras de XP no overview; aviso de conquista nova. Tudo em **branco neutro**, fora das cores com significado (§6) |
+| Q-XP-11 | **Missões** (quests) | **Backlog**: só missões definidas pelo Lucas, cumpridas quando os dados confirmam; nunca geradas automaticamente (§9) |
+
+### Próxima rodada: guia dos agentes (aberta em 2026-10-09)
+
+| Id | Pergunta | Proposta |
+|---|---|---|
+| Q-DEV-1 | **O conteúdo do [CLAUDE.md](../CLAUDE.md)** está bom? | Fontes da verdade, processo e formato das rodadas, 11 invariantes, regras de dependência e padrões de código, testes, git e como falar com o Lucas. Ele aponta para os documentos em vez de copiá-los, para não divergir |
+| Q-DEV-2 | **Os outros providers** também trabalham neste repositório? | Um `AGENTS.md` curto, lido por Codex e opencode (a confirmar o do Hermes), que manda seguir o `CLAUDE.md`, para o guia ser um só |
+| Q-DEV-3 | **Branches na implementação** | Documentação continua direto na `main` local. Na implementação, **uma branch e um PR por ticket**, com o PR citando as regras e os critérios de aceite do ticket |

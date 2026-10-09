@@ -129,7 +129,8 @@ Room tem as cinco áreas do Environment, sem exceção, mesmo que o realm nunca 
   (regra R28). Na sala ficam as ativas e as dos **últimos 10 dias** (configurável no Orb); as demais
   ficam no **Histórico do realm** (regra R28a).
 - Stats e nível (XP), quando existirem, vêm só de histórico real (testes, PRs, retrabalho,
-  tokens, tempo). Nunca inventados.
+  tokens, tempo). Nunca inventados. Proposta de progressão (XP como recibo de trabalho confirmado,
+  níveis e conquistas): [PROGRESSION.md](PROGRESSION.md).
 
 ### Inner World
 

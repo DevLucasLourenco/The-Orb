@@ -29,6 +29,8 @@ agentes trabalham.
 | [docs/MVP.md](docs/MVP.md) | Escopo do MVP, critérios, riscos, decisões e próximos passos |
 | [docs/SPIKES.md](docs/SPIKES.md) | Resultados completos dos 4 spikes |
 | [docs/IDEAS.md](docs/IDEAS.md) | Backlog **completo** de ideias, com status (nada é apagado) |
+| [docs/PROGRESSION.md](docs/PROGRESSION.md) | Progressão: XP, níveis e conquistas (proposta) |
+| [CLAUDE.md](CLAUDE.md) | **Guia para os agentes** que trabalham neste repositório: processo, invariantes, arquitetura, testes |
 
 ## Princípios (resumo)
 
