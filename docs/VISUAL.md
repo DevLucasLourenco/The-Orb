@@ -56,12 +56,12 @@ Situação: ✅ como está · ❌ precisa mudar · ❓ precisa de decisão.
 | V-EGO-4 | Balanço do corpo, halo girando mais rápido | Dado | A sessão está trabalhando (lendo, editando, executando, testando, revisando, pesquisando) | ✅ |
 | V-EGO-5 | Três pontos orbitando a cabeça | Dado | `THINKING` | ✅ |
 | V-EGO-6 | Losango âmbar sobre a cabeça | Dado | A sessão espera o Lucas | ⚠️ A cor do "esperando" muda (R20c, V-PEND-7b) |
-| V-EGO-7 | Translúcido, cabeça baixa, sem halo | Heurística | "Dormindo": sessão recente parada há mais de 15 min (R31) | ✅ |
+| V-EGO-7 | Translúcido, cabeça baixa, sem halo | Heurística | "Dormindo": sessão recente parada há mais de 15 min (R31); o mundo informa `asleep` (R47) | ✅ |
 | V-EGO-8 | Rótulo: **nome histórico em destaque**; embaixo "provider · título da sessão"; depois atividade · última ação | Dado + Identidade | Título e modelo do próprio CLI; última ferramenta usada, com o texto do provider; o nome vem de §9 (D-066) | ⚠️ Hoje sem o nome |
 | V-EGO-11 | **Nome histórico** do personagem (ex.: "Einstein") | Identidade | Sorteado sem reposição quando a sessão aparece, fica com a sessão (R37, §9) | ⏳ |
 | V-EGO-12 | Contador **"+N"** numa área | Dado | Personagens além dos 8 visíveis naquela área (R33) | ⏳ |
 | V-EGO-9 | Personagem menor, mesma cor | Dado | Subagente da sessão (Team) | ✅ |
-| V-EGO-10 | Subagente **cinza ("sem sinal")** | Heurística | **Decidido (R7, D-045, D-050):** depois de **5 min sem atividade** e sem sinal do fim, o subagente fica **cinza translúcido, sem halo, com um ícone de sinal cortado** sobre a cabeça, em vez de sumir. O opencode continua cinza **sólido, com halo**. Hoje: some depois de 5 min | ❌ Mudar |
+| V-EGO-10 | Subagente **cinza ("sem sinal")** | Heurística | **Decidido (R7, D-045, D-050):** depois de **5 min sem atividade** e sem sinal do fim, o subagente fica **cinza translúcido, sem halo, com um ícone de sinal cortado** sobre a cabeça, em vez de sumir. O opencode continua cinza **sólido, com halo**. O mundo informa `no_signal` (R47); o subagente fica no lugar em que estava | ✅ Feito e conferido ao vivo (ticket 01). Com R30 (ticket 05) o opencode fica cinza: o que o separa do "sem sinal" é a translucidez, o halo e o ícone |
 | V-EGO-15 | **Líder em erro, bloqueado ou sem sinal**: ícone neutro sobre a cabeça (erro = triângulo branco com "!" e corpo apagado; bloqueado = cadeado; sem sinal = o ícone de sinal cortado de V-EGO-10) | Dado | Estados `ERROR`, `BLOCKED`, `NO_SIGNAL` do Core (R52, D-095); sem vermelho | ⏳ |
 | V-EGO-16 | **Subagente que termina caminha até o líder** e então sai de cena | Dado | Sinal `subagent.ended` (R51, D-094); sem o sinal, vale V-EGO-10 | ⏳ |
 | V-EGO-13 | **Nível** ao lado do nome histórico no rótulo ("Einstein · 7") | Dado | Nível do Alter Ego pela XP confirmada (R54, D-110) | ⏳ |
@@ -125,6 +125,13 @@ exatos, saturados para se distinguirem da paleta do git, ficam para a V-PEND-7d.
 **Decidido (R20c):** as áreas **não têm cor própria**: piso neutro, identificadas por **ícone e
 nome** (e um padrão no piso). "Esperando o Lucas" é **magenta pulsante**. Ícones e tons exatos:
 V-PEND-7d.
+
+### Subagente sem sinal (V-EGO-10, R7, D-050)
+
+Tons neutros, fora do orçamento de cores: corpo e cabeça em cinza `#8a909c` (a cabeça clareada), com
+**40% de opacidade** e sem halo; o ícone de sinal cortado sobre a cabeça é um sprite (sempre de frente
+para a câmera) com barras `#c9d0dc` e um traço branco `#ffffff` com contorno `#0b1020`. Os valores
+estão em `clients/web/js/avatar.js`; mudá-los exige mudar esta seção.
 
 **Orçamento de cores do mundo:** janelas = paleta do git · personagens = cor do provider ·
 "esperando o Lucas" = magenta. Nenhuma outra cor carrega significado; o cenário é neutro (R12a).

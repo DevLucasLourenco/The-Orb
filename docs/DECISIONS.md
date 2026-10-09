@@ -133,6 +133,11 @@ ele revisar, e a proposta está escrita no documento do assunto.
 | D-116 | 2026-10-09 | **Árvore da Team no overview:** subagentes em árvore (quem criou quem), com tipo e estado; no mundo nada muda | Lucas | Q-REV-2, R57, V-HUD-17 |
 | D-117 | 2026-10-09 | **Divisão em 25 tickets aprovada**, gravados em `.scratch/the-orb-cidade-viva/issues/` | Lucas | P5 |
 | D-118 | 2026-10-09 | **Tickets 05 e 25 ficam `ready-for-agent`**, com um ponto de parada explícito para a aprovação do Lucas (prévia de cores; curva de XP) | Lucas | `.scratch/the-orb-cidade-viva/issues/` 05 e 25 |
+| D-119 | 2026-10-09 | **Um subagente "sem sinal" não segura o líder em `DELEGATING`**: sem isso, um subagente em segundo plano que nunca avisa o fim mantinha a sessão "delegando" para sempre e ela nunca dormia | Lucas | Q-T01-1, R7, R31, ticket 01 |
+| D-120 | 2026-10-09 | **Atividade de um subagente = qualquer evento dele** (resultado, narração, ferramenta), não só os que trazem sinal | Lucas | Q-T01-2, ticket 01 |
+| D-121 | 2026-10-09 | **Os totais de subagentes ativos não contam os "sem sinal"**; eles seguem listados no overview, em cinza | Lucas | Q-T01-3, ticket 01 |
+| D-122 | 2026-10-09 | **Líder dormindo não esconde a Team**: só uma sessão encerrada a esconde; os "sem sinal" ficam cinza no lugar (R7); o limite por área é do ticket 13 | Lucas | Q-T01-4, ticket 01, ticket 13 |
+| D-123 | 2026-10-09 | **Só dorme quem está parado (`IDLE`)**: sessão presa em atividade (CLI morto) não dorme; "esperando você" nunca dorme | Lucas | Q-T01-5, R31 |
 
 ## Decisões revistas
 
@@ -308,4 +313,18 @@ que **nunca foram decididos**:
 |---|---|---|
 | ~~Q-REV-1~~ D-115 | **Brilho geral das janelas** (V-REALM-4: mais sessões ativas = janelas mais fortes). Com as janelas mostrando o git (R20) e só acesas ou apagadas (D-043), esse brilho ainda faz sentido? | **Retirar:** a janela acesa tem brilho fixo; a atividade já aparece na sala (personagens trabalhando) e no rótulo. Evita misturar dois dados na mesma janela |
 | ~~Q-REV-2~~ D-116 | **Árvore da Team** (VISION.md §5: "a árvore de quem delegou o quê"). Subagentes podem ter subagentes; hoje o overview lista todos no mesmo nível | **No overview**, os subagentes aparecem em árvore (quem criou quem), com o tipo e o estado de cada um; **no mundo**, nada muda (todos na sala, menores) |
+
+### Rodada: o que a implementação do ticket 01 decidiu por conta própria (aberta em 2026-10-09)
+
+Ao implementar o ticket 01 ([.scratch/the-orb-cidade-viva/issues/01-mundo-calcula-o-tempo.md](../.scratch/the-orb-cidade-viva/issues/01-mundo-calcula-o-tempo.md)),
+cinco comportamentos **não estavam escritos** e foram escolhidos de forma provisória (regra P2).
+**O Lucas confirmou as cinco em 2026-10-09 (D-119 a D-123).** Todos estão cobertos por teste no mundo.
+
+| Id | Pergunta | Proposta (já aplicada, provisória) |
+|---|---|---|
+| ~~Q-T01-1~~ D-119 | Um subagente **"sem sinal"** (sem atividade há 5 min e sem aviso de fim) ainda segura o líder em `DELEGATING`? | **Não.** Sem isso, um subagente em segundo plano que nunca avisa o fim mantinha a sessão "delegando" para sempre e ela nunca dormia. Custo: um subagente legítimo, mas calado por mais de 5 min, faz o líder voltar a `IDLE` (e, 15 min depois, a dormir) |
+| ~~Q-T01-2~~ D-120 | O que conta como **atividade** de um subagente? | **Qualquer evento dele** (resultado, narração, ferramenta), não só os que trazem sinal |
+| ~~Q-T01-3~~ D-121 | Os totais de **subagentes ativos** (barra de cima, Mankind) contam os "sem sinal"? | **Não:** não se sabe que ainda trabalham. Eles continuam listados no overview, em cinza |
+| ~~Q-T01-4~~ D-122 | Um líder **dormindo** esconde a Team? | **Não** (só uma sessão **encerrada** esconde): os subagentes "sem sinal" ficam cinza no lugar onde estavam, como pede R7. Com muitos, o ticket 13 limita a 8 por área e mostra "+N" |
+| ~~Q-T01-5~~ D-123 | Só dorme quem está `IDLE`? Uma sessão presa em `READING`/`CODING` há horas (CLI morto) nunca dorme | **Manter:** é o comportamento que o cliente já tinha, e "esperando você" nunca deve dormir. Alternativa a estudar: sem nenhum evento há mais de X min, qualquer estado de trabalho vira `NO_SIGNAL` |
 

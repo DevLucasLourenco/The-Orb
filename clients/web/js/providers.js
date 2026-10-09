@@ -15,9 +15,7 @@ export const STATE_LABEL = {
   WAITING: "esperando você", BLOCKED: "bloqueado", ERROR: "erro", COMPLETED: "concluído", NO_SIGNAL: "sem sinal",
 };
 
-// Sessão parada há mais que isso aparece "dormindo" (só apresentação; o Core não tem relógio).
-export const ASLEEP_AFTER_MS = 15 * 60 * 1000;
-
+// Só para mostrar "há Xs" nos cartões. Quem decide dormindo e sem sinal é o mundo (R47), não o cliente.
 export function ageMs(ts) {
   const t = Date.parse(ts || "");
   return Number.isFinite(t) ? Date.now() - t : Infinity;
@@ -33,17 +31,8 @@ export function ago(ts) {
   return `há ${Math.round(s / 86400)} d`;
 }
 
-// Subagente sem atividade há mais que isso sai de cena. No nível 0 o fim de um subagente em segundo
-// plano não é observável (docs/adapters/CLAUDE.md §1.6): sem isso ele ficaria "trabalhando" para sempre.
-export const SUB_IDLE_AFTER_MS = 5 * 60 * 1000;
-
-export function subVisible(sub) {
-  return sub.active && ageMs(sub.last_ts) < SUB_IDLE_AFTER_MS;
-}
-
-export function isAsleep(ego) {
-  return ego.ended || (ego.state === "IDLE" && ageMs(ego.last_ts) > ASLEEP_AFTER_MS);
-}
+// Dormindo: a decisão vem do mundo (`asleep`); o cliente só desenha.
+export const isAsleep = (ego) => Boolean(ego.asleep);
 
 export function tokens(usage) {
   const n = (usage?.input_tokens || 0) + (usage?.output_tokens || 0);
