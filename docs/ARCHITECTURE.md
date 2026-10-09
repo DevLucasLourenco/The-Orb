@@ -293,7 +293,10 @@ The Orb/
 ├── clients/
 │   ├── web/             o mundo 3D: index.html, styles.css, js/ (scene, realm3d, avatar, hud, innerworld, net)
 │   └── godot/           terminal remoto (alternativa; godot-xterm só exibe)
-├── tests/
+├── tests/               (tests/governance/: testes das skills de acompanhamento)
+├── tools/governance/    hook opcional de fechamento das entregas (skill delivery-summary)
+├── .claude/skills/      delivery-summary e phase-overview (acompanhamento; não fazem parte do produto)
+├── .scratch/            spec e tickets (rastreador local, D-098)
 └── spikes/              experimentos que rodam os CLIs reais (02, 03, 04)
 ```
 

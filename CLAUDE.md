@@ -228,3 +228,21 @@ Vocabulário padrão: `needs-triage`, `needs-info`, `ready-for-agent`, `ready-fo
 ### Domain docs
 
 Single-context: um `CONTEXT.md` e `docs/adr/` na raiz. Ver `docs/agents/domain.md`.
+
+### Complementos: acompanhamento e fechamento
+
+`delivery-summary` e `phase-overview` (do pacote
+[skills-matt-pocock-support](https://github.com/devlucaslourenco/skills-matt-pocock-support)) ficam em
+`.claude/skills/` e complementam as skills do Matt Pocock.
+
+- Use `delivery-summary` ao concluir ou pausar uma tarefa que alterou arquivos: gere o fechamento com
+  o script da skill (resultado, mudanças, verificações, riscos, pendências e próximo passo). Pendências
+  de um ticket vão para a seção `## Comments` dele, com `Status: needs-info` quando dependerem do Lucas.
+- Use `phase-overview` quando o Lucas pedir progresso, fases, bloqueios ou o que falta. As fontes deste
+  projeto são `.scratch/the-orb-cidade-viva/` (spec e tickets, com `Status:` e `Blocked by:`),
+  `docs/RULES.md` (coluna Situação) e `docs/DECISIONS.md`. Diferencie implementação de conclusão e
+  validações pendentes.
+- Com `show_widget` disponível, exiba o HTML gerado e inclua a linha de marca na resposta; sem ela, use
+  Markdown.
+- Testes do pacote: `tests/governance/` (rodam junto com `python -m pytest -q`).
+
