@@ -258,3 +258,18 @@ Encontradas na leitura completa do projeto e conferidas nos dados desta máquina
 
 **Correção registrada:** em 2026-10-08 o Claude disse ao Lucas que não havia uma tabela de tipos de
 prédio no CodeCity. Há: as 5 categorias de altura por limites, descritas acima e em VISUAL.md §8.
+
+### Próxima rodada: ideias da conversa original (aberta em 2026-10-09)
+
+A conversa de ideação no ChatGPT foi relida inteira a pedido do Lucas. O que não estava nos
+documentos entrou em [IDEAS.md](IDEAS.md) §9. Tudo abaixo respeita R12 (só dado real), R38 (sem
+tokens) e o orçamento de cores (R20c).
+
+| Id | Pergunta | Proposta |
+|---|---|---|
+| Q-ORIG-1 | **Progresso da tarefa e Task Board** | Mostrar a **lista de tarefas que o próprio CLI mantém** (TodoWrite do Claude, plano do Codex, `todowrite` do opencode): no overview, "7 de 12" e uma barra na sessão; na área **Task Board**, as tarefas concluídas. Só quando o provider grava a lista; sem lista, nada (nunca estimado). Formato de cada provider a levantar só pela estrutura |
+| Q-ORIG-2 | **Subagente que termina** | Ao receber o fim (`subagent.ended`), ele **caminha até o líder** e só então se desmobiliza. Sem sinal de fim, continua a regra R7 (fica cinza no lugar) |
+| Q-ORIG-3 | **Erro, bloqueio e "sem sinal" do líder** (hoje sem entrada em VISUAL.md) | Ícones neutros sobre a cabeça, sem cor de significado: **erro** = triângulo branco com "!" e corpo apagado; **bloqueado** = cadeado; **sem sinal** = o mesmo ícone de sinal cortado do subagente (V-EGO-10). Vermelho fica de fora (é do git) |
+| Q-ORIG-4 | **Atributos por área** | No overview de cada Alter Ego, **barras da parcela do trabalho em cada área** (Development, Testing, Research, Review), calculadas da mesma contagem do Papel (R40). É dado real e explica o Papel; não vira pontuação |
+| Q-ORIG-5 | **Resumo do realm visto de longe** | O rótulo do prédio ganha: sessões ativas, esperando você e, quando houver dado, o **Weather** e as **tarefas abertas** (de Q-ORIG-1). Nada de "saudável" inventado: sem dado, não aparece |
+

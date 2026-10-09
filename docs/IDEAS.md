@@ -156,6 +156,25 @@
 
 ---
 
+## 9. Da conversa original (lida em 2026-10-09)
+
+A ideação que deu origem ao projeto ([VISION.md](VISION.md) §8) foi relida inteira. Quase tudo já
+estava aqui; estas ideias não estavam e entram agora, com status. Propostas na rodada Q-ORIG de
+[DECISIONS.md](DECISIONS.md).
+
+| Ideia | Resumo | Status |
+|---|---|---|
+| Progresso da tarefa da sessão | "7 de 12 subtarefas", barra de progresso sobre o personagem; a lista de tarefas que o próprio CLI mantém (TodoWrite do Claude, plano do Codex, `todowrite` do opencode, Kanban do Hermes) | **Em proposta** (Q-ORIG-1) |
+| Task Board com as tarefas reais da sessão | A área Task Board mostra as tarefas da lista do CLI, não só quem concluiu | **Em proposta** (Q-ORIG-1) |
+| Subagente volta ao líder ao terminar | Ao concluir, o subagente caminha até o líder antes de se desmobilizar (ou ficar cinza, R7) | **Em proposta** (Q-ORIG-2) |
+| Erro, bloqueio e "sem sinal" do líder visíveis | A ideação sugeria "estação vermelha" para erro. Hoje VISUAL.md não define como o líder mostra `ERROR`, `BLOCKED` e `NO_SIGNAL` | **Em proposta** (Q-ORIG-3); vermelho não pode (é do git, R20a) |
+| Atributos por área ("Backend 92, Tests 84") | Barras por tipo de trabalho, calculadas do histórico real da sessão | **Em proposta** (Q-ORIG-4), ligada ao Papel (R40) e à progressão |
+| Resumo do realm visto de longe | "8 agentes, 14 tarefas, 2 bloqueados, saudável" no rótulo do prédio | **Em proposta** (Q-ORIG-5) |
+| Kanban do Hermes | Hooks `kanban_task_claimed/completed/blocked` | Pesquisa: os hooks exigem mudar a configuração (descartados, ver adapters/HERMES.md); falta saber se o Kanban fica gravado em algum lugar legível |
+| Personagem com nome próprio ("Atlas") separado do LLM | O personagem trocaria de Claude para Codex | **Revisto**: Alter Ego = sessão (ADR 0001); o nome é o nome histórico (R37) |
+| Stack da ideação: React Three Fiber, Redis Streams/NATS, PostgreSQL, webhooks do GitHub | Proposta inicial de tecnologia | **Revisto**: Three.js puro sem build (ADR 0007), SQLite local (R36), sem rede por padrão (R42) |
+| Botão do meio + arrastar move o mapa | Controle de câmera | Backlog (hoje: arrastar com o botão esquerdo) |
+
 ## Ordem das camadas vivas (decidida, D-081)
 
 Janelas acesas → Gate → Chronicle → Weather → Energy → Archive. As quatro primeiras só dependem de
