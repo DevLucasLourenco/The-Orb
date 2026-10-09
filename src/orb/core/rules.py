@@ -62,7 +62,9 @@ def subagent_without_signal(*, active: bool, idle_seconds: float | None) -> bool
 
 def leader_state(base: str, *, no_signal: bool, waiting: bool, error: bool, active_subagents: int) -> str:
     """Estado visível do líder (Alter Ego). O fim do turno não encerra a Team: com subagentes
-    ativos o líder aparece DELEGATING (verificado no Claude: a ferramenta Agent é assíncrona)."""
+    ativos o líder aparece DELEGATING (verificado no Claude: a ferramenta Agent é assíncrona).
+    `active_subagents` conta só os que têm sinal: um subagente "sem sinal" (sem atividade há mais de
+    5 min e sem aviso de fim) não segura o líder em DELEGATING (R7, ticket 01)."""
     flags = {"NO_SIGNAL": no_signal, "WAITING": waiting, "ERROR": error}
     for overlay in OVERLAYS:
         if flags[overlay]:

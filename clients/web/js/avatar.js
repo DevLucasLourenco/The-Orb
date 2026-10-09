@@ -7,6 +7,8 @@ const WORKING = new Set(["READING", "RESEARCHING", "CODING", "EXECUTING", "TESTI
 // Subagente sem sinal (R7, D-050): cinza neutro, translúcido, sem halo e com o ícone de sinal cortado.
 const NO_SIGNAL_COLOR = new THREE.Color(0x8a909c);
 const NO_SIGNAL_OPACITY = 0.4;
+// A cabeça é o tom do corpo clareado.
+const headTone = (color) => color.clone().lerp(new THREE.Color(0xffffff), 0.35);
 
 // Ícone de sinal cortado (barras de sinal e um traço). É um sprite: sempre de frente para a câmera.
 function lostSignalSprite() {
@@ -44,7 +46,7 @@ export class Avatar {
     const body = (this.body = new THREE.Mesh(new THREE.CapsuleGeometry(0.46, 0.95, 6, 14),
       new THREE.MeshStandardMaterial({ color, roughness: 0.42, metalness: 0.1, emissive: color, emissiveIntensity: 0.12 })));
     body.position.y = 0.95;
-    this.headColor = color.clone().lerp(new THREE.Color(0xffffff), 0.35);
+    this.headColor = headTone(color);
     const head = (this.head = new THREE.Mesh(new THREE.SphereGeometry(0.4, 24, 16),
       new THREE.MeshStandardMaterial({ color: this.headColor, roughness: 0.35 })));
     head.position.y = 2.0;
@@ -129,7 +131,7 @@ export class Avatar {
     const body = on ? NO_SIGNAL_COLOR : this.color;
     this.body.material.color.copy(body);
     this.body.material.emissive.copy(body);
-    this.head.material.color.copy(on ? NO_SIGNAL_COLOR.clone().lerp(new THREE.Color(0xffffff), 0.35) : this.headColor);
+    this.head.material.color.copy(on ? headTone(NO_SIGNAL_COLOR) : this.headColor);
     this.head.material.transparent = on;
     this.head.material.opacity = on ? NO_SIGNAL_OPACITY : 1;
   }

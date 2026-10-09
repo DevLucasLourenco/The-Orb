@@ -18,6 +18,11 @@ _TOKEN_FIELDS = ("input_tokens", "output_tokens", "cache_read_tokens", "reasonin
 _ACTION_CHARS = 240     # tamanho do "fazendo agora" no overview
 
 
+def _require_aware(now: datetime | None) -> None:
+    if now is not None and now.utcoffset() is None:
+        raise ValueError("a hora do mundo precisa ter fuso horário")
+
+
 def _idle_seconds(last_ts: str | None, now: datetime | None) -> float | None:
     """Segundos entre o último evento e `now`. None quando não dá para saber (sem hora, sem evento,
     data ilegível ou sem fuso): o mundo não afirma nada que dependa do tempo."""
@@ -101,20 +106,27 @@ class AlterEgo:
             self._seen.discard(self._seen_order.popleft())
         return True
 
+    def active_subagents(self, now: datetime | None = None) -> int:
+        """Subagentes sabidamente ativos: ativos e com sinal. Um "sem sinal" não conta (R7): não se
+        sabe que ele ainda trabalha, então não mantém o líder em DELEGATING nem entra nos totais."""
+        return sum(1 for sub in self.subagents.values() if sub.active and not sub.without_signal(now))
+
     def state(self, now: datetime | None = None) -> str:
-        # Um subagente "sem sinal" não é sabidamente ativo: não mantém o líder em DELEGATING.
-        active = sum(1 for sub in self.subagents.values() if sub.active and not sub.without_signal(now))
         return rules.leader_state(self.base, no_signal=self.no_signal, waiting=bool(self.waiting),
-                                  error=self.error is not None, active_subagents=active)
+                                  error=self.error is not None, active_subagents=self.active_subagents(now))
+
+    def asleep(self, now: datetime | None = None) -> bool:
+        return rules.is_asleep(ended=self.ended, state=self.state(now),
+                               idle_seconds=_idle_seconds(self.last_ts, now))
 
     def snapshot(self, now: datetime | None = None) -> dict[str, Any]:
         state = self.state(now)
-        asleep = rules.is_asleep(ended=self.ended, state=state, idle_seconds=_idle_seconds(self.last_ts, now))
         return {
             "id": self.id, "provider": self.provider, "session": self.session, "title": self.title,
             "model": self.model, "cwd": self.cwd, "state": state, "area": rules.area_for(state),
             "target": self.target, "last_action": self.last_action,
-            "ended": self.ended, "asleep": asleep, "error": self.error,
+            "ended": self.ended, "asleep": self.asleep(now), "error": self.error,
+            "active_subagents": self.active_subagents(now),
             "waiting": [{"request": r, "action": a} for r, a in self.waiting.items()],
             "events": self.events, "seq_gaps": self.seq_gaps,
             "usage": dict(self.usage), "last_ts": self.last_ts,
@@ -245,8 +257,7 @@ class World:
     def snapshot(self, now: datetime | None = None) -> dict[str, Any]:
         """O estado do mundo. `now` (com fuso) é a hora de quem pede: com ela o mundo deriva o que
         depende do tempo (dormindo, sem sinal; R47). Sem `now`, nada que dependa do tempo é afirmado."""
-        if now is not None and now.utcoffset() is None:
-            raise ValueError("a hora do snapshot precisa ter fuso horário")
+        _require_aware(now)
         realms = []
         total_egos = active_subs = waiting = 0
         for realm_id in sorted(self.realms):
@@ -254,7 +265,15 @@ class World:
             realms.append({"id": realm_id, "alter_egos": egos})
             total_egos += len(egos)
             for ego in egos:
-                active_subs += sum(1 for sub in ego["team"] if sub["active"] and not sub["no_signal"])
+                active_subs += ego["active_subagents"]
                 waiting += len(ego["waiting"])
         return {"realms": realms,
                 "mankind": {"alter_egos": total_egos, "active_subagents": active_subs, "waiting": waiting}}
+
+    def time_key(self, now: datetime) -> tuple:
+        """O que, no estado do mundo, só o passar do tempo muda: quem dorme e quem está sem sinal.
+        Quem distribui o mundo compara esta chave para avisar os clientes sem esperar um evento novo.
+        Os tickets "noite" (06) e "hoje" (20) estendem a chave quando criarem estados novos de tempo."""
+        _require_aware(now)
+        return tuple((ego.id, ego.asleep(now), tuple(sub.without_signal(now) for sub in ego.subagents.values()))
+                     for egos in self.realms.values() for ego in egos.values())

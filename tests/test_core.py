@@ -238,3 +238,24 @@ def test_an_unparseable_timestamp_never_breaks_the_snapshot():
                            realm="the-orb", alter_ego="claude:s1", agent=None, seq=1, kind="x", body={},
                            signal={"type": "idle"}))
     assert ego_at(world, 600)["asleep"] is False                 # sem hora confiável, não afirma nada
+
+
+def test_the_world_tells_what_only_time_can_change():
+    world = World()
+    world.apply(at(0, {"type": "subagent.started"}, agent="a1"))
+    world.apply(at(0, {"type": "idle"}))
+    early = world.time_key(T0 + timedelta(minutes=1))
+    assert world.time_key(T0 + timedelta(minutes=2)) == early        # o tempo passou, nada mudou
+    assert world.time_key(T0 + timedelta(minutes=6)) != early        # o subagente ficou sem sinal
+    assert world.time_key(T0 + timedelta(minutes=20)) != world.time_key(T0 + timedelta(minutes=6))   # a sessão dormiu
+    with pytest.raises(ValueError):
+        world.time_key(datetime(2026, 10, 7, 10, 0, 0))  # noqa: DTZ001 - sem fuso, de propósito
+
+
+def test_the_snapshot_counts_subagents_with_signal_per_alter_ego():
+    world = World()
+    world.apply(at(0, {"type": "subagent.started"}, agent="a1"))
+    world.apply(at(4, {"type": "subagent.started"}, agent="a2"))
+    assert ego_at(world, 4.5)["active_subagents"] == 2
+    assert ego_at(world, 6)["active_subagents"] == 1                 # a1 ficou sem sinal; a2 não
+    assert world.snapshot(T0 + timedelta(minutes=6))["mankind"]["active_subagents"] == 1

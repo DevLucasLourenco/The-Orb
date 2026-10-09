@@ -67,12 +67,6 @@ def authorized(token: str, query_token: str | None, origin: str | None) -> bool:
     return origin is not None and urlparse(origin).hostname in ALLOWED_HOSTS
 
 
-def _time_key(world: dict[str, Any]) -> tuple:
-    """O que, no snapshot, só o passar do tempo pode mudar: quem dorme e quem está sem sinal."""
-    return tuple((ego["id"], ego["asleep"], tuple(sub["no_signal"] for sub in ego["team"]))
-                 for realm in world["realms"] for ego in realm["alter_egos"])
-
-
 class Hub:
     """O mundo vivo: observa os realms, aplica no Core e distribui aos clientes do mundo.
 
@@ -89,8 +83,11 @@ class Hub:
     def realms(self) -> list[dict[str, Any]]:
         return [self.observatory.describe(rid) for rid in sorted(self.observatory.realms)]
 
-    def snapshot(self) -> dict[str, Any]:
-        world = self.world.snapshot(self.clock())
+    def snapshot(self, now: datetime | None = None) -> dict[str, Any]:
+        """O mundo na hora do servidor (`generated_at`): é com ela que o Core deriva dormindo e sem sinal."""
+        now = now or self.clock()
+        world = self.world.snapshot(now)
+        world["generated_at"] = now.isoformat()
         known = {realm["id"] for realm in world["realms"]}
         # Todo realm observado existe na cidade, mesmo sem nenhuma sessão ainda.
         world["realms"] += [{"id": rid, "alter_egos": []} for rid in self.observatory.realms if rid not in known]
@@ -118,14 +115,14 @@ class Hub:
 
     def publish_world(self) -> None:
         """Envia o mundo (na hora do servidor) a todos os clientes e guarda o que eles viram do tempo."""
-        world = self.snapshot()
-        self._published_time_key = _time_key(world)
-        self.publish({"channel": "world", "world": world})
+        now = self.clock()
+        self._published_time_key = self.world.time_key(now)
+        self.publish({"channel": "world", "world": self.snapshot(now)})
 
     def time_changed(self) -> bool:
         """Só o passar do tempo mudou algo (alguém dormiu, um subagente ficou sem sinal) desde o
         último mundo enviado? Assim os clientes são avisados sem esperar um evento novo."""
-        return _time_key(self.snapshot()) != self._published_time_key
+        return self.world.time_key(self.clock()) != self._published_time_key
 
     async def run(self, poll_seconds: float) -> None:
         last_tick = time.monotonic()

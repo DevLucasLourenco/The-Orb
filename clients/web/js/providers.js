@@ -31,10 +31,6 @@ export function ago(ts) {
   return `há ${Math.round(s / 86400)} d`;
 }
 
-// O subagente está na Team enquanto não terminou. "Sem sinal" (sem atividade há 5 min e sem aviso de
-// fim) também aparece: fica cinza no lugar, em vez de sumir (R7). Quem decide é o mundo (`no_signal`).
-export const subVisible = (sub) => sub.active;
-
 // Dormindo: a decisão vem do mundo (`asleep`); o cliente só desenha.
 export const isAsleep = (ego) => Boolean(ego.asleep);
 

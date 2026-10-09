@@ -101,7 +101,9 @@ Todo adapter expõe a mesma forma (`orb.adapters._shared.base`):
   `now` (com fuso) é a hora de quem pede; com ela o mundo deriva o que depende do tempo e os limites
   ficam numa tabela de `rules.py`: `asleep` no Alter Ego (parado há mais de 15 min, ou encerrado) e
   `no_signal` no subagente (ativo, sem atividade há mais de 5 min; o estado vira `NO_SIGNAL`, a área é
-  a do último estado conhecido, e ele deixa de manter o líder em `DELEGATING`). Sem `now`, nada que
+  a do último estado conhecido, e ele deixa de manter o líder em `DELEGATING`) e `active_subagents`
+  (os sabidamente ativos). `World.time_key(now)` diz o que só o tempo muda, e o Hub acrescenta
+  `generated_at` (a hora do servidor) ao snapshot. Sem `now`, nada que
   dependa do tempo é afirmado. Faltam, para os tickets seguintes, "noite" (06) e "hoje" (20).
 - **Decidido (D-085):** o Core guarda também estado **por realm** (métricas, alterações locais,
   Weather) e **do mundo** (limites da conta), vindo de eventos com `alter_ego: null` (protocolo 0.3).

@@ -36,19 +36,35 @@ Ponto de teste: o mundo (eventos sintéticos + horas diferentes → estados).
 
 ## Comments
 
-Implementado em 2026-10-09 na branch `ticket/01-mundo-calcula-o-tempo`; falta a revisão e o merge.
-**Fora do que o ticket pedia, decidido na implementação (confira):**
+Implementado em 2026-10-09 na branch `ticket/01-mundo-calcula-o-tempo`; falta a revisão do Lucas e o merge.
 
-- Um subagente "sem sinal" **deixa de manter o líder em `DELEGATING`**. Sem isso, um subagente em
-  segundo plano que nunca avisa o fim mantinha a sessão "delegando" para sempre e ela nunca dormia.
-- **Qualquer evento do subagente** conta como atividade (antes, só os que traziam sinal).
-- O total de subagentes ativos de Mankind passa a **não contar** os sem sinal (não se sabe que estão ativos).
-- A hora do snapshot precisa ter fuso; data ilegível no evento não quebra nada (o mundo não afirma nada).
+**O que ficou decidido na implementação, sem estar escrito antes** (agora em DECISIONS.md, rodada
+Q-T01-1 a 5, para o Lucas confirmar): o "sem sinal" não segura o líder em `DELEGATING`; qualquer evento
+do subagente é atividade; os totais não contam os sem sinal; líder dormindo não esconde a Team;
+só dorme quem está `IDLE`. Também: a hora do snapshot precisa ter fuso e o snapshot do servidor
+leva `generated_at`; data ilegível no evento não quebra nada (o mundo não afirma nada).
 
-**Verificação ao vivo:** console do navegador sem erros; o canal `/world` entrega `asleep` e
-`no_signal` com dados reais (8 sessões, 1 dormindo, 119 subagentes). O desenho do ícone de sinal
-cortado no 3D ainda não foi visto numa sessão real com subagente sem sinal.
+**Revisão (/code-review, padrões e spec), tratada neste ticket:** a regra "subagente ativo e com
+sinal" ficou só no mundo (`active_subagents`), o cliente deixou de calculá-la; os subagentes não somem
+com o líder dormindo; a chave do que só o tempo muda (`time_key`) mora no mundo; o laço do servidor
+tem teste; as cores do "sem sinal" estão em VISUAL.md §5.
+
+**O critério "o opencode continua cinza sólido com halo" só vale depois do ticket 05** (R30): hoje o
+opencode é azul. Nada no ticket 01 mexe na cor dos providers; o "sem sinal" é cinza neutro,
+translúcido, sem halo e com o ícone, então já se distingue do opencode (sólido, com halo).
+
+**Verificação ao vivo:** console do navegador sem erros; o canal `/world` entrega `asleep`,
+`no_signal` e `active_subagents` com dados reais. O desenho do ícone de sinal cortado no 3D ainda não
+foi visto numa sessão real com subagente sem sinal.
 
 **Observação para o ticket 06:** o primeiro poll com os 19 realms demora mais de 100 s e aplica
-~10 mil eventos antes de aparecer a primeira sessão (já era assim; é o que a leitura em duas camadas, R48, resolve).
+~10 mil eventos antes de aparecer a primeira sessão (já era assim; é o que a leitura em duas
+camadas, R48, resolve). Outra: o ritmo de leitura do servidor continua em 500 ms (D-087 pede 250 ms, ticket 06).
+
+**Achado ao vivo (para o ticket 02 ou 03, não é deste):** os eventos de abertura de sessão e de
+subagente do Claude e do Hermes não trazem hora do evento e usam a **hora da leitura**. Um subagente
+descoberto agora parece "recém-ativo" mesmo que tenha começado horas atrás, e só vira "sem sinal" 5 min
+depois. Na máquina do Lucas, 117 dos 120 subagentes ativos ficaram "sem sinal" 5 min depois do
+primeiro poll (a maioria, subagentes antigos que nunca avisam o fim). Com R7 ("não some"), o 3D vai
+mostrar esses 117 em cinza até o ticket 13 limitar a 8 por área e mostrar "+N".
 

@@ -309,3 +309,17 @@ que **nunca foram decididos**:
 | ~~Q-REV-1~~ D-115 | **Brilho geral das janelas** (V-REALM-4: mais sessões ativas = janelas mais fortes). Com as janelas mostrando o git (R20) e só acesas ou apagadas (D-043), esse brilho ainda faz sentido? | **Retirar:** a janela acesa tem brilho fixo; a atividade já aparece na sala (personagens trabalhando) e no rótulo. Evita misturar dois dados na mesma janela |
 | ~~Q-REV-2~~ D-116 | **Árvore da Team** (VISION.md §5: "a árvore de quem delegou o quê"). Subagentes podem ter subagentes; hoje o overview lista todos no mesmo nível | **No overview**, os subagentes aparecem em árvore (quem criou quem), com o tipo e o estado de cada um; **no mundo**, nada muda (todos na sala, menores) |
 
+### Rodada: o que a implementação do ticket 01 decidiu por conta própria (aberta em 2026-10-09)
+
+Ao implementar o ticket 01 ([.scratch/the-orb-cidade-viva/issues/01-mundo-calcula-o-tempo.md](../.scratch/the-orb-cidade-viva/issues/01-mundo-calcula-o-tempo.md)),
+cinco comportamentos **não estavam escritos** e foram escolhidos de forma provisória (regra P2: ficam
+aqui para o Lucas confirmar ou mudar). Todos estão cobertos por teste no mundo.
+
+| Id | Pergunta | Proposta (já aplicada, provisória) |
+|---|---|---|
+| Q-T01-1 | Um subagente **"sem sinal"** (sem atividade há 5 min e sem aviso de fim) ainda segura o líder em `DELEGATING`? | **Não.** Sem isso, um subagente em segundo plano que nunca avisa o fim mantinha a sessão "delegando" para sempre e ela nunca dormia. Custo: um subagente legítimo, mas calado por mais de 5 min, faz o líder voltar a `IDLE` (e, 15 min depois, a dormir) |
+| Q-T01-2 | O que conta como **atividade** de um subagente? | **Qualquer evento dele** (resultado, narração, ferramenta), não só os que trazem sinal |
+| Q-T01-3 | Os totais de **subagentes ativos** (barra de cima, Mankind) contam os "sem sinal"? | **Não:** não se sabe que ainda trabalham. Eles continuam listados no overview, em cinza |
+| Q-T01-4 | Um líder **dormindo** esconde a Team? | **Não** (só uma sessão **encerrada** esconde): os subagentes "sem sinal" ficam cinza no lugar onde estavam, como pede R7. Com muitos, o ticket 13 limita a 8 por área e mostra "+N" |
+| Q-T01-5 | Só dorme quem está `IDLE`? Uma sessão presa em `READING`/`CODING` há horas (CLI morto) nunca dorme | **Manter:** é o comportamento que o cliente já tinha, e "esperando você" nunca deve dormir. Alternativa a estudar: sem nenhum evento há mais de X min, qualquer estado de trabalho vira `NO_SIGNAL` |
+

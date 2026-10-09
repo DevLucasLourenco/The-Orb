@@ -126,6 +126,13 @@ exatos, saturados para se distinguirem da paleta do git, ficam para a V-PEND-7d.
 nome** (e um padrão no piso). "Esperando o Lucas" é **magenta pulsante**. Ícones e tons exatos:
 V-PEND-7d.
 
+### Subagente sem sinal (V-EGO-10, R7, D-050)
+
+Tons neutros, fora do orçamento de cores: corpo e cabeça em cinza `#8a909c` (a cabeça clareada), com
+**40% de opacidade** e sem halo; o ícone de sinal cortado sobre a cabeça é um sprite (sempre de frente
+para a câmera) com barras `#c9d0dc` e um traço branco `#ffffff` com contorno `#0b1020`. Os valores
+estão em `clients/web/js/avatar.js`; mudá-los exige mudar esta seção.
+
 **Orçamento de cores do mundo:** janelas = paleta do git · personagens = cor do provider ·
 "esperando o Lucas" = magenta. Nenhuma outra cor carrega significado; o cenário é neutro (R12a).
 
