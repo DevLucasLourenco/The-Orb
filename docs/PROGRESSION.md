@@ -144,7 +144,22 @@ centenas de MB ([ARCHITECTURE.md](ARCHITECTURE.md) §5). O cálculo retroativo l
 - **Registro local (R36)**: o extrato e as conquistas, com a versão da tabela que os gerou.
 - **Gateway**: envia nível, extrato e conquistas ao cliente, como já faz com o mundo.
 
-## 9. Depois (backlog)
+## 9. Referências (pesquisadas em 2026-10-09)
+
+- **Visual Studio Achievements** (Microsoft, 2012): conquistas por ações dentro da IDE, com placar.
+  Jesper Juul criticou o "problema jogo × ferramenta": o sistema de pontos de outra pessoa entra em
+  conflito com os objetivos de quem trabalha. **Lição para o Orb:** pontuar só o que o Lucas já
+  considera resultado (testes, commits que ficam), nunca ações por si só.
+  [Microsoft (anúncio)](https://blogs.microsoft.com/blog/2012/01/18/visual-studio-achievements-program-brings-gamification-to-development/) ·
+  [Juul, "Microsoft Visual Studio as a Game"](https://www.jesperjuul.net/ludologist/2012/01/23/visual-studio-as-a-game/)
+- **Badges mudam o comportamento** (Anderson, Huttenlocher, Kleinberg e Leskovec, *Steering User
+  Behavior with Badges*, WWW 2013, dados do Stack Overflow): medalhas aumentam a participação e
+  **mudam a mistura de atividades** de quem as persegue. **Lição para o Orb:** os agentes nunca veem
+  a XP (§1), mas o Lucas vê; por isso as conquistas premiam resultado confirmado, e não volume de
+  uma atividade, para não puxar o trabalho numa direção errada.
+  [Artigo (PDF)](https://archives.iw3c2.org/www2013/proceedings/p95.pdf)
+
+## 10. Depois (backlog)
 
 - **Missões** (quests) **definidas pelo Lucas** no Orb (ex.: "deixar o TriSafe com testes verdes"),
   cumpridas quando os dados confirmam. Nunca geradas automaticamente.

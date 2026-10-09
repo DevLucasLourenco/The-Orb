@@ -56,6 +56,10 @@ camadas futuras (título da sessão, custo).
   - `stop_reason`: `tool_use` (continua) ou `end_turn` (fim do turno → sinal `idle`).
 - **`user`:** `message.content` (texto, ou lista com blocos `tool_result`/`text`/`image`), `origin`,
   `isMeta`, `promptId`.
+- **`toolUseResult`** (na entrada `user` que traz o resultado; estrutura vista em 2026-10-09): para
+  ferramentas de shell, `stdout`, `stderr`, `interrupted`, `isImage` e, às vezes, `returnCodeInterpretation`
+  (texto), `backgroundTaskId`, `timedOutAfterMs` e **`gitOperation`** (`commit`, `push`, `branch`, `pr`).
+  **Não há código de saída**: falha = `is_error` no bloco `tool_result` (Q-TEC-1, Q-TEC-7).
 
 ### 1.4 Mensagens com papel `user`
 

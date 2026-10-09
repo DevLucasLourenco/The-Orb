@@ -228,7 +228,7 @@ ticket existir.
 | Deduplicação | Janela limitada por Alter Ego (memória constante) |
 | Deltas de streaming (`outputDelta`, `agentMessage/delta`) | Não viram eventos um a um; o item completo (`item/completed`) carrega o texto |
 | Envio ao cliente | Snapshot ao conectar, depois deltas; bytes do terminal nunca são descartados |
-| Polling (nível 0) | 250 ms por sessão hospedada (medido: ~270–470 ms ponta a ponta) |
+| Polling (nível 0) | 250 ms por sessão hospedada (medido: ~270–470 ms ponta a ponta). **Atenção:** o servidor atual usa 500 ms (`POLL_SECONDS`); ver Q-TEC-4 |
 
 ## 6. Lógica bem estruturada
 

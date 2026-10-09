@@ -224,3 +224,28 @@ Proposta completa em [PROGRESSION.md](PROGRESSION.md). Tudo respeita R12 (teleme
 | Q-DEV-1 | **O conteúdo do [CLAUDE.md](../CLAUDE.md)** está bom? | Fontes da verdade, processo e formato das rodadas, 11 invariantes, regras de dependência e padrões de código, testes, git e como falar com o Lucas. Ele aponta para os documentos em vez de copiá-los, para não divergir |
 | Q-DEV-2 | **Os outros providers** também trabalham neste repositório? | Um `AGENTS.md` curto, lido por Codex e opencode (a confirmar o do Hermes), que manda seguir o `CLAUDE.md`, para o guia ser um só |
 | Q-DEV-3 | **Branches na implementação** | Documentação continua direto na `main` local. Na implementação, **uma branch e um PR por ticket**, com o PR citando as regras e os critérios de aceite do ticket |
+
+### Próxima rodada: lacunas técnicas (aberta em 2026-10-09)
+
+Encontradas na leitura completa do projeto e conferidas nos dados desta máquina **só pela estrutura**
+(nomes de campos e contagens, sem ler conteúdo de sessões). Precisam de decisão antes dos tickets.
+
+| Id | Pergunta | Proposta |
+|---|---|---|
+| Q-TEC-1 | **Resultado de um comando** (passou/falhou): o Weather (R42) e a XP dependem dele, e o protocolo 0.2 não tem esse sinal | Um sinal novo, `command.result` (`ok`, `exit_code?`), no **protocolo 0.3** (o vocabulário é fechado, então muda a versão). Fonte por provider, conferida: **Codex** `exitCode` no app-server e `item.exit_code` em `event_msg/item_completed` do rollout (2.287 ocorrências; hoje o adapter ignora essa linha); **Hermes** `exit_code` no JSON do resultado do `terminal` (262 de 262); **opencode** `state.metadata.exit` do `bash` (44 de 44); **Claude** **não grava o código**: só `is_error` e `interrupted` no resultado, então `ok` sem `exit_code` |
+| Q-TEC-2 | **Eventos que não são de uma sessão** (linhas de código, alterações locais, limites da conta, CI): o Core hoje os ignora | O Core passa a guardar estado **por realm** (métricas, alterações locais, Weather) e **do mundo** (limites da conta), com sinais novos no protocolo 0.3 (`realm.metrics`, `realm.changes`, `account.limits`), produzidos pelos Probes e pelos adapters (ex.: `account/rateLimits/updated` do Codex) |
+| Q-TEC-3 | **Onde fica o tempo** ("dormindo" 15 min, "sem sinal" 5 min, "noite" 10 dias, "hoje" da Energy) | **No Core, sem relógio próprio:** `snapshot(now)` recebe a hora de quem pede, e os limites ficam numa tabela em `core/rules.py`. Continua puro e testável, todos os clientes veem o mesmo, e o registro local (R36) guarda o resultado para o Chronicle. O cliente deixa de calcular |
+| Q-TEC-4 | **Intervalo de leitura:** a arquitetura diz 250 ms (medido no Spike 1); o servidor usa 500 ms | **250 ms** para realms com sessão ativa (o que foi medido e documentado); varredura de sessões novas a cada 2 s (como o Codex já faz) |
+| Q-TEC-5 | **Ler o histórico inteiro** (todos os projetos já registrados, sessões dos últimos 10 dias, XP retroativa) sem perder desempenho | **Duas camadas:** (1) um **índice de metadados** de todas as sessões (pasta, datas, título, provider), barato, para a cidade, a sala e o Histórico do realm; (2) o **conteúdo** lido incrementalmente só das sessões da sala; o passado (XP retroativa) numa leitura única em segundo plano, com o ponto de parada guardado no registro local |
+| Q-TEC-6 | **Linhas novas do Codex** que o adapter não conhece: `response_item/agent_message` (139 nos últimos 10 rollouts), `inter_agent_communication_metadata` (134), `event_msg/thread_settings_applied` (126) | Mapear `agent_message` como narração (hoje essa fala do Codex não aparece no Inner World) e avaliar as outras duas; atualizar [adapters/CODEX.md](adapters/CODEX.md) com a versão em que surgiram |
+| Q-TEC-7 | **Commits feitos pelo Claude** | O resultado das ferramentas do Claude tem um campo `gitOperation` (`commit`, `push`, `branch`, `pr`) quando a ferramenta mexe no git. Usar como evidência de commit (X-COMMIT em [PROGRESSION.md](PROGRESSION.md)) no lugar de interpretar o comando |
+
+### Próxima rodada: referências (aberta em 2026-10-09)
+
+| Id | Pergunta | Proposta |
+|---|---|---|
+| Q-REF-1 | **6 classes de prédio ou 5, como o CodeCity?** O CodeCity usa 5 categorias de altura; a D-052 propôs 6 | **Manter 6**: linhas de código vão de centenas a milhões, mais que o número de métodos de uma classe, e a 6ª classe (Arranha-céu) é o destaque que o Lucas pediu (D-051). Fonte em [VISUAL.md](VISUAL.md) §8 |
+| Q-REF-2 | **Submódulos do git** nas janelas | O VS Code tem uma cor própria para submódulo (`#8db9e2`, azul). Proposta: **sem janela própria**; a alteração dentro de um submódulo não acende janela do projeto pai (é outro repositório). Evita também um azul que se confundiria com o Codex |
+
+**Correção registrada:** em 2026-10-08 o Claude disse ao Lucas que não havia uma tabela de tipos de
+prédio no CodeCity. Há: as 5 categorias de altura por limites, descritas acima e em VISUAL.md §8.
