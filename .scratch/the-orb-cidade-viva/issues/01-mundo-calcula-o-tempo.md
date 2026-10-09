@@ -39,7 +39,7 @@ Ponto de teste: o mundo (eventos sintéticos + horas diferentes → estados).
 Implementado em 2026-10-09 na branch `ticket/01-mundo-calcula-o-tempo`; falta a revisão do Lucas e o merge.
 
 **O que ficou decidido na implementação, sem estar escrito antes** (agora em DECISIONS.md, rodada
-Q-T01-1 a 5, para o Lucas confirmar): o "sem sinal" não segura o líder em `DELEGATING`; qualquer evento
+Q-T01-1 a 5; **confirmadas pelo Lucas em D-119 a D-123**): o "sem sinal" não segura o líder em `DELEGATING`; qualquer evento
 do subagente é atividade; os totais não contam os sem sinal; líder dormindo não esconde a Team;
 só dorme quem está `IDLE`. Também: a hora do snapshot precisa ter fuso e o snapshot do servidor
 leva `generated_at`; data ilegível no evento não quebra nada (o mundo não afirma nada).
