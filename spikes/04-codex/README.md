@@ -24,7 +24,7 @@ python drive.py --persist     # thread persistida: grava UMA sessão no históri
 ## Cuidados (aprendidos no spike)
 
 - **Nunca envie teclas à TUI do Codex às cegas.** Ela abre diálogos modais cujo padrão tem efeito
-  (*Update now*, *Trust*, *Trust all hooks*). Detalhes e o incidente em docs/adapters/CODEX.md §6.
+  (*Update now*, *Trust*, *Trust all hooks*). Detalhes e o incidente em docs/adapters/CODEX.md §7.
 - O padrão `model` do `config.toml` do Lucas não é aceito com conta ChatGPT: passe o modelo.
 - `--persist` cria uma sessão real no histórico (`~/.codex/sessions`); `drive.py` sem a flag não.
 - Cada execução com modelo consome uma pequena parte da cota da conta ChatGPT.

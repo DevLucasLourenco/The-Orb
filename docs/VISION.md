@@ -3,7 +3,7 @@
 > O que o The Orb é, os princípios que não se negociam, como o mundo se organiza e o que ainda
 > está em aberto. Vocabulário: [CONTEXT.md](../CONTEXT.md) · Decisões: [adr/](adr/).
 
-Última atualização: 2026-10-07
+Última atualização: 2026-10-09
 
 ---
 
@@ -87,9 +87,11 @@ registram; o Lucas não informa caminhos (regra R3; como, em [ARCHITECTURE.md](A
 Detecção de realms). Entram **todos os projetos que algum CLI já registrou**; sessões fora de
 projeto (pasta do usuário, pastas temporárias) são ignoradas; projetos cuja pasta não existe mais
 não entram; e o Lucas pode **esconder** realms desmarcando-os numa lista, sem que nada mude nos
-providers. As preferências do Lucas ficam numa **tela de configurações do Orb** (regra R29). Pode ter aparência temática própria (ex.:
-TriSafe como centro industrial, CLARA como biblioteca, UTC CONECTA+ como estação de comunicação).
-O objetivo é reconhecer onde há trabalho só olhando a cidade.
+providers. As preferências do Lucas ficam numa **tela de configurações do Orb** (regra R29).
+~~Pode ter aparência temática própria (ex.: TriSafe como centro industrial, CLARA como biblioteca,
+UTC CONECTA+ como estação de comunicação).~~ **Revisto (D-071, D-072):** todos os prédios no mesmo
+estilo, com uma forma arquitetônica por classe de tamanho (R41); um tema por realm, se vier, é
+cenário escolhido pelo Lucas. O objetivo é reconhecer onde há trabalho só olhando a cidade.
 
 **A cidade é retangular**, com os prédios em ordem alfabética por bairros de letra e uma posição
 "aleatória" mas rastreável (regra R32; traçado em [VISUAL.md](VISUAL.md) §7).
@@ -216,7 +218,8 @@ criar o ticket → implementar. Nada entra no código sem passar pelos dois prim
 3. Codex, Hermes e opencode validados ao vivo no mesmo painel; modo Observar.
 4. **Sala 3D mais rica**: o terminal como monitor dentro do Rooftop Room, animações por atividade,
    altura do prédio pela contagem de linhas, andares e janelas acesas.
-5. **Camadas vivas** e camada de jogo (mapas, movimentação, XP, quests, conquistas).
+5. **Camadas vivas** e camada de jogo (mapas, movimentação, XP, quests, conquistas). Progressão
+   em proposta: [PROGRESSION.md](PROGRESSION.md).
 
 Interface 3D prevista: câmera 3/4 de ~40–55°, WASD mover, scroll zoom, Q/E rotacionar, botão
 direito orbitar, F focar, ESC visão geral, 1–9 atalhos de realm, modo FREE CAM; o detalhe muda
@@ -227,14 +230,15 @@ com o zoom (realm → personagens → card detalhado).
 **Alter Ego e Perfil** (a ideia ainda precisa amadurecer):
 
 - O que é o **Perfil** de um Alter Ego? ~~Nome?~~ **Decidido: um nome histórico sorteado (R37,
-  [VISUAL.md](VISUAL.md) §9), uma vez por sessão, para sempre; subagentes sem nome.** Ainda em
-  aberto: papel, aparência, stats (Q-EGO-2 em [DECISIONS.md](DECISIONS.md)).
+  [VISUAL.md](VISUAL.md) §9), uma vez por sessão, para sempre; subagentes sem nome.** **Papel**
+  decidido: o que a sessão mais fez, por contagem (R40, D-069). **Aparência:** só a cor do provider
+  por enquanto. **XP, níveis e conquistas:** em proposta ([PROGRESSION.md](PROGRESSION.md)).
 - Duas sessões podem compartilhar um Perfil (ex.: "o Alter Ego de revisão do TriSafe" usado em
   várias sessões)? **O nome é por sessão (D-064)**; compartilhar outros elementos do Perfil segue em
   aberto.
 - Retomada (`resume`), bifurcação (`fork`), `/clear` e compactação: mesmo Alter Ego ou um novo?
-  Depende de o id da sessão mudar em cada provider (a verificar). Proposta em Q-EGO-1
-  ([DECISIONS.md](DECISIONS.md)).
+  **Decidido (D-068, R39):** retomar = o mesmo Alter Ego; bifurcar = um novo; `/clear` e
+  compactação = o mesmo quando o provider liga o id antigo ao novo. A confirmar por provider.
 - ~~O que acontece com o personagem quando a sessão termina?~~ **Decidido: não é excluído (R28).**
   ~~Onde ficam as encerradas e as antigas?~~ **Decidido: na sala, as dos últimos 10 dias
   (configurável); as demais no Histórico do realm (R28a).**
@@ -244,20 +248,21 @@ com o zoom (realm → personagens → card detalhado).
 **Mundo e interface:**
 
 - ~~Escala da altura (linear, raiz, log)?~~ **Decidido: absoluta, por classes de faixa de linhas
-  (R19; [VISUAL.md](VISUAL.md) §8).** Ainda em aberto: linhas em branco e comentários
-  contam? Lockfiles versionados entram? Frequência de recálculo; como expor o filtro.
+  (R19; [VISUAL.md](VISUAL.md) §8).** ~~Linhas em branco e comentários contam? Lockfiles
+  versionados entram? Frequência de recálculo; como expor o filtro?~~ **Decidido (D-053 a D-056).**
 - ~~Rooftop Room: nome definitivo; sala cheia?~~ **Decidido: o nome fica; até 8 por área e "+N" (R33).**
-- Estilo visual de cada realm; como o Inner World aparece no 3D. Cenário é permitido quando
-  declarado (R12a). Propostas em Q-WORLD-1 e Q-WORLD-2 ([DECISIONS.md](DECISIONS.md)).
+- ~~Estilo visual de cada realm; como o Inner World aparece no 3D.~~ **Decidido:** mesmo estilo
+  e forma por classe (D-071, D-072, D-075); o Inner World no painel de baixo agora e, depois, num
+  monitor na área do personagem (D-073). Cenário é permitido quando declarado (R12a).
 - ~~Como a UI avisa que um terminal está parado num diálogo?~~ **Decidido: leitor de diálogos
   próprio marca "esperando o Lucas", sem responder (R34).**
 
 **Telemetria:**
 
 - Observador do Codex ignorando um pedido de aprovação: o servidor bloqueia, reenvia ou decide?
-  **Risco principal**, ver [adapters/CODEX.md](adapters/CODEX.md) §9.
-- Quais CLIs entram além de Claude, Codex, Hermes e opencode (qualquer CLI com sessões legíveis é
-  candidato). Proposta em Q-PROV-1.
+  **Risco principal**, ver [adapters/CODEX.md](adapters/CODEX.md) §10.
+- ~~Quais CLIs entram além de Claude, Codex, Hermes e opencode?~~ **Decidido (D-074): só os 4 por
+  agora**; o contrato de adapter permite incluir outro sem mexer no resto.
 - ~~Persistência?~~ **Decidido: registro local do Orb em SQLite, só com o que o Orb derivou (R36).**
 
 ## 8. Origem

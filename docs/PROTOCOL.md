@@ -4,7 +4,7 @@
 > (Core, Gateway, clientes). Vocabulário: [CONTEXT.md](../CONTEXT.md) · Módulos:
 > [ARCHITECTURE.md](ARCHITECTURE.md) · Por que é assim: [ADR 0002](adr/0002-eventos-nativos-por-provider.md).
 
-Versão do protocolo: `0.2` (rascunho) · Última atualização: 2026-10-07 · Implementação:
+Versão do protocolo: `0.2` (rascunho) · Última atualização: 2026-10-09 · Implementação:
 `src/orb/protocol/`
 
 > **Mudança desde a 0.1:** o protocolo deixou de traduzir eventos para um vocabulário universal.
@@ -105,7 +105,7 @@ Vocabulário **fechado**. Um tipo novo exige nova versão do protocolo.
 | `type` | Campos | Efeito no mundo |
 |---|---|---|
 | `session.started` | `cwd?`, `model?`, `title?` | O Alter Ego aparece no Rooftop Room |
-| `session.ended` | `reason?` | O Alter Ego sai de cena (continua no Chronicle) |
+| `session.ended` | `reason?` | A sessão terminou; o Alter Ego **não é excluído**: fica na sala enquanto for recente e depois no Histórico do realm (R28) |
 | `session.updated` | `title?`, `model?`, `cwd?` | A identidade da sessão mudou (título, modelo); o estado não muda |
 | `activity` | `activity`, `target?` | O personagem vai para a área da atividade |
 | `idle` | — | Fim do turno; a Team só fica `IDLE` sem subagentes ativos |
@@ -231,7 +231,7 @@ No canal do mundo (`/world`), o cliente pode pedir o histórico de uma sessão:
 |---|---|
 | `term` | Bytes do terminal (texto) |
 | `event` | Um evento do protocolo (§2) |
-| `world` | Snapshot do mundo (Core) depois de aplicar eventos, com todos os realms configurados |
+| `world` | Snapshot do mundo (Core) depois de aplicar eventos, com todos os realms observados |
 | `feed` | Histórico de linhas de Inner World de uma sessão (`alter_ego`, `events`) |
 | `exit` | O processo do terminal terminou |
 | `system` | Informação ou erro do Gateway |
@@ -248,4 +248,5 @@ No canal do mundo (`/world`), o cliente pode pedir o histórico de uma sessão:
 - Probes (git, CI, LOC): sinais `realm.metrics`, `ci.status`, `git.commit` ainda não definidos.
 - Granularidade de `inner` para streaming (deltas de texto agrupados por item ou por intervalo).
 - Formato e autorização do canal de comandos além do terminal.
-- Sessão retomada/bifurcada: mesmo `alter_ego` ou novo (depende do [Perfil](VISION.md#7-questões-em-aberto)).
+- ~~Sessão retomada/bifurcada: mesmo `alter_ego` ou novo?~~ Decidido (D-068, R39): retomar = o mesmo;
+  bifurcar = um novo. Falta confirmar, por provider, como o id muda.

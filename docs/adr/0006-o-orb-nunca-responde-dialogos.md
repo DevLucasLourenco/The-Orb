@@ -15,4 +15,5 @@ instalador falhou sem efeito). A regra vale para o produto, para automação e p
   ele pede pelo Gate ou pelo painel.
 - Um observador de protocolo (ex.: o cliente do app-server do Codex) **nunca** responde a um
   `ServerRequest`, nem para recusar.
-- A UI deve avisar quando um terminal está parado num diálogo esperando o Lucas (forma em aberto).
+- A UI deve avisar quando um terminal está parado num diálogo esperando o Lucas. **Forma decidida
+  em 2026-10-08:** um leitor de diálogos próprio, que só reconhece e avisa (D-060, R34).

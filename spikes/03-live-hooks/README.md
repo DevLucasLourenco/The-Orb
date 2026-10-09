@@ -2,7 +2,7 @@
 
 Responde: os hooks do Claude Code entregam ao Orb o que as docs dizem, sem tocar na
 configuração do usuário e sem atrapalhar o agente? Resultado: [SPIKES.md](../../docs/SPIKES.md) e
-[adapters/CLAUDE.md](../../docs/adapters/CLAUDE.md) §6. O formato de settings por sessão escolhido
+[adapters/CLAUDE.md](../../docs/adapters/CLAUDE.md) §2. O formato de settings por sessão escolhido
 (hook `command` assíncrono + `curl`) foi promovido para `src/orb/adapters/claude/hooks.py`; este
 experimento continua aqui para regenerar as fixtures reais e repetir as medições.
 

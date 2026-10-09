@@ -117,8 +117,8 @@ progressão usa **branco neutro**, fora das paletas do git, dos providers e do m
 
 | Id proposto | Elemento | Fonte |
 |---|---|---|
-| V-EGO-12 | O nível ao lado do nome histórico no rótulo ("Einstein · 7") | Nível do Alter Ego |
-| V-EGO-13 | **Subir de nível**: um anel de luz neutra sobe pelo personagem uma vez | O evento real de subir de nível |
+| V-EGO-13 | O nível ao lado do nome histórico no rótulo ("Einstein · 7") | Nível do Alter Ego |
+| V-EGO-14 | **Subir de nível**: um anel de luz neutra sobe pelo personagem uma vez | O evento real de subir de nível |
 | V-HUD-12 | Nível de Mankind e a barra de progresso na barra de cima; clicar abre o painel **Progressão** (extrato, conquistas, placar por provider) | Soma da XP confirmada |
 | V-HUD-13 | No overview do realm: o nível do realm e, por Alter Ego, a barra de XP (confirmada cheia, provisória tracejada) | Extrato |
 | V-HUD-14 | **Conquista nova**: um aviso curto no HUD com o nome e o recibo | Conquista |

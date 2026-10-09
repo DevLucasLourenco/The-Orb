@@ -4,7 +4,7 @@
 > âmbito. Vocabulário: [CONTEXT.md](../CONTEXT.md) · Contrato de eventos: [PROTOCOL.md](PROTOCOL.md)
 > · Decisões: [adr/](adr/).
 
-Última atualização: 2026-10-07
+Última atualização: 2026-10-09
 
 ---
 
@@ -259,8 +259,9 @@ Rodar: `python -m pytest -q` na raiz.
 
 ```
 The Orb/
-├── README.md · CONTEXT.md · pyproject.toml
+├── README.md · CONTEXT.md · CLAUDE.md · pyproject.toml
 ├── docs/
+│   ├── RULES.md · VISUAL.md · DECISIONS.md · PROGRESSION.md
 │   ├── VISION.md · ARCHITECTURE.md · PROTOCOL.md · MVP.md · SPIKES.md · IDEAS.md
 │   ├── adapters/   CLAUDE.md · CODEX.md · HERMES.md · OPENCODE.md
 │   └── adr/        decisões numeradas
@@ -274,7 +275,7 @@ The Orb/
 │   │   ├── hermes/      mapping.py · state_db.py
 │   │   └── opencode/    mapping.py · state_db.py
 │   ├── terminal_host/   launch.py · env.py · terminal.py
-│   └── gateway/         app.py · messages.py
+│   └── gateway/         app.py · messages.py · realms.py
 ├── clients/
 │   ├── web/             o mundo 3D: index.html, styles.css, js/ (scene, realm3d, avatar, hud, innerworld, net)
 │   └── godot/           terminal remoto (alternativa; godot-xterm só exibe)
@@ -301,6 +302,7 @@ reais); eles importam os módulos definitivos em vez de duplicar código.
 ## 9. Em aberto
 
 - Isolamento de adapters: tarefa supervisionada (hoje) ou processo separado.
-- Onde vive o log de eventos (arquivo/SQLite) e quando entra um banco.
+- ~~Onde vive o log de eventos (arquivo/SQLite) e quando entra um banco.~~ Decidido: registro local
+  do Orb em SQLite (R36).
 - Receptor de hooks do nível 1 como processo separado, sempre responsivo.
 - Nível 1 de Hermes (sidecar da TUI) e opencode (servidor próprio).

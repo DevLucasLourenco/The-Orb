@@ -6,7 +6,7 @@
 > · O que cada elemento visual significa: [VISUAL.md](VISUAL.md) · Todas as decisões, em ordem:
 > [DECISIONS.md](DECISIONS.md).
 
-Última atualização: 2026-10-08
+Última atualização: 2026-10-09
 
 ## Como usar este documento
 
@@ -62,7 +62,7 @@ Situação: ✅ cumprida · ⚠️ parcial ou com heurística não decidida · �
 
 | # | Regra | Origem | Situação |
 |---|---|---|---|
-| R12 | **Telemetria real, nunca animação inventada.** Todo elemento visual que parece dado **é** dado; o que for só cenário é declarado como cenário em [VISUAL.md](VISUAL.md). | Visão, princípio 1 | ❌ Janelas dos prédios são um padrão aleatório (V-REALM-3); ⚠️ "dormindo" após 15 min e subagente some após 5 min são inferências de apresentação sem decisão |
+| R12 | **Telemetria real, nunca animação inventada.** Todo elemento visual que parece dado **é** dado; o que for só cenário é declarado como cenário em [VISUAL.md](VISUAL.md). | Visão, princípio 1 | ❌ Janelas dos prédios são um padrão aleatório (V-REALM-3). ~~"Dormindo" e subagente que some são inferências sem decisão~~: decididas em R31 e R7 |
 | R12a | **Cenário é permitido** (céu, chão, grade, estrelas, iluminação), desde que **declarado** em VISUAL.md e sem usar cores que tenham significado na legenda. | Lucas, 2026-10-07 | ✅ declarado em VISUAL.md |
 | R13 | **Cada provider aparece como ele é** (evento nativo intacto); o mundo usa só sinais derivados. | Lucas, [ADR 0002](adr/0002-eventos-nativos-por-provider.md) | ✅ |
 | R14 | **Fidelidade explícita** do pensamento (`raw`/`summary`); nada deduzido aparece como pensamento. | Visão | ⚠️ Hermes e opencode marcam `raw` sem confirmar se o modelo entrega texto bruto ou resumo |

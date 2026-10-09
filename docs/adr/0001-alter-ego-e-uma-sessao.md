@@ -23,3 +23,6 @@ memória ao Inner World.
   sessões) **ainda não está decidido**. Ver [VISION.md](../VISION.md) §7.
 - Ficam em aberto: retomada, bifurcação (`fork`), `clear` e compactação geram o mesmo Alter Ego
   ou um novo?
+
+**Atualização (2026-10-08):** o Perfil começou pelo nome histórico (D-063) e pelo papel (D-069), e a
+continuidade foi decidida em D-068 (R39). Ver [DECISIONS.md](../DECISIONS.md).

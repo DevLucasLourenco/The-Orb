@@ -4,7 +4,7 @@
 > ([RULES.md](RULES.md)): todo elemento que parece dado **é** dado; o resto é **cenário**, declarado
 > aqui. Um elemento novo só entra no mundo depois de ter uma linha nesta tabela.
 
-Última atualização: 2026-10-08 · Decisões em ordem: [DECISIONS.md](DECISIONS.md)
+Última atualização: 2026-10-09 · Decisões em ordem: [DECISIONS.md](DECISIONS.md)
 
 Tipo: **Dado** (vem da telemetria) · **Legenda** (código fixo de cores/formas, sempre o mesmo
 significado) · **Cenário** (sem significado, só ambiente) · **Heurística** (deduzido pelo Orb;

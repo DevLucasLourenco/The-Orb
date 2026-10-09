@@ -5,7 +5,7 @@
 > §3, princípio 5): o Orb só visualiza; a única porta de escrita é o terminal do Inner World.
 > Escopo do MVP: [MVP.md](MVP.md).
 
-Última atualização: 2026-10-07
+Última atualização: 2026-10-09
 
 **Status:** `Feito` = implementado em `src/` · `MVP` = no escopo do MVP · `Próximo` = logo depois ·
 `Backlog` = guardado · `Pesquisa` = investigar antes · `Decidido` = registrado em ADR/visão ·
@@ -29,15 +29,15 @@
 | Painel 2D de validação | Árvore Realm → Alter Ego → Team → Atividade + Inner World | **Revisto**: substituído pelo mundo 3D (ADR 0007) |
 | Observador por realm | Os 4 providers observados ao mesmo tempo em cada projeto; sessões de fora do Orb aparecem sozinhas | **Feito** |
 | Realms configurados por caminho (`--realm`, `--root`) | O Lucas informa as pastas dos projetos | **Revisto**: viola R3; os realms são detectados pelos providers |
-| Detecção de realms pelos providers | A cidade se monta sozinha a partir das sessões que os 4 CLIs registram; entram todos os projetos já registrados | **Decidido** (R3, R3a); pendências D-REALM-2, 3, 5, 6; ticket a criar |
+| Detecção de realms pelos providers | A cidade se monta sozinha a partir das sessões que os 4 CLIs registram; entram todos os projetos já registrados | **Decidido** (R3, R3a); pendências D-REALM-2 a 6 decididas; ticket a criar |
 | Ignorar sessões fora de projeto | Pasta do usuário, `Temp`, `Downloads` não viram realm | **Decidido** (R3b, critério incluído) |
 | Projeto apagado do disco | Pasta que não existe mais, mas está no histórico dos CLIs | **Decidido**: não entra (R3d) |
 | Tela de configurações do Orb | Preferências do Lucas (realms escondidos, prazo das sessões recentes) num arquivo próprio do Orb | **Decidido** (R29) |
 | Sessões recentes na sala, antigas no Histórico do realm | Na sala, ativas + últimos 10 dias (configurável); as demais no Histórico do realm | **Decidido** (R28a) |
-| Cores novas dos providers | Claude laranja, Codex azul, Hermes amarelo, opencode cinza | **Decidido** (R30); colisões em V-PEND-7c |
+| Cores novas dos providers | Claude laranja, Codex azul, Hermes amarelo, opencode cinza | **Decidido** (R30); colisões resolvidas (D-040) |
 | Áreas identificadas por ícone e nome, sem cor | Libera as cores para git (janelas), providers (personagens) e "esperando" | **Decidido** (R20c, D-040); ícones em V-PEND-7d |
 | Lista de realms com marcação | O Lucas desmarca um realm para escondê-lo da cidade; preferência guardada pelo Orb | **Decidido** (R3c); ticket a criar |
-| Sessões encerradas permanecem | O Alter Ego não é excluído quando a sessão termina | **Decidido** (R28); forma de mostrar em V-PEND-2 |
+| Sessões encerradas permanecem | O Alter Ego não é excluído quando a sessão termina | **Decidido** (R28); na sala por 10 dias, depois no Histórico do realm (R28a) |
 | Cenário declarado | Céu, chão, grade, estrelas e luz são cenário, declarados em VISUAL.md | **Decidido** (R12a) |
 | Linguagem visual documentada | Cada elemento do mundo tem significado declarado (dado, legenda ou cenário) | **Decidido** ([VISUAL.md](VISUAL.md)) |
 | Adapter Codex | Rollouts (nível 0) + observador de um app-server próprio do Orb (nível 1) | **Feito** (validação ao vivo pendente) |
@@ -50,7 +50,7 @@
 | Classificador de comandos | Tabela declarativa: `Get-Content`, `git status` → `READING`; `pytest` → `TESTING`… | **Feito** (compartilhado) |
 | Orb passa o modelo explicitamente | `-m`/`--model` quando a sessão tem modelo (o padrão do `config.toml` pode não ser aceito) | **Feito** |
 | Sessões grandes do Codex | Leitura incremental começando do fim (rollouts de 145 MB) | **Feito** |
-| Diálogos da TUI são do Lucas | Nunca responder; detectar e avisar na UI | **Decidido** (aviso na UI: Pesquisa) |
+| Diálogos da TUI são do Lucas | Nunca responder; detectar e avisar na UI | **Decidido** (aviso na UI: leitor de diálogos, R34) |
 | Adapters para outros CLIs | Gemini CLI, Cursor, agentes próprios (o opencode já entrou) | Backlog |
 | Modo Observar | Sessões iniciadas fora do Orb | Próximo (leitores já suportam) |
 | Modo Hospedar via stream JSON | Alternativa à TUI | Backlog |
@@ -72,7 +72,7 @@
 | O Orb não consome tokens | Só monitora; nada chama modelo de IA | **Decidido** (R38, D-070) |
 | Papel do Alter Ego | O que a sessão mais fez, por contagem | **Decidido** (R40, D-069) |
 | Mapa/minimap | Visão geral rápida | Backlog |
-| Cidade/campus como hub | Tela inicial com todos os realms e contagem de Alter Egos | **Feito** (v1: disco do Orb com os realms em anel) |
+| Cidade/campus como hub | Tela inicial com todos os realms e contagem de Alter Egos | **Feito** (v1: disco do Orb com os realms em grade); traçado **revisto**: cidade retangular com bairros (R32) |
 
 ## 3. Câmera e controles
 
@@ -98,7 +98,7 @@
 | Nome histórico para cada Alter Ego | Einstein, Ada Lovelace, Tesla…: sorteio sem reposição de 60 nomes, uma vez por sessão, sacola global; subagentes sem nome | **Decidido** (R37, D-063 a D-067) |
 | Registro local do Orb (SQLite) | Base do Chronicle e dos nomes; só o que o Orb derivou | **Decidido** (R36) |
 | Leitor de diálogos | Avisa que o terminal espera o Lucas num diálogo do CLI, sem responder | **Decidido** (R34) |
-| Quests, conquistas, evolução de projeto | Camada de jogo | Backlog |
+| Quests, conquistas, evolução de projeto | Camada de jogo | Conquistas: **em proposta** ([PROGRESSION.md](PROGRESSION.md)); quests: backlog |
 | Quadro de tarefas ligado a issues reais | Task Board alimentado por tickets | Backlog |
 | Memorial | Subagentes e sessões encerradas deixam marca; linhagem | Backlog |
 | Cerimônias | Commit como entrega, PR merged como celebração | Backlog |
@@ -156,7 +156,7 @@
 
 ---
 
-## Ordem sugerida das camadas vivas
+## Ordem das camadas vivas (decidida, D-081)
 
 Janelas acesas → Gate → Chronicle → Weather → Energy → Archive. As quatro primeiras só dependem de
 eventos já previstos; Archive exige o leitor somente leitura e a política de privacidade.

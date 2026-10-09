@@ -8,7 +8,7 @@ Este arquivo é **só glossário**. Visão e princípios: [docs/VISION.md](docs/
 [docs/RULES.md](docs/RULES.md). Decisões em ordem: [docs/DECISIONS.md](docs/DECISIONS.md). Decisões: [docs/adr/](docs/adr/). Contratos técnicos:
 [docs/PROTOCOL.md](docs/PROTOCOL.md). O que cada elemento visual significa: [docs/VISUAL.md](docs/VISUAL.md).
 
-Última atualização: 2026-10-07
+Última atualização: 2026-10-09
 
 ## O mundo
 
@@ -56,8 +56,9 @@ Egos. O provider e o modelo pertencem à sessão e não mudam. Quando a sessão 
 _Evite_: agente principal, persona do provider, bot
 
 **Perfil** *(em construção)*:
-O que dá identidade a um Alter Ego além da sessão. Começa pelo **nome histórico**; papel,
-aparência e histórico entre sessões seguem em aberto ([docs/VISION.md](docs/VISION.md)).
+O que dá identidade a um Alter Ego além da sessão. Começa pelo **nome histórico** e pelo
+**papel**; a aparência (hoje só a cor do provider) e o que se compartilha entre sessões seguem em
+aberto ([docs/VISION.md](docs/VISION.md)). XP e níveis estão em proposta ([docs/PROGRESSION.md](docs/PROGRESSION.md)).
 
 **Papel**:
 O que um Alter Ego mais faz na sua sessão (ex.: revisor, pesquisador), contado a partir das
@@ -141,8 +142,8 @@ _Evite_: anexar, espelhar
 ## Camadas vivas
 
 **Gate**:
-O portão central do Orb: mostra tudo o que espera o Lucas em todos os realms e permite escrever a
-qualquer Alter Ego sem entrar no realm, sempre pelo terminal do Inner World dele.
+O portão do Orb, na borda da cidade: mostra tudo o que espera o Lucas em todos os realms e permite
+escrever a qualquer Alter Ego sem entrar no realm, sempre pelo terminal do Inner World dele.
 _Evite_: inbox, central de aprovações
 
 **Archive**:
@@ -160,11 +161,13 @@ recentes (10 dias, configurável). Nenhuma sessão some; as recentes ficam na sa
 _Evite_: arquivo (colide com **Archive**), memorial, lixeira
 
 **Weather**:
-O clima de um realm, que mostra a saúde dele (CI e testes).
+O clima de um realm, que mostra a saúde dele: hoje, o resultado dos testes rodados nas sessões;
+o CI do GitHub fica opcional, para depois.
 _Evite_: status do build
 
 **Energy**:
-O que o Orb consome: tokens e custo, por Alter Ego, por realm e por Mankind.
+O que as sessões consomem, só quando o provider informa: tokens e custo, por Alter Ego, por realm
+e no dia, e os limites de uso da conta. O Orb em si não consome tokens.
 _Evite_: custo (sozinho), billing
 
 ## Relações

@@ -136,8 +136,8 @@ Ficam no documento do assunto; aqui só o índice.
 | V-PEND-5 | ~~Posição dos prédios na cidade~~ Decidido em D-046; traçado delegado (D-047) | [VISUAL.md](VISUAL.md) §7 |
 | V-PEND-6 | ~~Escala da altura~~ Decidido em D-051; escala delegada (D-052) | [VISUAL.md](VISUAL.md) §8 |
 | V-PEND-7b | ~~As novas cores das áreas e do "esperando o Lucas"~~ decidido em D-036, revisto pela V-PEND-7c | [VISUAL.md](VISUAL.md) |
-| D-REALM-3 | Aparência de um realm parado há muito tempo | [ARCHITECTURE.md](ARCHITECTURE.md) |
-| R6 | O Perfil do Alter Ego: o nome já foi decidido (D-063); o resto (papel, aparência, histórico entre sessões) segue em aberto | [VISION.md](VISION.md) §7 |
+| D-REALM-3 | ~~Aparência de um realm parado há muito tempo~~ Decidido em D-059: "noite" | [ARCHITECTURE.md](ARCHITECTURE.md) |
+| R6 | O Perfil do Alter Ego: nome (D-063) e papel (D-069) decididos; aparência e o que se compartilha entre sessões seguem em aberto; XP em proposta (Q-XP) | [VISION.md](VISION.md) §7 |
 | — | Questões de [VISION.md](VISION.md) §7 e dos adapters ([CODEX.md](adapters/CODEX.md) §10, risco do observador com aprovações) | — |
 
 ### Próxima rodada (aberta em 2026-10-08)
