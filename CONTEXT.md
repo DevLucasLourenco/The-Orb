@@ -170,6 +170,26 @@ O que as sessões consomem, só quando o provider informa: tokens e custo, por A
 e no dia, e os limites de uso da conta. O Orb em si não consome tokens.
 _Evite_: custo (sozinho), billing
 
+## Progressão
+
+**XP**:
+O recibo do trabalho confirmado de um Alter Ego: cada ponto aponta para uma evidência (teste que
+passou, commit que chegou à branch principal, subagente concluído). Provisória até o mundo real
+confirmar; nunca negativa; nunca por gastar tokens.
+_Evite_: pontos (sozinho), score
+
+**Nível**:
+A posição na curva de XP confirmada, em três escalas: do Alter Ego, do Realm e de Mankind.
+_Evite_: level, rank
+
+**Extrato**:
+A lista de todas as entradas de XP de um Alter Ego, cada uma com data, regra e evidência.
+_Evite_: histórico (colide com Histórico do realm), log
+
+**Conquista**:
+Uma medalha de uma vez só, cumprida por dado observado, com o seu recibo; não dá XP.
+_Evite_: badge, troféu
+
 ## Relações
 
 - Um **Realm** tem um **Rooftop Room**; um Rooftop Room tem zero ou mais **Alter Egos**.

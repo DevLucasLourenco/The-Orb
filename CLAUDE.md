@@ -41,8 +41,13 @@ evidência e a confiança.
 ticket a ticket → rever a Situação da regra. Nada é implementado sem a regra escrita e o ticket
 criado (P1).
 
-**Fase atual (P5): levantamento de ideias e decisões.** Os tickets só são escritos quando o Lucas
-pedir. Até lá, **não implemente** funcionalidade, mesmo que pareça óbvia; documente e proponha.
+**Fase atual (P5): spec escrita, tickets ainda não.** O levantamento terminou e a primeira spec está
+em `.scratch/`. Os tickets só são escritos quando o Lucas pedir. Até lá, **não implemente**
+funcionalidade, mesmo que pareça óbvia; documente e proponha.
+
+**Specs e tickets ficam em `.scratch/`**, arquivos markdown versionados no git, com a etiqueta
+`ready-for-agent` no cabeçalho (D-098). **Nunca em issues públicas do GitHub**: o repositório é
+público e os documentos citam projetos e dados internos.
 
 **Rodada de decisões** (formato aprovado pelo Lucas):
 
@@ -170,6 +175,11 @@ python -m pytest -q
 - Os experimentos de `spikes/` rodam os CLIs de verdade e **consomem cota**: não rode sem o Lucas
   pedir.
 
+**Pontos de teste (D-099):** o principal é o mundo (eventos sintéticos + uma hora → estado do mundo,
+incluindo cidade, fachada, classes e XP); os outros dois são os leitores dos CLIs (arquivos e bancos
+sintéticos → eventos) e as leituras do mundo real (pasta falsa → eventos). Não crie pontos de teste
+novos sem necessidade; o cliente web só desenha e não tem lógica de domínio.
+
 **Pronto quando:** critérios de aceite do ticket cumpridos + testes + documentação atualizada +
 coluna Situação da regra revista em RULES.md.
 
@@ -178,6 +188,8 @@ coluna Situação da regra revista em RULES.md.
 - Repositório: `DevLucasLourenco/The-Orb`, branch `main`.
 - Mensagens de commit em pt-BR, verbo na 3ª pessoa do presente ("Registra…", "Corrige…",
   "Adiciona…"), uma ideia por commit.
+- Documentação vai direto na `main`; **implementação: uma branch e um PR por ticket**, citando as
+  regras e os critérios de aceite (D-114).
 - Commits locais, sim; **`push` só quando o Lucas pedir**. Nunca force push, nunca reescrever
   histórico publicado, nunca pular hooks.
 - Arquivos locais da máquina (`.claude/launch.json`, capturas dos spikes) ficam fora do git.

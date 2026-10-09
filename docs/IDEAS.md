@@ -94,11 +94,11 @@
 | Reabrir um Alter Ego | Retomar a sessão num terminal novo (`--resume`) | Próximo (`Launch(resume=True)` feito; comportamento do id a verificar) |
 | Subagentes como unidades temporárias | Nascem na sessão, cumprem a missão, se desmobilizam | **Feito** no Core |
 | Atividades do mundo | THINKING, CODING, TESTING, WAITING, … | **Feito** |
-| Personalidade / stats / nível (XP) | Só com histórico real | Personalidade e stats: backlog. **XP, níveis e conquistas: em proposta** ([PROGRESSION.md](PROGRESSION.md), rodada Q-XP, D-083) |
+| Personalidade / stats / nível (XP) | Só com histórico real | Personalidade e stats: backlog. **XP, níveis e conquistas: decididos** ([PROGRESSION.md](PROGRESSION.md), D-101 a D-111, Delegada) |
 | Nome histórico para cada Alter Ego | Einstein, Ada Lovelace, Tesla…: sorteio sem reposição de 60 nomes, uma vez por sessão, sacola global; subagentes sem nome | **Decidido** (R37, D-063 a D-067) |
 | Registro local do Orb (SQLite) | Base do Chronicle e dos nomes; só o que o Orb derivou | **Decidido** (R36) |
 | Leitor de diálogos | Avisa que o terminal espera o Lucas num diálogo do CLI, sem responder | **Decidido** (R34) |
-| Quests, conquistas, evolução de projeto | Camada de jogo | Conquistas: **em proposta** ([PROGRESSION.md](PROGRESSION.md)); quests: backlog |
+| Quests, conquistas, evolução de projeto | Camada de jogo | Conquistas: **decididas** (R55); quests (missões): backlog, só as definidas pelo Lucas (D-111) |
 | Quadro de tarefas ligado a issues reais | Task Board alimentado por tickets | Backlog |
 | Memorial | Subagentes e sessões encerradas deixam marca; linhagem | Backlog |
 | Cerimônias | Commit como entrega, PR merged como celebração | Backlog |

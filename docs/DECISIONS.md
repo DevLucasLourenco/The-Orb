@@ -10,8 +10,8 @@
 Quem: **Lucas** = decidido por ele · **Delegada** = o Lucas deixou a definição com o Claude; vale até
 ele revisar, e a proposta está escrita no documento do assunto.
 
-**Fase atual:** levantamento de ideias e decisões. **Ainda não há tickets** (decisão D-034); a
-implementação só volta depois deles (regra P1).
+**Fase atual:** levantamento concluído; **a primeira spec está em `.scratch/`** (D-098, D-100).
+**Ainda não há tickets** (D-034); a implementação só volta depois deles (regra P1).
 
 | Id | Data | Decisão | Quem | Onde se aplica |
 |---|---|---|---|---|
@@ -112,6 +112,23 @@ implementação só volta depois deles (regra P1).
 | D-095 | 2026-10-09 | **Erro, bloqueio e "sem sinal" do líder** com ícones neutros sobre a cabeça: erro = triângulo branco com "!" e corpo apagado; bloqueado = cadeado; sem sinal = o ícone de sinal cortado do subagente. Sem vermelho (é do git) | Lucas | Q-ORIG-3, R52, V-EGO-15 |
 | D-096 | 2026-10-09 | **Atributos por área:** barras com a parcela do trabalho da sessão em cada área, pela mesma contagem do Papel; dado real, não pontuação | Lucas | Q-ORIG-4, R40, V-HUD-16 |
 | D-097 | 2026-10-09 | **Resumo do realm de longe:** o rótulo do prédio mostra sessões ativas, esperando você e, quando houver dado, o Weather e as tarefas abertas; sem dado, nada | Lucas | Q-ORIG-5, V-REALM-7 |
+| D-098 | 2026-10-09 | **Rastreador de specs e tickets: arquivos locais em `.scratch/`, versionados no git**; nada em issues públicas do GitHub. Etiqueta de triagem: `ready-for-agent` | Lucas | RULES.md (Do documento aos tickets), [CLAUDE.md](../CLAUDE.md) |
+| D-099 | 2026-10-09 | **Pontos de teste:** um principal, o mundo (Core: eventos + hora → estado do mundo); a **cidade (bairros e lotes), a fachada (janelas) e a classe dos prédios passam a ser calculadas no mundo, em Python**, e o cliente só desenha. Dois pontos a mais: os leitores dos CLIs sobre arquivos sintéticos e as leituras do mundo real (pasta falsa → eventos) | Lucas | ARCHITECTURE.md §3 e §7 |
+| D-100 | 2026-10-09 | **Escopo da primeira spec:** tudo o que está decidido, **incluindo a progressão (XP) e o guia dos agentes**; as definições de XP e do guia ficam com o Claude | Lucas | `.scratch/` |
+| D-101 | 2026-10-09 | **XP = recibo de trabalho confirmado**, com extrato; nada por tokens, custo, mensagens ou espera; nunca negativa; os agentes nunca a veem | **Delegada** | Q-XP-1, R53, PROGRESSION.md §1 |
+| D-102 | 2026-10-09 | **Fontes e pesos da tabela v1** (teste verde, vermelho → verde, commit, subagente concluído, ofício com teto; PR mesclado depois) | **Delegada** | Q-XP-2, PROGRESSION.md §3 |
+| D-103 | 2026-10-09 | **XP provisória → confirmada:** commit só conta ao chegar à branch principal; revertido = anulada; 30 dias = expira; o nível usa só a confirmada e pode cair | **Delegada** | Q-XP-3, R53 |
+| D-104 | 2026-10-09 | **Três escalas** (Alter Ego, Realm, Mankind) e o placar por provider | **Delegada** | Q-XP-4, R54 |
+| D-105 | 2026-10-09 | **XP dos subagentes vai para o líder**; retomar mantém; bifurcar começa do zero | **Delegada** | Q-XP-5 |
+| D-106 | 2026-10-09 | **Commits do Lucas fora das sessões não dão XP** | **Delegada** | Q-XP-6 |
+| D-107 | 2026-10-09 | **Curva k·n·(n−1)** (k = 50, 500, 2.500), calibrada com o histórico real antes do ticket da progressão | **Delegada** | Q-XP-7, R54 |
+| D-108 | 2026-10-09 | **XP retroativa**, lida uma vez em segundo plano (camada 2 de R48) | **Delegada** | Q-XP-8, R48 |
+| D-109 | 2026-10-09 | **16 conquistas iniciais**, cada uma com recibo e sem XP | **Delegada** | Q-XP-9, R55 |
+| D-110 | 2026-10-09 | **Onde aparece:** nível ao lado do nome, anel ao subir de nível, painel Progressão, nível do realm e barras de XP no overview, aviso de conquista; tudo em branco neutro | **Delegada** | Q-XP-10, V-EGO-13, V-EGO-14, V-HUD-12 a 14 |
+| D-111 | 2026-10-09 | **Missões no backlog**, só as definidas pelo Lucas | **Delegada** | Q-XP-11 |
+| D-112 | 2026-10-09 | **O conteúdo do `CLAUDE.md` vale**, atualizado com o rastreador local, os pontos de teste e a fase atual | **Delegada** | Q-DEV-1, [CLAUDE.md](../CLAUDE.md) |
+| D-113 | 2026-10-09 | **`AGENTS.md` curto** na raiz, mandando seguir o `CLAUDE.md` (lido por Codex e opencode; Hermes a confirmar) | **Delegada** | Q-DEV-2, [AGENTS.md](../AGENTS.md) |
+| D-114 | 2026-10-09 | **Na implementação, uma branch e um PR por ticket**, citando as regras e os critérios de aceite; documentação segue direto na `main` | **Delegada** | Q-DEV-3, [CLAUDE.md](../CLAUDE.md) |
 
 ## Decisões revistas
 
@@ -219,25 +236,25 @@ Proposta completa em [PROGRESSION.md](PROGRESSION.md). Tudo respeita R12 (teleme
 
 | Id | Pergunta | Proposta |
 |---|---|---|
-| Q-XP-1 | **O princípio:** o que é XP no Orb? | **Recibo de trabalho confirmado**: cada ponto aponta para a evidência (teste, commit, subagente) num **extrato**; nada por tokens, custo, mensagens ou tempo esperando; nunca negativa; os agentes nunca a veem (§1) |
-| Q-XP-2 | **Fontes e pesos** (tabela v1) | Teste verde 5 (1 a cada 10 min); vermelho → verde 25; commit 10 + 1/20 linhas (teto 40); subagente concluído 3 para o líder (teto 30/dia); **ofício** 1 a cada 5 min ativos (teto 30/dia, para sessões de pesquisa e revisão não ficarem no nível 1); PR mesclado 50 depois, opcional (§3) |
-| Q-XP-3 | **Provisória → confirmada** | XP de commit é **provisória** até o commit chegar à branch principal; revertido = **anulada**; 30 dias sem chegar = expira. O nível usa só a confirmada e **pode cair** se um commit for revertido (§3, §4) |
-| Q-XP-4 | **Três escalas** | **Alter Ego**, **Realm** (soma dos seus Alter Egos) e **Mankind** (o Orb inteiro), com um **placar por provider** (§2) |
-| Q-XP-5 | **Team e continuidade** | A XP dos subagentes vai para o líder; retomar mantém a XP; bifurcar começa do zero e mostra de quem nasceu (R39) |
-| Q-XP-6 | **Commits do Lucas** fora das sessões | **Não contam**: o Orb mede os agentes. Continuam nas janelas e na altura do prédio |
-| Q-XP-7 | **Curva de níveis** | XP para o nível *n* = k · n · (n − 1), com k = 50 (Alter Ego), 500 (Realm), 2.500 (Mankind); **calibrada com o histórico real** antes do ticket, para a sessão típica ficar entre os níveis 2 e 4 (§4) |
-| Q-XP-8 | **Retroativa?** | **Sim**: no primeiro uso, o Orb calcula a XP de todas as sessões antigas em segundo plano, lendo cada uma uma única vez. Alternativa: começar do zero, como o Chronicle (§7) |
-| Q-XP-9 | **Conquistas** | 16 medalhas iniciais (Primeiro verde, Fênix, Maestro, Polímata, Cirurgião, …, Panteão), cada uma com recibo e **sem XP**, para não contar o trabalho duas vezes (§5) |
-| Q-XP-10 | **Onde aparece** | Nível ao lado do nome; anel de luz ao subir de nível; nível de Mankind na barra de cima com o painel Progressão; nível do realm e barras de XP no overview; aviso de conquista nova. Tudo em **branco neutro**, fora das cores com significado (§6) |
-| Q-XP-11 | **Missões** (quests) | **Backlog**: só missões definidas pelo Lucas, cumpridas quando os dados confirmam; nunca geradas automaticamente (§9) |
+| ~~Q-XP-1~~ D-101 | **O princípio:** o que é XP no Orb? | **Recibo de trabalho confirmado**: cada ponto aponta para a evidência (teste, commit, subagente) num **extrato**; nada por tokens, custo, mensagens ou tempo esperando; nunca negativa; os agentes nunca a veem (§1) |
+| ~~Q-XP-2~~ D-102 | **Fontes e pesos** (tabela v1) | Teste verde 5 (1 a cada 10 min); vermelho → verde 25; commit 10 + 1/20 linhas (teto 40); subagente concluído 3 para o líder (teto 30/dia); **ofício** 1 a cada 5 min ativos (teto 30/dia, para sessões de pesquisa e revisão não ficarem no nível 1); PR mesclado 50 depois, opcional (§3) |
+| ~~Q-XP-3~~ D-103 | **Provisória → confirmada** | XP de commit é **provisória** até o commit chegar à branch principal; revertido = **anulada**; 30 dias sem chegar = expira. O nível usa só a confirmada e **pode cair** se um commit for revertido (§3, §4) |
+| ~~Q-XP-4~~ D-104 | **Três escalas** | **Alter Ego**, **Realm** (soma dos seus Alter Egos) e **Mankind** (o Orb inteiro), com um **placar por provider** (§2) |
+| ~~Q-XP-5~~ D-105 | **Team e continuidade** | A XP dos subagentes vai para o líder; retomar mantém a XP; bifurcar começa do zero e mostra de quem nasceu (R39) |
+| ~~Q-XP-6~~ D-106 | **Commits do Lucas** fora das sessões | **Não contam**: o Orb mede os agentes. Continuam nas janelas e na altura do prédio |
+| ~~Q-XP-7~~ D-107 | **Curva de níveis** | XP para o nível *n* = k · n · (n − 1), com k = 50 (Alter Ego), 500 (Realm), 2.500 (Mankind); **calibrada com o histórico real** antes do ticket, para a sessão típica ficar entre os níveis 2 e 4 (§4) |
+| ~~Q-XP-8~~ D-108 | **Retroativa?** | **Sim**: no primeiro uso, o Orb calcula a XP de todas as sessões antigas em segundo plano, lendo cada uma uma única vez. Alternativa: começar do zero, como o Chronicle (§7) |
+| ~~Q-XP-9~~ D-109 | **Conquistas** | 16 medalhas iniciais (Primeiro verde, Fênix, Maestro, Polímata, Cirurgião, …, Panteão), cada uma com recibo e **sem XP**, para não contar o trabalho duas vezes (§5) |
+| ~~Q-XP-10~~ D-110 | **Onde aparece** | Nível ao lado do nome; anel de luz ao subir de nível; nível de Mankind na barra de cima com o painel Progressão; nível do realm e barras de XP no overview; aviso de conquista nova. Tudo em **branco neutro**, fora das cores com significado (§6) |
+| ~~Q-XP-11~~ D-111 | **Missões** (quests) | **Backlog**: só missões definidas pelo Lucas, cumpridas quando os dados confirmam; nunca geradas automaticamente (§9) |
 
 ### Próxima rodada: guia dos agentes (aberta em 2026-10-09)
 
 | Id | Pergunta | Proposta |
 |---|---|---|
-| Q-DEV-1 | **O conteúdo do [CLAUDE.md](../CLAUDE.md)** está bom? | Fontes da verdade, processo e formato das rodadas, 11 invariantes, regras de dependência e padrões de código, testes, git e como falar com o Lucas. Ele aponta para os documentos em vez de copiá-los, para não divergir |
-| Q-DEV-2 | **Os outros providers** também trabalham neste repositório? | Um `AGENTS.md` curto, lido por Codex e opencode (a confirmar o do Hermes), que manda seguir o `CLAUDE.md`, para o guia ser um só |
-| Q-DEV-3 | **Branches na implementação** | Documentação continua direto na `main` local. Na implementação, **uma branch e um PR por ticket**, com o PR citando as regras e os critérios de aceite do ticket |
+| ~~Q-DEV-1~~ D-112 | **O conteúdo do [CLAUDE.md](../CLAUDE.md)** está bom? | Fontes da verdade, processo e formato das rodadas, 11 invariantes, regras de dependência e padrões de código, testes, git e como falar com o Lucas. Ele aponta para os documentos em vez de copiá-los, para não divergir |
+| ~~Q-DEV-2~~ D-113 | **Os outros providers** também trabalham neste repositório? | Um `AGENTS.md` curto, lido por Codex e opencode (a confirmar o do Hermes), que manda seguir o `CLAUDE.md`, para o guia ser um só |
+| ~~Q-DEV-3~~ D-114 | **Branches na implementação** | Documentação continua direto na `main` local. Na implementação, **uma branch e um PR por ticket**, com o PR citando as regras e os critérios de aceite do ticket |
 
 ### Próxima rodada: lacunas técnicas (aberta em 2026-10-09)
 

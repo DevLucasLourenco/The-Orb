@@ -64,6 +64,8 @@ Situação: ✅ como está · ❌ precisa mudar · ❓ precisa de decisão.
 | V-EGO-10 | Subagente **cinza ("sem sinal")** | Heurística | **Decidido (R7, D-045, D-050):** depois de **5 min sem atividade** e sem sinal do fim, o subagente fica **cinza translúcido, sem halo, com um ícone de sinal cortado** sobre a cabeça, em vez de sumir. O opencode continua cinza **sólido, com halo**. Hoje: some depois de 5 min | ❌ Mudar |
 | V-EGO-15 | **Líder em erro, bloqueado ou sem sinal**: ícone neutro sobre a cabeça (erro = triângulo branco com "!" e corpo apagado; bloqueado = cadeado; sem sinal = o ícone de sinal cortado de V-EGO-10) | Dado | Estados `ERROR`, `BLOCKED`, `NO_SIGNAL` do Core (R52, D-095); sem vermelho | ⏳ |
 | V-EGO-16 | **Subagente que termina caminha até o líder** e então sai de cena | Dado | Sinal `subagent.ended` (R51, D-094); sem o sinal, vale V-EGO-10 | ⏳ |
+| V-EGO-13 | **Nível** ao lado do nome histórico no rótulo ("Einstein · 7") | Dado | Nível do Alter Ego pela XP confirmada (R54, D-110) | ⏳ |
+| V-EGO-14 | **Subir de nível**: um anel de luz branca neutra sobe pelo personagem uma vez | Dado | O evento real de subir de nível (D-110) | ⏳ |
 
 ## 4. Painéis
 
@@ -82,6 +84,9 @@ Situação: ✅ como está · ❌ precisa mudar · ❓ precisa de decisão.
 | V-HUD-11 | **Archive**: aba no Inner World | Dado | Instruções, skills e memória da sessão: nome, tamanho e data; conteúdo só ao abrir (R45) | ⏳ |
 | V-HUD-15 | **Progresso da tarefa** no overview: "7 de 12" e uma barra por sessão | Dado | A lista de tarefas que o próprio CLI mantém (R50, D-093); sem lista, nada | ⏳ |
 | V-HUD-16 | **Atributos por área** no overview: barras com a parcela do trabalho em cada área | Dado | A mesma contagem do Papel (R40, D-096); não é pontuação | ⏳ |
+| V-HUD-12 | **Nível de Mankind** e a barra de progresso na barra de cima; clicar abre o painel **Progressão** (extrato, conquistas, placar por provider) | Dado | Soma da XP confirmada (R54, D-110) | ⏳ |
+| V-HUD-13 | No overview do realm: o **nível do realm** e, por Alter Ego, a **barra de XP** (confirmada cheia, provisória tracejada) | Dado | Extrato (R53) | ⏳ |
+| V-HUD-14 | **Conquista nova**: um aviso curto no HUD com o nome e o recibo | Dado | Conquista (R55) | ⏳ |
 
 ---
 

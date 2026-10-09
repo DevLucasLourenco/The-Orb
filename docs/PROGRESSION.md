@@ -1,7 +1,7 @@
 # The Orb — Progressão: XP, níveis e conquistas
 
-> **Proposta, aguardando a decisão do Lucas** (rodada Q-XP em [DECISIONS.md](DECISIONS.md)).
-> Nada aqui é regra até ser decidido; nada é implementado antes dos tickets (P1, P5).
+> **Decidido em 2026-10-09 (D-101 a D-111, Delegada: vale até o Lucas revisar).** Regras R53 a
+> R55. Nada é implementado antes dos tickets (P1, P5).
 > Vocabulário: [CONTEXT.md](../CONTEXT.md) · Regras: [RULES.md](RULES.md) · Visual: [VISUAL.md](VISUAL.md).
 
 Última atualização: 2026-10-09
@@ -109,13 +109,13 @@ cumpriu). **Não dão XP** (para não contar o mesmo trabalho duas vezes). Lista
 | C-41 | **Cidade viva** | Mankind | 10 realms com atividade na mesma semana |
 | C-42 | **Panteão** | Mankind | Os 60 nomes históricos já foram usados e a sacola recomeçou (R37) |
 
-## 6. Como aparece no mundo (proposta, a entrar em VISUAL.md quando decidido)
+## 6. Como aparece no mundo (decidido, D-110; também em VISUAL.md)
 
 Todos os elementos abaixo são **Dado** (vêm do extrato) e não usam cores com significado: a
 progressão usa **branco neutro**, fora das paletas do git, dos providers e do magenta "esperando"
 (R20c). Dourado ficou de fora de propósito: confundiria com o amarelo do Hermes (R30).
 
-| Id proposto | Elemento | Fonte |
+| Id | Elemento | Fonte |
 |---|---|---|
 | V-EGO-13 | O nível ao lado do nome histórico no rótulo ("Einstein · 7") | Nível do Alter Ego |
 | V-EGO-14 | **Subir de nível**: um anel de luz neutra sobe pelo personagem uma vez | O evento real de subir de nível |
@@ -135,7 +135,7 @@ centenas de MB ([ARCHITECTURE.md](ARCHITECTURE.md) §5). O cálculo retroativo l
 **uma vez**, em segundo plano, e nunca de novo (o registro local guarda o resultado). A alternativa
 é começar do zero no dia em que o Orb passa a registrar, como o Chronicle (D-078).
 
-## 8. Onde mora no código (proposta)
+## 8. Onde mora no código
 
 - **`src/orb/progression/`**: domínio puro, como o Core. Entra: eventos do Protocol e fatos do git
   (dos Probes). Sai: entradas do extrato e conquistas. Tabelas em `rules.py` (a tabela v1 da §3, a

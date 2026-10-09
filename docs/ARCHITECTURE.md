@@ -102,6 +102,9 @@ Todo adapter expõe a mesma forma (`orb.adapters._shared.base`):
   com a hora de quem pede e os limites numa tabela de `rules.py`.
 - **Decidido (D-085):** o Core guarda também estado **por realm** (métricas, alterações locais,
   Weather) e **do mundo** (limites da conta), vindo de eventos com `alter_ego: null` (protocolo 0.3).
+- **Decidido (D-099):** o mundo também calcula, em Python, o **traçado da cidade** (bairros, lotes,
+  deslocamento pela semente do nome; VISUAL.md §7), a **classe e os andares** de cada prédio (§8) e a
+  **fachada** (as janelas por percentual; §6). O cliente recebe isso pronto no snapshot e só desenha.
 - Puro: tempo vem do `ts` dos eventos e do `now` recebido; nenhuma chamada a disco, rede ou relógio.
 - Regras em tabelas (`orb.core.rules`): atividade → área, sinais → transições, estados que
   sobrepõem outros (`WAITING`, `NO_SIGNAL`).
@@ -253,6 +256,12 @@ ticket existir.
 | Classificador de comandos | Tabela de casos | `tests/test_commands.py` |
 | Terminal Host | PTY falsa (sempre) + terminal real (quando `pywinpty` e o CLI existem) | `tests/test_terminal_host.py` |
 | Gateway | Validação de mensagens; app com terminal falso | `tests/test_gateway.py` |
+
+**Pontos de teste (D-099).** O principal é o mundo: eventos sintéticos + uma hora → estado do mundo
+(inclui tempo, papel, tarefas, Weather, Energy, XP, cidade, fachada e classes). Os outros dois são os
+leitores dos CLIs (arquivos e bancos sintéticos → eventos) e as leituras do mundo real (pasta de
+projeto ou de CLI falsa → eventos: git, linhas de código, detecção de realms). O cliente web não tem
+lógica de domínio para testar.
 
 Fixtures **reais** (golden files) são geradas pelos scripts de `spikes/03-live-hooks` e
 `spikes/04-codex` e **não são versionadas** (contêm caminhos locais, prompts e dados da conta).
