@@ -45,8 +45,9 @@ criado (P1).
 em `.scratch/`. Os tickets só são escritos quando o Lucas pedir. Até lá, **não implemente**
 funcionalidade, mesmo que pareça óbvia; documente e proponha.
 
-**Specs e tickets ficam em `.scratch/`**, arquivos markdown versionados no git, com a etiqueta
-`ready-for-agent` no cabeçalho (D-098). **Nunca em issues públicas do GitHub**: o repositório é
+**Specs e tickets ficam em `.scratch/<feature>/`** (`spec.md` e `issues/NN-*.md`), arquivos
+markdown versionados no git, com a linha `Status:` no topo (D-098; formato em
+[docs/agents/issue-tracker.md](docs/agents/issue-tracker.md)). **Nunca em issues públicas do GitHub**: o repositório é
 público e os documentos citam projetos e dados internos.
 
 **Rodada de decisões** (formato aprovado pelo Lucas):
@@ -213,3 +214,17 @@ impressa. O terminal hospedado roda o **CLI de verdade** e consome a cota da con
 - Decisões são dele: proponha com uma recomendação, não decida sozinho o que é de produto.
 - Diga o que foi feito e o que não foi, com a saída real quando algo falhar.
 - Quando faltar dado, diga o que falta e pergunte; não suponha.
+
+## Agent skills
+
+### Issue tracker
+
+Issues e specs vivem como markdown local em `.scratch/<feature>/`. Ver `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Vocabulário padrão: `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`. Ver `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context: um `CONTEXT.md` e `docs/adr/` na raiz. Ver `docs/agents/domain.md`.
