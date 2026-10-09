@@ -8,7 +8,7 @@ export function summarize(realm) {
     sessions: egos.length,
     active: awake.filter((e) => !["IDLE", "COMPLETED"].includes(e.state)).length,
     waiting: egos.filter((e) => e.waiting.length || e.state === "WAITING").length,
-    subagents: egos.reduce((n, e) => n + e.team.filter(subVisible).length, 0),
+    subagents: egos.reduce((n, e) => n + e.team.filter((s) => subVisible(s) && !s.no_signal).length, 0),
     tokens: egos.reduce((n, e) => n + (e.usage.input_tokens || 0) + (e.usage.output_tokens || 0), 0),
     cost: egos.reduce((n, e) => n + (e.usage.cost_usd || 0), 0),
   };

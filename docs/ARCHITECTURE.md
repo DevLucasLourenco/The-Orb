@@ -97,9 +97,12 @@ Todo adapter expõe a mesma forma (`orb.adapters._shared.base`):
 ### Core
 
 - `World.apply(event) -> bool` aplica um evento (falso se repetido ou inválido) e
-  `World.snapshot() -> dict` devolve o estado para os clientes. **Decidido (D-086, R47):** passa a
-  `snapshot(now)`, que deriva os estados que dependem do tempo (dormindo, sem sinal, noite, "hoje")
-  com a hora de quem pede e os limites numa tabela de `rules.py`.
+  `World.snapshot(now) -> dict` devolve o estado para os clientes. **Feito (ticket 01, D-086, R47):**
+  `now` (com fuso) é a hora de quem pede; com ela o mundo deriva o que depende do tempo e os limites
+  ficam numa tabela de `rules.py`: `asleep` no Alter Ego (parado há mais de 15 min, ou encerrado) e
+  `no_signal` no subagente (ativo, sem atividade há mais de 5 min; o estado vira `NO_SIGNAL`, a área é
+  a do último estado conhecido, e ele deixa de manter o líder em `DELEGATING`). Sem `now`, nada que
+  dependa do tempo é afirmado. Faltam, para os tickets seguintes, "noite" (06) e "hoje" (20).
 - **Decidido (D-085):** o Core guarda também estado **por realm** (métricas, alterações locais,
   Weather) e **do mundo** (limites da conta), vindo de eventos com `alter_ego: null` (protocolo 0.3).
 - **Decidido (D-099):** o mundo também calcula, em Python, o **traçado da cidade** (bairros, lotes,
@@ -132,7 +135,9 @@ Todo adapter expõe a mesma forma (`orb.adapters._shared.base`):
     de subpastas e confirma cada uma pelo `cwd` gravado no transcript.
   - A falha de um leitor não afeta os outros (fica em `errors`).
 - **`Hub`**: um laço único lê todos os realms (fora do loop, `to_thread`), aplica no Core, guarda as
-  últimas linhas de Inner World por sessão (`Feed`) e distribui aos clientes.
+  últimas linhas de Inner World por sessão (`Feed`) e distribui aos clientes. É a borda que conhece a
+  hora (relógio injetável): pede o mundo ao Core com a hora do servidor e, a cada 15 s, reavalia o que
+  só o tempo muda (quem dormiu, quem ficou sem sinal) e avisa os clientes sem esperar um evento novo.
 - `/world?token=…`: o mundo para o cliente 3D — snapshot, depois `event` (linhas de Inner World),
   `world` (snapshot quando algo muda) e `feed` (histórico de uma sessão, sob pedido).
 - `/ws?token=…&realm=…&provider=…&model=…`: abre o terminal real de uma sessão nova num realm e

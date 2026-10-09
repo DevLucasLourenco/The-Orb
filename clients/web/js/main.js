@@ -183,5 +183,3 @@ stage.onFrame = (dt, t) => {
   for (const a of avatars.values()) a.update(dt, t, near && (!selectedRealm || a.realm === selectedRealm));
 };
 stage.start();
-// Sessões "dormem" com o tempo: reavalia sem esperar o próximo evento.
-setInterval(() => world.realms.length && syncWorld(world), 30000);

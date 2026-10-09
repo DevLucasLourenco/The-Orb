@@ -1,12 +1,14 @@
 """O mundo do The Orb: Realm -> Alter Ego (sessão, líder) -> Subagentes.
 
 Puro: só aplica eventos já validados e devolve snapshots. Sem disco, rede ou relógio (o tempo vem
-do `ts` dos eventos). Mesmos eventos na mesma ordem -> mesmo mundo.
+do `ts` dos eventos e da hora que quem pede o snapshot informa). Mesmos eventos na mesma ordem e a
+mesma hora -> mesmo mundo.
 """
 from __future__ import annotations
 
 from collections import deque
 from dataclasses import dataclass, field
+from datetime import datetime
 from typing import Any
 
 from ..protocol import Event, validate
@@ -14,6 +16,20 @@ from . import rules
 
 _TOKEN_FIELDS = ("input_tokens", "output_tokens", "cache_read_tokens", "reasoning_tokens")
 _ACTION_CHARS = 240     # tamanho do "fazendo agora" no overview
+
+
+def _idle_seconds(last_ts: str | None, now: datetime | None) -> float | None:
+    """Segundos entre o último evento e `now`. None quando não dá para saber (sem hora, sem evento,
+    data ilegível ou sem fuso): o mundo não afirma nada que dependa do tempo."""
+    if now is None or last_ts is None:
+        return None
+    try:
+        then = datetime.fromisoformat(last_ts)
+    except ValueError:
+        return None
+    if then.utcoffset() is None:
+        return None
+    return (now - then).total_seconds()
 
 
 @dataclass
@@ -28,10 +44,22 @@ class Subagent:
     last_action: str | None = None
     last_ts: str | None = None
 
-    def snapshot(self) -> dict[str, Any]:
-        state = self.base if self.active else "COMPLETED"
-        return {"id": self.id, "kind": self.kind, "parent": self.parent, "state": state,
-                "area": rules.area_for(state), "target": self.target, "active": self.active,
+    def touch(self, ts: str) -> None:
+        """Qualquer evento do subagente é atividade (não só os que trazem sinal)."""
+        if self.last_ts is None or ts > self.last_ts:
+            self.last_ts = ts
+
+    def without_signal(self, now: datetime | None) -> bool:
+        return rules.subagent_without_signal(active=self.active, idle_seconds=_idle_seconds(self.last_ts, now))
+
+    def snapshot(self, now: datetime | None = None) -> dict[str, Any]:
+        base = self.base if self.active else "COMPLETED"
+        no_signal = self.without_signal(now)
+        # Sem sinal, o subagente não some nem muda de lugar: o estado vira NO_SIGNAL e a área
+        # continua a do último estado conhecido (R7, D-045).
+        return {"id": self.id, "kind": self.kind, "parent": self.parent,
+                "state": "NO_SIGNAL" if no_signal else base, "area": rules.area_for(base),
+                "target": self.target, "active": self.active, "no_signal": no_signal,
                 "outcome": self.outcome, "last_action": self.last_action, "last_ts": self.last_ts}
 
 
@@ -73,22 +101,24 @@ class AlterEgo:
             self._seen.discard(self._seen_order.popleft())
         return True
 
-    def state(self) -> str:
-        active = sum(1 for sub in self.subagents.values() if sub.active)
+    def state(self, now: datetime | None = None) -> str:
+        # Um subagente "sem sinal" não é sabidamente ativo: não mantém o líder em DELEGATING.
+        active = sum(1 for sub in self.subagents.values() if sub.active and not sub.without_signal(now))
         return rules.leader_state(self.base, no_signal=self.no_signal, waiting=bool(self.waiting),
                                   error=self.error is not None, active_subagents=active)
 
-    def snapshot(self) -> dict[str, Any]:
-        state = self.state()
+    def snapshot(self, now: datetime | None = None) -> dict[str, Any]:
+        state = self.state(now)
+        asleep = rules.is_asleep(ended=self.ended, state=state, idle_seconds=_idle_seconds(self.last_ts, now))
         return {
             "id": self.id, "provider": self.provider, "session": self.session, "title": self.title,
             "model": self.model, "cwd": self.cwd, "state": state, "area": rules.area_for(state),
             "target": self.target, "last_action": self.last_action,
-            "ended": self.ended, "error": self.error,
+            "ended": self.ended, "asleep": asleep, "error": self.error,
             "waiting": [{"request": r, "action": a} for r, a in self.waiting.items()],
             "events": self.events, "seq_gaps": self.seq_gaps,
             "usage": dict(self.usage), "last_ts": self.last_ts,
-            "team": [sub.snapshot() for sub in self.subagents.values()],
+            "team": [sub.snapshot(now) for sub in self.subagents.values()],
         }
 
 
@@ -135,7 +165,10 @@ class World:
             if event["agent"] is None:
                 self._apply_to_leader(ego, signal)
             else:
-                self._apply_to_subagent(ego, event["agent"], signal, event["ts"])
+                self._apply_to_subagent(ego, event["agent"], signal)
+        sub = ego.subagents.get(event["agent"]) if event["agent"] is not None else None
+        if sub is not None:
+            sub.touch(event["ts"])
         return True
 
     @staticmethod
@@ -191,9 +224,8 @@ class World:
             sub = ego.subagents[agent_id] = Subagent(id=agent_id)
         return sub
 
-    def _apply_to_subagent(self, ego: AlterEgo, agent_id: str, signal: dict[str, Any], ts: str) -> None:
+    def _apply_to_subagent(self, ego: AlterEgo, agent_id: str, signal: dict[str, Any]) -> None:
         sub = self._subagent(ego, agent_id)
-        sub.last_ts = ts
         kind = signal["type"]
         if kind == "subagent.started":
             sub.kind = signal.get("kind") or sub.kind
@@ -210,15 +242,19 @@ class World:
         elif kind == "waiting.resolved":
             ego.waiting.pop(str(signal["request"]), None)
 
-    def snapshot(self) -> dict[str, Any]:
+    def snapshot(self, now: datetime | None = None) -> dict[str, Any]:
+        """O estado do mundo. `now` (com fuso) é a hora de quem pede: com ela o mundo deriva o que
+        depende do tempo (dormindo, sem sinal; R47). Sem `now`, nada que dependa do tempo é afirmado."""
+        if now is not None and now.utcoffset() is None:
+            raise ValueError("a hora do snapshot precisa ter fuso horário")
         realms = []
         total_egos = active_subs = waiting = 0
         for realm_id in sorted(self.realms):
-            egos = [ego.snapshot() for ego in self.realms[realm_id].values()]
+            egos = [ego.snapshot(now) for ego in self.realms[realm_id].values()]
             realms.append({"id": realm_id, "alter_egos": egos})
             total_egos += len(egos)
             for ego in egos:
-                active_subs += sum(1 for sub in ego["team"] if sub["active"])
+                active_subs += sum(1 for sub in ego["team"] if sub["active"] and not sub["no_signal"])
                 waiting += len(ego["waiting"])
         return {"realms": realms,
                 "mankind": {"alter_egos": total_egos, "active_subagents": active_subs, "waiting": waiting}}
