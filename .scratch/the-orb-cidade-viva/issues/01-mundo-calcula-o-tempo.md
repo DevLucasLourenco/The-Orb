@@ -53,9 +53,11 @@ tem teste; as cores do "sem sinal" estão em VISUAL.md §5.
 opencode é azul. Nada no ticket 01 mexe na cor dos providers; o "sem sinal" é cinza neutro,
 translúcido, sem halo e com o ícone, então já se distingue do opencode (sólido, com halo).
 
-**Verificação ao vivo:** console do navegador sem erros; o canal `/world` entrega `asleep`,
-`no_signal` e `active_subagents` com dados reais. O desenho do ícone de sinal cortado no 3D ainda não
-foi visto numa sessão real com subagente sem sinal.
+**Verificação ao vivo (2026-10-09, dados reais):** console do navegador sem erros; o canal `/world`
+entrega `asleep`, `no_signal`, `active_subagents` e `generated_at`; sem nenhum evento novo o servidor
+empurrou o mundo com `no_signal` subindo de 0 a 117 e os subagentes ativos de Mankind caindo de 119
+a 3. No 3D (realm ATIA), os dois subagentes sem sinal aparecem cinza translúcido, sem halo e com o
+ícone de sinal cortado, ao lado do líder.
 
 **Observação para o ticket 06:** o primeiro poll com os 19 realms demora mais de 100 s e aplica
 ~10 mil eventos antes de aparecer a primeira sessão (já era assim; é o que a leitura em duas
