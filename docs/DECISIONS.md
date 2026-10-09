@@ -132,6 +132,7 @@ ele revisar, e a proposta está escrita no documento do assunto.
 | D-115 | 2026-10-09 | **Sem brilho geral das janelas por atividade:** a janela acesa tem brilho fixo; a atividade aparece na sala e no rótulo | Lucas | Q-REV-1, V-REALM-4 |
 | D-116 | 2026-10-09 | **Árvore da Team no overview:** subagentes em árvore (quem criou quem), com tipo e estado; no mundo nada muda | Lucas | Q-REV-2, R57, V-HUD-17 |
 | D-117 | 2026-10-09 | **Divisão em 25 tickets aprovada**, gravados em `.scratch/the-orb-cidade-viva/issues/` | Lucas | P5 |
+| D-118 | 2026-10-09 | **Tickets 05 e 25 ficam `ready-for-agent`**, com um ponto de parada explícito para a aprovação do Lucas (prévia de cores; curva de XP) | Lucas | `.scratch/the-orb-cidade-viva/issues/` 05 e 25 |
 
 ## Decisões revistas
 
