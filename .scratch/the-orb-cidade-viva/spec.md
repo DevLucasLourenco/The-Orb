@@ -309,6 +309,10 @@ Um mundo 3D navegável que se monta sozinho a partir do que os quatro CLIs já g
   `inter_agent_communication_metadata` e `event_msg/thread_settings_applied` (D-089). Produzir
   `account.limits` a partir de `account/rateLimits/updated`.
 - Claude: ler `gitOperation` como evidência de commit, push, branch e PR (D-090).
+- Hermes: ler os totais de tokens por sessão das colunas de `sessions` (hoje não lidos), para a Energy
+  (R43).
+- Hermes e opencode: confirmar, só pela estrutura, se o pensamento gravado é texto bruto ou resumo, e
+  marcar a fidelidade certa (R14; hoje marcam `raw` sem confirmar).
 - Todo leitor passa a alimentar o **índice de metadados** (pasta, datas, título, provider, modelo) de
   todas as sessões, além do conteúdo incremental (R48).
 

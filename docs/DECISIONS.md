@@ -295,3 +295,13 @@ tokens) e o orçamento de cores (R20c).
 | ~~Q-ORIG-4~~ D-096 | **Atributos por área** | No overview de cada Alter Ego, **barras da parcela do trabalho em cada área** (Development, Testing, Research, Review), calculadas da mesma contagem do Papel (R40). É dado real e explica o Papel; não vira pontuação |
 | ~~Q-ORIG-5~~ D-097 | **Resumo do realm visto de longe** | O rótulo do prédio ganha: sessões ativas, esperando você e, quando houver dado, o **Weather** e as **tarefas abertas** (de Q-ORIG-1). Nada de "saudável" inventado: sem dado, não aparece |
 
+### Próxima rodada: revisão antes dos tickets (aberta em 2026-10-09)
+
+Na revisão de todas as regras e elementos visuais contra a divisão em tickets, apareceram dois pontos
+que **nunca foram decididos**:
+
+| Id | Pergunta | Proposta |
+|---|---|---|
+| Q-REV-1 | **Brilho geral das janelas** (V-REALM-4: mais sessões ativas = janelas mais fortes). Com as janelas mostrando o git (R20) e só acesas ou apagadas (D-043), esse brilho ainda faz sentido? | **Retirar:** a janela acesa tem brilho fixo; a atividade já aparece na sala (personagens trabalhando) e no rótulo. Evita misturar dois dados na mesma janela |
+| Q-REV-2 | **Árvore da Team** (VISION.md §5: "a árvore de quem delegou o quê"). Subagentes podem ter subagentes; hoje o overview lista todos no mesmo nível | **No overview**, os subagentes aparecem em árvore (quem criou quem), com o tipo e o estado de cada um; **no mundo**, nada muda (todos na sala, menores) |
+
