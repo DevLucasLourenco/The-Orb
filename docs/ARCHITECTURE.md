@@ -179,7 +179,15 @@ ticket existir.
 | D-REALM-5 | ~~Persistência local do Orb?~~ **Decidido (2026-10-08): um arquivo de preferências próprio do Orb (R29)**, nunca dos providers, editado pela tela de configurações do Orb: realms escondidos (R3c), prazo das sessões recentes (R28a) e o que vier. Local proposto: `%LOCALAPPDATA%\the-orb\` no Windows (`~/.the-orb/` nos outros). Em aberto: se também guarda a posição dos prédios (V-PEND-5). |
 | D-REALM-6 | ~~Pasta de projeto que não existe mais no disco?~~ **Decidido (2026-10-08): não entra (R3d).** |
 
-### Módulos novos decididos (2026-10-08), ainda sem implementação
+### Módulos novos decididos (2026-10-08 e 2026-10-09), ainda sem implementação
+
+- **Weather local** (R42, D-076): deriva o resultado dos testes das sessões, a partir dos eventos
+  que os adapters já produzem (comando classificado como teste + código de saída/erro do
+  resultado). A forma de obter o código de saída varia por provider (ex.: `exitCode` no Codex,
+  resultado com erro no Claude) e se confirma na implementação. Sem rede; o CI do GitHub é um
+  Probe opcional, futuro, só leitura.
+- **Energy** (R43, D-077): soma no Core os `usage` que os providers informam, por sessão, realm e
+  dia; nunca estima custo.
 
 - **Leitor de diálogos** (R34, D-060): separado do Terminal Host (que só transporta bytes e não
   interpreta o que o CLI imprime). Só nas sessões abertas pelo Orb, lê a tela do terminal e

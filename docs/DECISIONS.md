@@ -5,7 +5,7 @@
 > [ARCHITECTURE.md](ARCHITECTURE.md), [adr/](adr/)…). Decisões difíceis de reverter também têm um ADR.
 > Nada é apagado: uma decisão revista fica listada, com a que a substituiu.
 
-Última atualização: 2026-10-08
+Última atualização: 2026-10-09
 
 Quem: **Lucas** = decidido por ele · **Delegada** = o Lucas deixou a definição com o Claude; vale até
 ele revisar, e a proposta está escrita no documento do assunto.
@@ -90,6 +90,12 @@ implementação só volta depois deles (regra P1).
 | D-073 | 2026-10-08 | **Inner World no 3D:** agora o painel de baixo (linha do tempo e terminal); depois o personagem a um **monitor** na sua área com o terminal na tela; o "mergulho" fica no backlog | Lucas | R9, Q-WORLD-2 |
 | D-074 | 2026-10-08 | **Nenhum CLI além dos 4** por agora; o contrato de adapter já permite incluir outro | Lucas | R8, Q-PROV-1 |
 | D-075 | 2026-10-08 | **As formas de cada classe de prédio** (VISUAL.md §8) estão aprovadas | Lucas | R41, Q-WORLD-3 |
+| D-076 | 2026-10-09 | **Weather:** agora só local, pelo resultado dos testes que as sessões rodaram (comando de teste observado e código de saída), sem rede; o CI do GitHub fica opcional para depois, ligado nas configurações. No mundo: céu limpo (últimos testes passaram), chuva (falharam), nada (sem dado) | Lucas | R42, V-REALM-16 |
+| D-077 | 2026-10-09 | **Energy:** tokens e custo só quando o provider informa (nunca estimados); por sessão e por realm no overview; total de **hoje** na barra de cima; limites de uso da conta (Codex) num painel de Energy | Lucas | R43, V-HUD-9 |
+| D-078 | 2026-10-09 | **Chronicle:** barra de tempo no rodapé; arrastar mostra a cidade como era; fonte = registro local do Orb (R36), a partir do dia em que ele passa a registrar; o passado anterior pelo histórico do git fica para depois | Lucas | R44, V-HUD-10 |
+| D-079 | 2026-10-09 | **Archive:** aba no Inner World com `CLAUDE.md`, `AGENTS.md`, skills e memória de cada provider; só nome, tamanho e data; conteúdo só quando o Lucas abrir; somente leitura, nada reinjetado | Lucas | R45, V-HUD-11 |
+| D-080 | 2026-10-09 | **Gate no mundo:** um portão na borda da cidade, de frente para a câmera inicial e fora dos bairros, com a contagem de quem espera o Lucas; clicar abre a lista de esperas de todos os realms e permite escrever para qualquer Alter Ego pelo terminal dele | Lucas | R46, V-CITY-7 |
+| D-081 | 2026-10-09 | **Ordem das camadas vivas:** janelas acesas → Gate → Chronicle → Weather → Energy → Archive | Lucas | VISION.md §5 |
 
 ## Decisões revistas
 
@@ -183,9 +189,9 @@ tickets, cada uma precisa de fonte de dado, forma no mundo e limites. Todas resp
 
 | Id | Pergunta | Proposta |
 |---|---|---|
-| Q-LIVE-1 | **Weather (saúde do realm):** de onde vem o dado? | **Agora, só local:** o resultado dos testes que as sessões rodaram (comando de teste observado e o código de saída dele), sem rede. **Depois, opcional:** o CI do GitHub (pelo `gh`, com a conta do Lucas, só leitura), ligado nas configurações. No mundo: céu limpo sobre o prédio quando os últimos testes passaram, chuva quando falharam, nada quando não há dado |
-| Q-LIVE-2 | **Energy (tokens e custo):** o que mostrar e onde? | Tokens e custo **só quando o provider informa** (nunca estimados): por sessão e por realm no overview, e o total de **hoje** na barra de cima. Os limites de uso da conta (o Codex informa) aparecem num painel de Energy |
-| Q-LIVE-3 | **Chronicle (a cidade no tempo):** como e desde quando? | Uma **barra de tempo** no rodapé: arrastar mostra a cidade como era (prédios, personagens, janelas). Fonte: o registro local do Orb (R36), então começa no dia em que o Orb passa a registrar. Reconstruir o passado anterior pelo histórico do git fica para depois |
-| Q-LIVE-4 | **Archive (o que molda cada sessão):** o que e onde? | Uma aba **Archive** no Inner World: `CLAUDE.md`, `AGENTS.md`, skills e arquivos de memória de cada provider, só **nome, tamanho e data**; o conteúdo só quando o Lucas abrir um arquivo. Somente leitura, nada é reinjetado (já decidido em VISION.md §5) |
-| Q-LIVE-5 | **Gate:** onde fica no mundo? | Um **portão na borda da cidade**, de frente para a câmera inicial, fora dos bairros, com a contagem de quem espera o Lucas; clicar abre a lista de esperas de todos os realms e permite escrever para qualquer Alter Ego (pelo terminal dele, R35) |
-| Q-LIVE-6 | **Ordem das camadas vivas** | A de VISION.md §5: janelas acesas → Gate → Chronicle → Weather → Energy → Archive |
+| ~~Q-LIVE-1~~ D-076 | **Weather (saúde do realm):** de onde vem o dado? | **Agora, só local:** o resultado dos testes que as sessões rodaram (comando de teste observado e o código de saída dele), sem rede. **Depois, opcional:** o CI do GitHub (pelo `gh`, com a conta do Lucas, só leitura), ligado nas configurações. No mundo: céu limpo sobre o prédio quando os últimos testes passaram, chuva quando falharam, nada quando não há dado |
+| ~~Q-LIVE-2~~ D-077 | **Energy (tokens e custo):** o que mostrar e onde? | Tokens e custo **só quando o provider informa** (nunca estimados): por sessão e por realm no overview, e o total de **hoje** na barra de cima. Os limites de uso da conta (o Codex informa) aparecem num painel de Energy |
+| ~~Q-LIVE-3~~ D-078 | **Chronicle (a cidade no tempo):** como e desde quando? | Uma **barra de tempo** no rodapé: arrastar mostra a cidade como era (prédios, personagens, janelas). Fonte: o registro local do Orb (R36), então começa no dia em que o Orb passa a registrar. Reconstruir o passado anterior pelo histórico do git fica para depois |
+| ~~Q-LIVE-4~~ D-079 | **Archive (o que molda cada sessão):** o que e onde? | Uma aba **Archive** no Inner World: `CLAUDE.md`, `AGENTS.md`, skills e arquivos de memória de cada provider, só **nome, tamanho e data**; o conteúdo só quando o Lucas abrir um arquivo. Somente leitura, nada é reinjetado (já decidido em VISION.md §5) |
+| ~~Q-LIVE-5~~ D-080 | **Gate:** onde fica no mundo? | Um **portão na borda da cidade**, de frente para a câmera inicial, fora dos bairros, com a contagem de quem espera o Lucas; clicar abre a lista de esperas de todos os realms e permite escrever para qualquer Alter Ego (pelo terminal dele, R35) |
+| ~~Q-LIVE-6~~ D-081 | **Ordem das camadas vivas** | A de VISION.md §5: janelas acesas → Gate → Chronicle → Weather → Energy → Archive |

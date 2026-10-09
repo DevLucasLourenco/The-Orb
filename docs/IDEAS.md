@@ -120,13 +120,15 @@
 | Ideia | Resumo | Status |
 |---|---|---|
 | Janelas acesas e andares | Andares = módulos; janelas mostram as **alterações locais**, **cada janela = x% das alterações, sem dividir nenhuma**, **na cor do tipo de alteração no git** (paleta do VS Code) | Próximo (1ª); decidido (R20, R20a, R20b, R20c, R20d); hoje as janelas são aleatórias e violam R12 (V-REALM-3) |
-| Gate | Vê o que espera o Lucas e escreve a qualquer Alter Ego pelo terminal dele | Próximo (2ª; a parte de **ver** já existe: feixe âmbar no prédio e contagem no topo) |
+| Gate | Vê o que espera o Lucas e escreve a qualquer Alter Ego pelo terminal dele; **portão na borda da cidade** | **Decidido** (R35, R46, D-080); 2ª camada (D-081) |
 | Team | Alter Ego + subagentes agrupados e endereçáveis | **Feito** em parte (subagentes como personagens menores na sala) |
 | Orb como centralizador de IAs | Inner World e Gate: duas portas para o mesmo terminal | **Decidido** |
-| Chronicle | Replay da cidade no tempo | Próximo (3ª) |
-| Weather | CI verde = céu limpo, falhando = tempestade… | Próximo (4ª) |
-| Energy | Tokens e custo por Alter Ego, realm e Mankind | Próximo (5ª; totais já no Core) |
-| Archive | O que molda a sessão, só para ver, metadados por padrão | Próximo (6ª) |
+| Chronicle | Replay da cidade no tempo, pela barra de tempo, a partir do registro local | **Decidido** (R44, D-078); 3ª camada |
+| Weather | Testes rodados nas sessões: céu limpo / chuva / nada; CI do GitHub opcional depois | **Decidido** (R42, D-076); 4ª camada |
+| Energy | Tokens e custo só quando o provider informa: sessão, realm, hoje, limites da conta | **Decidido** (R43, D-077); 5ª camada |
+| Archive | Aba no Inner World, só nome/tamanho/data; conteúdo ao abrir | **Decidido** (R45, D-079); 6ª camada |
+| Weather pelo CI do GitHub | Ler o CI pelo `gh`, só leitura, ligado nas configurações | Backlog (D-076) |
+| Chronicle anterior ao Orb | Reconstruir o passado pelo histórico do git | Backlog (D-078) |
 | Estradas entre realms | Dependências entre projetos | Backlog |
 | Ciclo dia/noite ligado à atividade | Cidade acesa onde há trabalho | Backlog |
 | Testes como integridade estrutural | Falhas viram rachaduras/andaimes | Backlog |

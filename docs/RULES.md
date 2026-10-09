@@ -90,6 +90,11 @@ Situação: ✅ cumprida · ⚠️ parcial ou com heurística não decidida · �
 | R38 | **O Orb não consome tokens.** Só monitora: nenhuma parte do Orb chama modelo de IA (nem para resumir, classificar, nomear ou derivar papel). Tudo vem da telemetria por regras e tabelas. O único consumo é o do Lucas usando o CLI pelo Inner World. | Lucas, 2026-10-08 (D-070) | ✅ Nenhum módulo chama modelo |
 | R39 | **Continuidade da sessão:** retomar = o mesmo Alter Ego (mesmo nome); bifurcar = um Alter Ego novo, com nome novo, mostrando de quem nasceu; `/clear` e compactação = o mesmo Alter Ego se o provider liga o id antigo ao novo, senão um novo. | Lucas, 2026-10-08 (D-068) | ⏳ A confirmar por provider |
 | R40 | **Papel do Alter Ego** = o que a sessão mais fez (ex.: "revisor"), por contagem das atividades observadas, mostrado no overview. Sem modelo, sem tokens (R38). | Lucas, 2026-10-08 (D-069) | ⏳ |
+| R42 | **Weather** = resultado dos testes rodados nas sessões (comando de teste e código de saída), sem rede; céu limpo / chuva / nada. CI do GitHub só depois e opcional, ligado nas configurações, só leitura. | Lucas, 2026-10-09 (D-076) | ⏳ |
+| R43 | **Energy** = tokens e custo **só quando o provider informa**, nunca estimados; por sessão, por realm e o total de hoje; limites de uso da conta quando o provider informa. | Lucas, 2026-10-09 (D-077) | ⚠️ Tokens por sessão já aparecem; faltam realm, "hoje" e o painel |
+| R44 | **Chronicle** = barra de tempo que mostra a cidade como era, a partir do registro local do Orb (R36). | Lucas, 2026-10-09 (D-078) | ⏳ |
+| R45 | **Archive** = aba no Inner World com o que molda a sessão (instruções, skills, memória), só nome, tamanho e data; conteúdo só quando o Lucas abrir; somente leitura. | Lucas, 2026-10-09 (D-079) | ⏳ |
+| R46 | **O Gate é um lugar no mundo**: um portão na borda da cidade, fora dos bairros, com a contagem de quem espera o Lucas, a lista de esperas de todos os realms e a escrita para qualquer Alter Ego pelo terminal dele (R35). | Lucas, 2026-10-09 (D-080) | ⏳ Hoje só existem o feixe no prédio e a contagem no topo |
 | R41 | **Prédios no mesmo estilo** (sem tema por realm), mas **cada classe de tamanho tem uma forma arquitetônica própria** (Casa a Arranha-céu), como o CodeCity mapeia métricas no tipo do prédio. Um tema por realm, se vier, é cenário escolhido pelo Lucas. | Lucas, 2026-10-08 (D-071, D-072) | ❌ Hoje todos têm a mesma forma |
 | R37 | **Cada Alter Ego tem um nome histórico** (tecnologia, física, matemática, filosofia), sorteado sem reposição de uma lista de 60 ([VISUAL.md](VISUAL.md) §9), **uma vez, para sempre**, de uma sacola **global**, sem nomes iguais visíveis na mesma sala. **Subagentes não ganham nome** (ficam com o tipo do CLI). O nome é **identidade**, não dado. | Lucas, 2026-10-08 (D-063 a D-067) | ⏳ |
 | R32 | **A cidade é retangular.** Os prédios ficam em **ordem alfabética**, com um ar **"aleatório", mas rastreável**: a posição vem de uma estrutura lógica e é sempre a mesma para o mesmo realm. Traçado concreto (delegado): [VISUAL.md](VISUAL.md) §7. | Lucas, 2026-10-08 (D-046, D-047) | ❌ Hoje o chão é um disco e a grade é alfabética simples, sem bairros |
@@ -134,7 +139,7 @@ ARCHITECTURE.md §3 (Detecção de realms) precisam estar decididas; o índice e
 | Mundo 3D: cidade (traçado retangular, bairros, posição dos prédios) | R32 |
 | Mundo 3D: personagens dormindo, subagentes sem sinal, sala cheia | R7, R31, R33 |
 | Mundo 3D: personagens, áreas, câmera | R17, R21, R22 |
-| Overview e camadas vivas (Gate, Energy, Weather, Chronicle, Archive) | R18 e [IDEAS.md](IDEAS.md) §6 |
+| Overview e camadas vivas, nesta ordem: janelas → Gate → Chronicle → Weather → Energy → Archive (D-081) | R18, R20–R20d, R42–R46 |
 
 **Modelo de ticket:**
 

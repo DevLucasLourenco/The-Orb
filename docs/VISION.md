@@ -175,23 +175,29 @@ Tudo abaixo é visualização de dados reais, somente leitura (princípio 5).
   alteração no git** (paleta do VS Code): **cada janela acesa representa x% das alterações**, e
   nenhuma alteração fica dividida entre duas janelas (regras R20a, R20b, R20d; detalhe em
   [VISUAL.md](VISUAL.md) §6).
-- **Weather.** CI passando = céu limpo; CI falhando = tempestade; testes falhando =
-  rachaduras/andaimes; realm parado = noite.
-- **Chronicle.** Arrastar a linha do tempo e ver a cidade como era. Funciona porque o estado do
-  mundo é reconstruível do log de eventos; o histórico do git reconstrói o passado anterior ao Orb.
-- **Energy.** Tokens e custo como recursos, por Alter Ego, por realm e por Mankind.
+- **Weather.** ~~CI passando = céu limpo; CI falhando = tempestade; testes falhando =
+  rachaduras/andaimes~~ (revisto em D-076). **Agora:** o resultado dos testes que as sessões rodaram,
+  sem rede: céu limpo quando passaram, chuva quando falharam, nada sem dado (R42). O CI do GitHub
+  fica opcional para depois. Realm parado = noite (D-059).
+- **Chronicle.** Uma barra de tempo no rodapé: arrastar mostra a cidade como era. Funciona porque o
+  estado do mundo é reconstruível do registro local do Orb (R36, R44); começa no dia em que o Orb
+  passa a registrar. Reconstruir o passado anterior pelo histórico do git fica para depois.
+- **Energy.** Tokens e custo **só quando o provider informa** (nunca estimados): por sessão e por
+  realm no overview, o total de hoje na barra de cima e os limites de uso da conta num painel (R43).
 - **Gate.** Duas funções: **ver** tudo o que espera o Lucas (aprovações pendentes de todos os
   realms) e **escrever** a qualquer Alter Ego sem entrar no realm. O Gate não aprova nem decide
   sozinho e não cria canal paralelo: escreve no terminal do Inner World daquele Alter Ego, como se
   o Lucas tivesse digitado. Para uma sessão já fechada, o Gate **oferece reabrir** a sessão num
-  terminal novo e espera a confirmação do Lucas; nunca reabre sozinho (R35).
+  terminal novo e espera a confirmação do Lucas; nunca reabre sozinho (R35). **No mundo, o Gate é
+  um portão na borda da cidade**, fora dos bairros, com a contagem de quem espera o Lucas (R46).
 - **Team.** O Alter Ego e os seus subagentes, agrupados, com a árvore de quem delegou o quê.
 - **Archive.** O que molda cada sessão (instruções, skills, `CLAUDE.md`, memória), só para ver:
   nunca grava nem reinjeta nada; mostra nomes, tamanhos e datas por padrão e o conteúdo só quando
-  o Lucas abrir explicitamente (pode haver dados pessoais).
+  o Lucas abrir explicitamente (pode haver dados pessoais). Fica numa **aba Archive** do Inner World
+  (R45).
 
-Ordem sugerida: janelas acesas → Gate → Chronicle → Weather → Energy → Archive. Fonte, forma e
-limites de cada camada estão na rodada Q-LIVE de [DECISIONS.md](DECISIONS.md).
+**Ordem decidida (D-081):** janelas acesas → Gate → Chronicle → Weather → Energy → Archive. Fonte,
+forma e limites de cada camada: D-076 a D-080 em [DECISIONS.md](DECISIONS.md).
 
 ## 6. Roadmap
 

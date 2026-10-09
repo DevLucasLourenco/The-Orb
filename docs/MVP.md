@@ -95,7 +95,8 @@ Archive · Perfil do Alter Ego · persistência em banco · multiusuário.
    contagem de linhas (R19), sala cheia (R33), realm de "noite", leitor de diálogos (R34), Gate que
    oferece reabrir (R35), registro local (R36), nome histórico dos Alter Egos (R37), o Orb não
    consome tokens (R38), continuidade da sessão (R39), papel derivado (R40) e forma por classe de
-   prédio (R41). O índice das que ainda faltam está em [DECISIONS.md](DECISIONS.md).
+   prédio (R41). Decididas em 2026-10-09: as camadas vivas (Weather, Energy, Chronicle, Archive,
+   Gate) e a ordem delas (R42 a R46). O índice das que ainda faltam está em [DECISIONS.md](DECISIONS.md).
 3. Criar os tickets por épico (RULES.md, "Do documento aos tickets"), **quando o Lucas pedir** (P5).
 
 Depois, pela ordem dos tickets:

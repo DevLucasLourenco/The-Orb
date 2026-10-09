@@ -21,6 +21,7 @@ Situação: ✅ como está · ❌ precisa mudar · ❓ precisa de decisão.
 | V-CITY-3 | Céu em degradê e estrelas | Cenário | Ambiente noturno | ✅ (R12a) |
 | V-CITY-4 | Posição de cada prédio | Legenda | **Decidido (R32):** bairros por letra inicial, em ordem alfabética; lotes em ordem alfabética; deslocamento e giro pela semente do nome (§7). Hoje: grade alfabética simples | ❌ Mudar para §7 |
 | V-CITY-6 | Placa do bairro (a letra) no chão | Legenda | A letra inicial dos realms daquele bairro (§7) | ⏳ |
+| V-CITY-7 | **O Gate**: um portão na borda da cidade, de frente para a câmera inicial, fora dos bairros | Dado | A contagem de quem espera o Lucas em todos os realms; clicar abre a lista e a escrita para qualquer Alter Ego (R46) | ⏳ |
 | V-CITY-5 | Barra superior (realms, sessões, ativas, esperando você, subagentes, tokens) | Dado | Soma do snapshot do Core | ✅ |
 
 ## 2. O prédio (Realm)
@@ -32,6 +33,7 @@ Situação: ✅ como está · ❌ precisa mudar · ❓ precisa de decisão.
 | V-REALM-12 | **Altura de cada andar** | Dado | Parcela das linhas do projeto que está naquela pasta de 1º nível; pastas pequenas demais se juntam em "demais pastas" (§8) | ⏳ |
 | V-REALM-13 | **Cintas de luz neutra no topo** (e antena no Arranha-céu) | Legenda | A classe do prédio por faixa de linhas: uma cinta a mais por classe (§8) | ⏳ |
 | V-REALM-15 | **Forma arquitetônica** do prédio | Legenda | A classe do prédio (Casa a Arranha-céu), cada uma com a sua forma (§8, R41) | ❌ Hoje todos têm a mesma forma |
+| V-REALM-16 | **Céu sobre o prédio (Weather)**: limpo, chuva ou nada | Dado | Resultado dos últimos testes rodados nas sessões do realm: passaram = céu limpo; falharam = chuva; sem dado = nada (R42). Cores neutras (cinza, branco), fora do orçamento de cores | ⏳ |
 | V-REALM-3 | **Janelas: quais acendem e de que cor** | Dado | **Hoje: padrão aleatório**, sorteado pelo nome do realm, com cores quentes/frias sem significado. **Decidido:** andares = pastas de 1º nível (R20); as janelas mostram as **alterações locais** (R20b); **cada janela acesa = x% das alterações, e nenhuma alteração é dividida** (R20d, §6); **a cor é a do tipo de alteração no git**, paleta do VS Code (R20a, §5). A janela é só **acesa ou apagada**, sem esmaecer (D-043) | ❌ Viola R12 |
 | V-REALM-4 | Brilho geral das janelas | Dado | Quantidade de sessões ativas no realm (0 → apagado; 3 ou mais → máximo) | ⚠️ Correto como dado, mas aplicado sobre o padrão aleatório |
 | V-REALM-5 | Arestas de luz do Rooftop Room: azul / âmbar | Dado | Âmbar quando alguma sessão do realm espera o Lucas | ⚠️ A cor do "esperando" muda (R20c, V-PEND-7b) |
@@ -72,6 +74,9 @@ Situação: ✅ como está · ❌ precisa mudar · ❓ precisa de decisão.
 | V-HUD-6 | **Histórico do realm** | Dado | Sessões encerradas ou paradas há mais que o prazo (10 dias, R28a), no overview do realm; nenhuma some | ⏳ |
 | V-HUD-8 | **Papel** do Alter Ego no overview (ex.: "revisor") | Dado | O que a sessão mais fez, por contagem das atividades observadas; sem modelo, sem tokens (R40, R38) | ⏳ |
 | V-HUD-7 | **Tela de configurações do Orb** | Dado | Realms escondidos, prazo das sessões recentes e outras preferências, guardadas no arquivo próprio do Orb (R29) | ⏳ |
+| V-HUD-9 | **Energy**: tokens e custo por sessão e realm (overview), total de hoje (barra de cima), limites da conta (painel) | Dado | Só o que o provider informa, nunca estimado (R43) | ⚠️ Só por sessão hoje |
+| V-HUD-10 | **Chronicle**: barra de tempo no rodapé | Dado | Arrastar mostra a cidade como era, pelo registro local do Orb (R44) | ⏳ |
+| V-HUD-11 | **Archive**: aba no Inner World | Dado | Instruções, skills e memória da sessão: nome, tamanho e data; conteúdo só ao abrir (R45) | ⏳ |
 
 ---
 
