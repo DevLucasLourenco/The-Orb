@@ -245,4 +245,7 @@ Single-context: um `CONTEXT.md` e `docs/adr/` na raiz. Ver `docs/agents/domain.m
 - Com `show_widget` disponível, exiba o HTML gerado e inclua a linha de marca na resposta; sem ela, use
   Markdown.
 - Testes do pacote: `tests/governance/` (rodam junto com `python -m pytest -q`).
+- **Hook `Stop` ativo** (`.claude/settings.json`): um turno que editou arquivos ou delegou a
+  subagente só termina com o fechamento da `delivery-summary` (cabeçalho "Fechamento da entrega" e a
+  seção "Decisões humanas pendentes"). Edições feitas por shell não são detectadas pelo hook.
 
