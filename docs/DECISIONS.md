@@ -10,8 +10,8 @@
 Quem: **Lucas** = decidido por ele · **Delegada** = o Lucas deixou a definição com o Claude; vale até
 ele revisar, e a proposta está escrita no documento do assunto.
 
-**Fase atual:** levantamento concluído; **a primeira spec está em `.scratch/`** (D-098, D-100).
-**Ainda não há tickets** (D-034); a implementação só volta depois deles (regra P1).
+**Fase atual:** levantamento concluído; **a spec e os 25 tickets estão em
+`.scratch/the-orb-cidade-viva/`** (D-100, D-117). A implementação segue ticket a ticket (regra P1).
 
 | Id | Data | Decisão | Quem | Onde se aplica |
 |---|---|---|---|---|
@@ -129,6 +129,9 @@ ele revisar, e a proposta está escrita no documento do assunto.
 | D-112 | 2026-10-09 | **O conteúdo do `CLAUDE.md` vale**, atualizado com o rastreador local, os pontos de teste e a fase atual | **Delegada** | Q-DEV-1, [CLAUDE.md](../CLAUDE.md) |
 | D-113 | 2026-10-09 | **`AGENTS.md` curto** na raiz, mandando seguir o `CLAUDE.md` (lido por Codex e opencode; Hermes a confirmar) | **Delegada** | Q-DEV-2, [AGENTS.md](../AGENTS.md) |
 | D-114 | 2026-10-09 | **Na implementação, uma branch e um PR por ticket**, citando as regras e os critérios de aceite; documentação segue direto na `main` | **Delegada** | Q-DEV-3, [CLAUDE.md](../CLAUDE.md) |
+| D-115 | 2026-10-09 | **Sem brilho geral das janelas por atividade:** a janela acesa tem brilho fixo; a atividade aparece na sala e no rótulo | Lucas | Q-REV-1, V-REALM-4 |
+| D-116 | 2026-10-09 | **Árvore da Team no overview:** subagentes em árvore (quem criou quem), com tipo e estado; no mundo nada muda | Lucas | Q-REV-2, R57, V-HUD-17 |
+| D-117 | 2026-10-09 | **Divisão em 25 tickets aprovada**, gravados em `.scratch/the-orb-cidade-viva/issues/` | Lucas | P5 |
 
 ## Decisões revistas
 
@@ -302,6 +305,6 @@ que **nunca foram decididos**:
 
 | Id | Pergunta | Proposta |
 |---|---|---|
-| Q-REV-1 | **Brilho geral das janelas** (V-REALM-4: mais sessões ativas = janelas mais fortes). Com as janelas mostrando o git (R20) e só acesas ou apagadas (D-043), esse brilho ainda faz sentido? | **Retirar:** a janela acesa tem brilho fixo; a atividade já aparece na sala (personagens trabalhando) e no rótulo. Evita misturar dois dados na mesma janela |
-| Q-REV-2 | **Árvore da Team** (VISION.md §5: "a árvore de quem delegou o quê"). Subagentes podem ter subagentes; hoje o overview lista todos no mesmo nível | **No overview**, os subagentes aparecem em árvore (quem criou quem), com o tipo e o estado de cada um; **no mundo**, nada muda (todos na sala, menores) |
+| ~~Q-REV-1~~ D-115 | **Brilho geral das janelas** (V-REALM-4: mais sessões ativas = janelas mais fortes). Com as janelas mostrando o git (R20) e só acesas ou apagadas (D-043), esse brilho ainda faz sentido? | **Retirar:** a janela acesa tem brilho fixo; a atividade já aparece na sala (personagens trabalhando) e no rótulo. Evita misturar dois dados na mesma janela |
+| ~~Q-REV-2~~ D-116 | **Árvore da Team** (VISION.md §5: "a árvore de quem delegou o quê"). Subagentes podem ter subagentes; hoje o overview lista todos no mesmo nível | **No overview**, os subagentes aparecem em árvore (quem criou quem), com o tipo e o estado de cada um; **no mundo**, nada muda (todos na sala, menores) |
 

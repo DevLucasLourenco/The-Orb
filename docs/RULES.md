@@ -29,7 +29,7 @@ Situação: ✅ cumprida · ⚠️ parcial ou com heurística não decidida · �
 | P2 | Pedido que conflita com uma regra existente é apontado **antes** de implementar, e a decisão fica registrada. | Lucas, 2026-10-07 | ⚠️ Antes: janelas aleatórias contradiziam R12 e R20 sem aviso. Agora em uso: o conflito das cores do git com a legenda foi apontado (VISUAL.md, V-PEND-7) |
 | P3 | Nenhuma ideia é apagada; muda de status com motivo. | [IDEAS.md](IDEAS.md) | ✅ |
 | P4 | **Toda decisão é registrada** em [DECISIONS.md](DECISIONS.md) (data, quem, onde se aplica) e aplicada no documento do assunto. | Lucas, 2026-10-08 | ✅ |
-| P5 | **Fase atual: spec escrita, tickets ainda não.** O levantamento terminou e a primeira spec está em `.scratch/` (D-100); os tickets só são escritos quando o Lucas pedir. | Lucas, 2026-10-08 e 2026-10-09 | ✅ |
+| P5 | **Fase atual: tickets escritos.** A primeira spec e os 25 tickets estão em `.scratch/the-orb-cidade-viva/` (D-100, D-117). A implementação segue ticket a ticket, pela fronteira (os que não têm bloqueio pendente). | Lucas, 2026-10-08 e 2026-10-09 | ✅ |
 
 ## 2. Identidade e domínio
 
@@ -99,6 +99,7 @@ Situação: ✅ cumprida · ⚠️ parcial ou com heurística não decidida · �
 | R50 | **Progresso da tarefa = a lista de tarefas do próprio CLI** (TodoWrite do Claude, plano do Codex, `todowrite` do opencode): "concluídas de total" no overview e as concluídas no Task Board; sem lista gravada pelo provider, nada aparece. | Lucas, 2026-10-09 (D-093) | ⏳ |
 | R51 | **Subagente que termina caminha até o líder** antes de se desmobilizar; sem sinal de fim, vale R7. | Lucas, 2026-10-09 (D-094) | ⏳ Hoje ele some depois de 5 min |
 | R52 | **Erro, bloqueio e "sem sinal" do líder** aparecem por ícones neutros sobre a cabeça, nunca em vermelho. | Lucas, 2026-10-09 (D-095) | ❌ Hoje esses estados não têm forma própria |
+| R57 | **Árvore da Team no overview:** os subagentes aparecem em árvore (quem criou quem), com tipo e estado; no mundo, todos na sala. | Lucas, 2026-10-09 (D-116) | ⏳ Hoje a lista é plana |
 | R53 | **XP é recibo de trabalho confirmado:** cada ponto tem evidência no extrato; provisória até o mundo real confirmar (commit na branch principal); nada por tokens, custo, mensagens ou espera; nunca negativa; os agentes nunca a veem. Tabela versionada e recalculável. | Delegada, 2026-10-09 (D-101 a D-103, D-105, D-106) | ⏳ |
 | R54 | **Níveis em três escalas** (Alter Ego, Realm, Mankind) pela curva k·n·(n−1), calibrada com o histórico real; o nível usa só a XP confirmada. | Delegada, 2026-10-09 (D-104, D-107) | ⏳ |
 | R55 | **Conquistas** de uma vez só, cada uma com recibo, sem XP; lista inicial em PROGRESSION.md §5. | Delegada, 2026-10-09 (D-109) | ⏳ |

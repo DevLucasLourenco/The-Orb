@@ -19,4 +19,4 @@ as etiquetas, as de [docs/agents/triage-labels.md](../docs/agents/triage-labels.
 
 | Feature | O quê | Status |
 |---|---|---|
-| [the-orb-cidade-viva/](the-orb-cidade-viva/spec.md) | A primeira spec: tudo o que foi decidido até 2026-10-09 (D-001 a D-114), incluindo progressão e guia dos agentes | ready-for-agent |
+| [the-orb-cidade-viva/](the-orb-cidade-viva/spec.md) | A primeira spec (D-001 a D-117) e os **25 tickets** em `issues/` (01 a 05 sem bloqueio; 05 e 25 com aprovação do Lucas no meio) | ready-for-agent |

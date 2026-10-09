@@ -35,7 +35,7 @@ Situação: ✅ como está · ❌ precisa mudar · ❓ precisa de decisão.
 | V-REALM-15 | **Forma arquitetônica** do prédio | Legenda | A classe do prédio (Casa a Arranha-céu), cada uma com a sua forma (§8, R41) | ❌ Hoje todos têm a mesma forma |
 | V-REALM-16 | **Céu sobre o prédio (Weather)**: limpo, chuva ou nada | Dado | Resultado dos últimos testes rodados nas sessões do realm: passaram = céu limpo; falharam = chuva; sem dado = nada (R42). Cores neutras (cinza, branco), fora do orçamento de cores | ⏳ |
 | V-REALM-3 | **Janelas: quais acendem e de que cor** | Dado | **Hoje: padrão aleatório**, sorteado pelo nome do realm, com cores quentes/frias sem significado. **Decidido:** andares = pastas de 1º nível (R20); as janelas mostram as **alterações locais** (R20b); **cada janela acesa = x% das alterações, e nenhuma alteração é dividida** (R20d, §6); **a cor é a do tipo de alteração no git**, paleta do VS Code (R20a, §5). A janela é só **acesa ou apagada**, sem esmaecer (D-043) | ❌ Viola R12 |
-| V-REALM-4 | Brilho geral das janelas | Dado | Quantidade de sessões ativas no realm (0 → apagado; 3 ou mais → máximo) | ⚠️ Correto como dado, mas aplicado sobre o padrão aleatório |
+| V-REALM-4 | ~~Brilho geral das janelas~~ | — | ~~Quantidade de sessões ativas no realm~~ **Revisto (D-115):** a janela acesa tem brilho fixo; a atividade aparece na sala e no rótulo | ❌ Retirar |
 | V-REALM-5 | Arestas de luz do Rooftop Room: azul / âmbar | Dado | Âmbar quando alguma sessão do realm espera o Lucas | ⚠️ A cor do "esperando" muda (R20c, V-PEND-7b) |
 | V-REALM-6 | Feixe âmbar subindo do prédio, anel âmbar pulsando | Dado | Alguma sessão do realm espera o Lucas (aprovação/pergunta); visível de toda a cidade | ⚠️ A cor do "esperando" muda (R20c, V-PEND-7b) |
 | V-REALM-7 | Rótulo: nome, "N sessões · M ativas · K esperando" e, quando houver dado, o **Weather** e as **tarefas abertas** (D-097) | Dado | Snapshot do Core; sem dado, a parte não aparece | ⚠️ Faltam Weather e tarefas |
@@ -84,6 +84,7 @@ Situação: ✅ como está · ❌ precisa mudar · ❓ precisa de decisão.
 | V-HUD-11 | **Archive**: aba no Inner World | Dado | Instruções, skills e memória da sessão: nome, tamanho e data; conteúdo só ao abrir (R45) | ⏳ |
 | V-HUD-15 | **Progresso da tarefa** no overview: "7 de 12" e uma barra por sessão | Dado | A lista de tarefas que o próprio CLI mantém (R50, D-093); sem lista, nada | ⏳ |
 | V-HUD-16 | **Atributos por área** no overview: barras com a parcela do trabalho em cada área | Dado | A mesma contagem do Papel (R40, D-096); não é pontuação | ⏳ |
+| V-HUD-17 | **Árvore da Team** no overview: subagentes em árvore (quem criou quem), com tipo e estado | Dado | Campo `parent` dos subagentes (R57, D-116) | ⏳ |
 | V-HUD-12 | **Nível de Mankind** e a barra de progresso na barra de cima; clicar abre o painel **Progressão** (extrato, conquistas, placar por provider) | Dado | Soma da XP confirmada (R54, D-110) | ⏳ |
 | V-HUD-13 | No overview do realm: o **nível do realm** e, por Alter Ego, a **barra de XP** (confirmada cheia, provisória tracejada) | Dado | Extrato (R53) | ⏳ |
 | V-HUD-14 | **Conquista nova**: um aviso curto no HUD com o nome e o recibo | Dado | Conquista (R55) | ⏳ |

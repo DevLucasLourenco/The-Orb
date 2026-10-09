@@ -193,7 +193,7 @@ Tudo abaixo é visualização de dados reais, somente leitura (princípio 5).
   o Lucas tivesse digitado. Para uma sessão já fechada, o Gate **oferece reabrir** a sessão num
   terminal novo e espera a confirmação do Lucas; nunca reabre sozinho (R35). **No mundo, o Gate é
   um portão na borda da cidade**, fora dos bairros, com a contagem de quem espera o Lucas (R46).
-- **Team.** O Alter Ego e os seus subagentes, agrupados, com a árvore de quem delegou o quê.
+- **Team.** O Alter Ego e os seus subagentes, agrupados, com a árvore de quem delegou o quê (no overview, D-116).
 - **Archive.** O que molda cada sessão (instruções, skills, `CLAUDE.md`, memória), só para ver:
   nunca grava nem reinjeta nada; mostra nomes, tamanhos e datas por padrão e o conteúdo só quando
   o Lucas abrir explicitamente (pode haver dados pessoais). Fica numa **aba Archive** do Inner World

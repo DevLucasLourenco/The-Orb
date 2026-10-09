@@ -41,9 +41,9 @@ evidência e a confiança.
 ticket a ticket → rever a Situação da regra. Nada é implementado sem a regra escrita e o ticket
 criado (P1).
 
-**Fase atual (P5): spec escrita, tickets ainda não.** O levantamento terminou e a primeira spec está
-em `.scratch/`. Os tickets só são escritos quando o Lucas pedir. Até lá, **não implemente**
-funcionalidade, mesmo que pareça óbvia; documente e proponha.
+**Fase atual (P5): tickets escritos.** A spec e os 25 tickets estão em
+`.scratch/the-orb-cidade-viva/` (D-117). Implemente **um ticket por vez**, pela fronteira: só os que
+têm todos os bloqueios (`Blocked by:`) concluídos. Nada fora de um ticket.
 
 **Specs e tickets ficam em `.scratch/<feature>/`** (`spec.md` e `issues/NN-*.md`), arquivos
 markdown versionados no git, com a linha `Status:` no topo (D-098; formato em
