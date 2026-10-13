@@ -20,22 +20,31 @@ import json
 import secrets
 import time
 import uuid
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any
 from urllib.parse import urlparse
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
-from ..adapters._shared import alter_ego_id
+from ..adapters._shared import alter_ego_id, norm_path
 from ..core import NameBook, NameSource, World, rules
 from ..protocol import validate
-from ..registry import LocalRegistry, orb_home
-from ..terminal_host import (HostedTerminal, InvalidLaunchValue, Launch, ProviderNotInstalled,
-                             UnknownProvider, available_providers, resolve_provider, winpty_factory)
+from ..registry import SETTINGS, LocalRegistry, Preferences, PreferencesFile, orb_home
+from ..terminal_host import (
+    HostedTerminal,
+    InvalidLaunchValue,
+    Launch,
+    ProviderNotInstalled,
+    UnknownProvider,
+    available_providers,
+    resolve_provider,
+    winpty_factory,
+)
 from .messages import handle_client_message
 from .realms import Feed, Observatory
 
@@ -76,10 +85,15 @@ class Hub:
     O Hub é a borda que conhece a hora: o Core é puro e só recebe a hora que o Hub informa (R47)."""
 
     def __init__(self, observatory: Observatory, *, clock: Callable[[], datetime] | None = None,
-                 names: NameSource | None = None) -> None:
+                 names: NameSource | None = None, preferences: PreferencesFile | None = None) -> None:
         self.observatory = observatory
         self.clock = clock or (lambda: datetime.now(UTC))
+        self.preferences_file = preferences
+        self.preferences = preferences.load() if preferences is not None else Preferences()
+        if preferences is not None:
+            observatory.set_recent_seconds(self.preferences.recent_seconds)     # o que o Lucas escolheu vale desde a subida
         self.world = World(names=names, recent_seconds=observatory.recent_seconds)
+        self._sync_hidden()
         self.feed = Feed()
         self.clients: set[asyncio.Queue[dict[str, Any]]] = set()
         self._published_time_key: tuple | None = None      # o que os clientes viram da última vez
@@ -97,8 +111,8 @@ class Hub:
         now = now or self.clock()
         world = self.world.snapshot(now)
         world["generated_at"] = now.isoformat()
-        known = {realm["id"] for realm in world["realms"]}
-        # Todo realm observado existe na cidade, mesmo sem nenhuma sessão ainda.
+        known = {realm["id"] for realm in world["realms"]} | self.world.hidden
+        # Todo realm observado e não escondido existe na cidade, mesmo sem nenhuma sessão ainda.
         world["realms"] += [{"id": rid, "alter_egos": [], "night": True} for rid in self.observatory.realms if rid not in known]
         for realm in world["realms"]:
             if realm["id"] in self.observatory.realms:
@@ -110,13 +124,53 @@ class Hub:
         """Lê todos os realms (chamado fora do loop). Devolve (eventos aplicados, mudou?)."""
         applied: list[dict[str, Any]] = []
         known = len(self.observatory.realms)
-        for event in self.observatory.poll():
+        events = self.observatory.poll()
+        for realm_id in self.observatory.realms:
+            self.world.add_realm(realm_id)           # todo realm detectado existe, mesmo "de noite" (D-059)
+        self._sync_hidden()                          # antes de aplicar: um realm escondido recém-detectado nunca aparece, nem por um instante
+        for event in events:
             if validate(event) is None and self.world.apply(event):
                 applied.append(event)
                 self.feed.add(event)
-        for realm_id in self.observatory.realms:
-            self.world.add_realm(realm_id)           # todo realm detectado existe, mesmo "de noite" (D-059)
-        return applied, bool(applied) or len(self.observatory.realms) != known
+        shown = [e for e in applied if e["realm"] not in self.world.hidden]       # o que o Lucas escondeu não é distribuído
+        return shown, bool(shown) or len(self.observatory.realms) != known
+
+    def _sync_hidden(self) -> None:
+        """Os realms escondidos (R3c) são guardados pelo caminho do projeto; o id pode mudar, o caminho não."""
+        hidden = set(self.preferences.hidden_realms)
+        self.world.set_hidden(rid for rid, realm in self.observatory.realms.items() if norm_path(realm.cwd) in hidden)
+
+    def update_preferences(self, changes: dict[str, Any]) -> None:
+        """Muda as preferências do Lucas: valida (`ValueError` se não der), grava na pasta do Orb e aplica na hora.
+        `hidden_realms` chega como ids de realms; só os conhecidos contam, e os caminhos escondidos de projetos que o
+        Orb não detecta agora são mantidos (o projeto pode voltar). Roda fora do loop: cada atribuição ao mundo e ao
+        Observatório é atômica, então quem lê vê o valor antigo ou o novo, nunca um meio-termo."""
+        changes = dict(changes)
+        if "hidden_realms" in changes:
+            ids = changes["hidden_realms"]
+            if isinstance(ids, (str, bytes)) or not isinstance(ids, (list, tuple, set)):
+                raise ValueError("realms escondidos: precisa ser uma lista")
+            known = {norm_path(realm.cwd) for realm in self.observatory.realms.values()}
+            chosen = [norm_path(self.observatory.realms[i].cwd) for i in ids if isinstance(i, str) and i in self.observatory.realms]
+            changes["hidden_realms"] = chosen + [p for p in self.preferences.hidden_realms if p not in known]
+        new = self.preferences.updated(**changes)
+        if self.preferences_file is not None:
+            self.preferences_file.save(new)
+        self.preferences = new
+        self.observatory.set_recent_seconds(new.recent_seconds)
+        self.world.set_recent_seconds(new.recent_seconds)
+        self._sync_hidden()
+
+    def settings(self) -> dict[str, Any]:
+        """O que a tela de configurações mostra: todos os realms detectados (inclusive os escondidos), os valores
+        de hoje e a tabela de opções numéricas (os tickets 09 e 11 só acrescentam linhas a ela)."""
+        realms = [{"id": rid, "name": realm.name, "cwd": realm.cwd, "hidden": rid in self.world.hidden}
+                  for rid, realm in sorted(self.observatory.realms.items())]
+        options = [{"key": s.key, "kind": s.kind, "label": s.label, "unit": s.unit, "minimum": s.minimum, "maximum": s.maximum,
+                    "value": self.preferences.options.get(s.key, s.default)} for s in SETTINGS]
+        error = self.preferences_file.error if self.preferences_file is not None else None
+        return {"realms": realms, "options": options, "error": error, "persistent": self.preferences_file is not None,
+                "preferences": {**self.preferences.options, "hidden_realms": sorted(self.world.hidden)}}
 
     def history(self, realm_id: str) -> list[dict[str, Any]]:
         """O Histórico do realm: as sessões mais antigas que a sala, com o nome histórico quando já foi sorteado."""
@@ -182,10 +236,11 @@ class Hub:
 def create_app(config: GatewayConfig, *, pty_factory: Callable = winpty_factory,
                check_installed: bool = True, observatory: Observatory | None = None) -> FastAPI:
     names = LocalRegistry(config.state_dir) if config.state_dir is not None else NameBook()
+    preferences = PreferencesFile(config.state_dir) if config.state_dir is not None else None
     hub = Hub(observatory if observatory is not None else
               Observatory(config.realms, roots=config.roots, lookback_minutes=config.lookback_minutes,
                           recent_seconds=config.recent_seconds, home=config.home),
-              names=names)
+              names=names, preferences=preferences)
 
     @contextlib.asynccontextmanager
     async def lifespan(_app: FastAPI):
@@ -218,7 +273,9 @@ def create_app(config: GatewayConfig, *, pty_factory: Callable = winpty_factory,
         await ws.accept()
         queue: asyncio.Queue[dict[str, Any]] = asyncio.Queue(maxsize=CLIENT_QUEUE)
         await ws.send_json({"channel": "world", "world": hub.snapshot()})
-        for realm in hub.world.realms.values():
+        for realm_id, realm in hub.world.realms.items():
+            if realm_id in hub.world.hidden:
+                continue
             for ego_id in realm:
                 lines = hub.feed.history(ego_id, FEED_ON_CONNECT)
                 if lines:
@@ -237,7 +294,24 @@ def create_app(config: GatewayConfig, *, pty_factory: Callable = winpty_factory,
                     msg = json.loads(raw)
                 except json.JSONDecodeError:
                     continue
-                if isinstance(msg, dict) and msg.get("type") == "history" and isinstance(msg.get("realm"), str):
+                if isinstance(msg, dict) and msg.get("type") == "settings":
+                    await queue.put({"channel": "settings", **hub.settings()})
+                elif isinstance(msg, dict) and msg.get("type") == "preferences":
+                    error = None
+                    try:
+                        changes = {k: v for k, v in msg.items() if k != "type"}
+                        await asyncio.to_thread(hub.update_preferences, changes)     # grava na pasta do Orb: fora do loop
+                    except ValueError as exc:
+                        error = str(exc)
+                    except OSError:
+                        error = "não foi possível gravar as preferências na pasta do Orb"     # sem o caminho do sistema
+                    reply = {"channel": "settings", **hub.settings()}
+                    if error is not None:
+                        await queue.put({**reply, "error": error})                   # só quem pediu vê a recusa
+                    else:
+                        hub.publish(reply)                                           # todos os clientes veem as caixas e a cidade novas
+                        hub.publish_world()
+                elif isinstance(msg, dict) and msg.get("type") == "history" and isinstance(msg.get("realm"), str):
                     sessions = await asyncio.to_thread(hub.history, msg["realm"])    # nomes vêm do disco: fora do loop
                     await queue.put({"channel": "history", "realm": msg["realm"], "sessions": sessions,
                                      "total": max(len(sessions), hub.history_total(msg["realm"]))})

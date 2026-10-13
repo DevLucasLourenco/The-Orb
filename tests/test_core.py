@@ -390,3 +390,36 @@ def test_the_world_tells_when_a_session_leaves_the_room():
     world = World()
     world.apply(at(0, {"type": "idle"}))
     assert world.time_key(T0 + timedelta(days=9)) != world.time_key(T0 + timedelta(days=11))
+
+
+# --- realms escondidos (R3c, D-022): saem do estado da cidade, mas continuam detectados ---------------------
+
+def realm_ids(world, now=T0):
+    return [r["id"] for r in world.snapshot(now)["realms"]]
+
+
+def test_a_hidden_realm_leaves_the_city_state_but_the_world_still_knows_it():
+    world = World()
+    world.apply(at(0, {"type": "idle"}))
+    world.add_realm("outro")
+    world.set_hidden({"the-orb"})
+    snap = world.snapshot(T0)
+    assert [r["id"] for r in snap["realms"]] == ["outro"] and snap["hidden_realms"] == ["the-orb"]
+    assert snap["mankind"]["alter_egos"] == 0                                        # Mankind só soma o que a cidade mostra
+    assert world.alter_ego("claude:s1") is not None                                  # nada foi apagado: continua detectado
+
+
+def test_a_hidden_realm_keeps_receiving_events_and_comes_back_whole_when_shown_again():
+    world = World()
+    world.set_hidden({"the-orb"})
+    world.apply(at(0, {"type": "activity", "activity": "CODING"}))
+    assert realm_ids(world) == []
+    world.set_hidden(set())
+    assert realm_ids(world) == ["the-orb"] and ego_at(world, 0)["state"] == "CODING"
+
+
+def test_hiding_a_realm_that_does_not_exist_yet_is_harmless_and_applies_when_it_appears():
+    world = World()
+    world.set_hidden({"futuro"})
+    world.add_realm("futuro")
+    assert realm_ids(world) == []

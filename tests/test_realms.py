@@ -395,3 +395,133 @@ def test_the_history_message_tells_the_total_so_nothing_is_hidden_without_notice
     hub.poll_once()
     assert len(hub.history("alpha")) == 3 and hub.history_total("alpha") == 5
     assert hub.world.snapshot(hub.clock())["mankind"]["alter_egos"] == 0                 # Mankind conta só a sala
+
+
+# --- preferências e tela de configurações (R3c, R28a, R29, D-022, D-030, D-032) -----------------------------
+
+def hub_with_prefs(machine, folder):
+    from orb.registry import PreferencesFile
+    return Hub(machine.observatory(), preferences=PreferencesFile(folder))
+
+
+def test_the_recent_window_can_change_while_the_orb_runs_and_the_room_follows(machine):
+    alpha = machine.project("alpha")
+    hermes_session(machine, "H-20d", alpha, days_ago=20)
+    hub = Hub(machine.observatory())
+    hub.poll_once()
+    assert not egos_of(hub, "alpha") and [h["session"] for h in hub.history("alpha")] == ["H-20d"]
+    hub.observatory.set_recent_seconds(30 * DAY)                       # o Lucas aumentou o prazo para 30 dias
+    hub.world.set_recent_seconds(30 * DAY)
+    hub.poll_once()
+    assert set(egos_of(hub, "alpha")) == {"hermes:H-20d"} and hub.history("alpha") == []
+    assert all(r.since == hub.observatory.since for r in hub.observatory.readers.values())
+
+
+def test_a_hidden_project_leaves_the_city_but_stays_detected_and_listed_in_settings(machine, tmp_path):
+    alpha, beta = machine.project("alpha"), machine.project("beta")
+    hermes_session(machine, "H1", alpha, days_ago=1)
+    hermes_session(machine, "H2", beta, days_ago=1)
+    hub = hub_with_prefs(machine, tmp_path / "orb")
+    hub.poll_once()
+    hub.update_preferences({"hidden_realms": ["alpha"]})
+    assert [r["id"] for r in hub.snapshot()["realms"]] == ["beta"]
+    settings = hub.settings()
+    assert {r["id"]: r["hidden"] for r in settings["realms"]} == {"alpha": True, "beta": False}      # continua detectado e listado
+    assert set(hub.observatory.realms) == {"alpha", "beta"}
+    hub.update_preferences({"hidden_realms": []})
+    assert [r["id"] for r in hub.snapshot()["realms"]] == ["alpha", "beta"]
+
+
+def test_the_choices_are_saved_in_the_orb_folder_and_survive_a_restart(machine, tmp_path):
+    alpha = machine.project("alpha")
+    hermes_session(machine, "H1", alpha, days_ago=1)
+    hub = hub_with_prefs(machine, tmp_path / "orb")
+    hub.poll_once()
+    hub.update_preferences({"hidden_realms": ["alpha"], "recent_days": 30})
+    assert sorted(p.name for p in (tmp_path / "orb").iterdir()) == ["preferences.json"]
+    again = hub_with_prefs(machine, tmp_path / "orb")                  # o Orb reabriu
+    again.poll_once()
+    assert again.snapshot()["realms"] == [] and again.observatory.recent_seconds == 30 * DAY
+    assert again.settings()["preferences"]["recent_days"] == 30
+
+
+def test_a_change_the_orb_cannot_accept_is_refused_and_nothing_is_saved(machine, tmp_path):
+    hub = hub_with_prefs(machine, tmp_path / "orb")
+    for bad in ({"recent_days": 0}, {"recent_days": "dez"}, {"hidden_realms": "alpha"}, {"nao_existe": 1}):
+        with pytest.raises(ValueError):
+            hub.update_preferences(bad)
+    assert not (tmp_path / "orb").exists() and hub.preferences.recent_days == 10
+
+
+def test_an_id_that_is_not_a_known_realm_is_ignored_when_hiding(machine, tmp_path):
+    machine.project("alpha")
+    hermes_session(machine, "H1", machine.user / "work" / "alpha", days_ago=1)
+    hub = hub_with_prefs(machine, tmp_path / "orb")
+    hub.poll_once()
+    hub.update_preferences({"hidden_realms": ["alpha", "fantasma"]})
+    assert hub.settings()["preferences"]["hidden_realms"] == ["alpha"]
+
+
+def test_the_settings_screen_is_built_from_a_table_of_options_so_new_tickets_only_add_rows(machine, tmp_path):
+    options = hub_with_prefs(machine, tmp_path / "orb").settings()["options"]
+    assert [(o["key"], o["unit"], o["minimum"], o["maximum"], o["value"]) for o in options] == [("recent_days", "dias", 1, 365, 10)]
+
+
+def test_without_a_folder_the_choices_apply_but_nothing_is_written(machine):
+    hub = Hub(machine.observatory())
+    hub.update_preferences({"recent_days": 5})
+    assert hub.observatory.recent_seconds == 5 * DAY
+
+
+def test_the_world_stream_serves_the_settings_and_applies_changes(machine, tmp_path):
+    pytest.importorskip("httpx", reason="TestClient do FastAPI precisa de httpx")
+    import json
+
+    from fastapi.testclient import TestClient
+
+    from orb.gateway import GatewayConfig, create_app
+    hermes_session(machine, "H1", machine.project("alpha"), days_ago=1)
+    config = GatewayConfig(token="tok", home=machine.home, poll_seconds=0.05, idle_poll_seconds=0.05, state_dir=tmp_path / "orb")
+    app = create_app(config, check_installed=False, observatory=machine.observatory())
+    with TestClient(app) as client, client.websocket_connect("/world?token=tok", headers={"origin": "http://127.0.0.1"}) as ws:
+        ws.receive_json()
+
+        def ask(message):
+            ws.send_text(json.dumps(message))
+            return next(m for m in iter(ws.receive_json, None) if m["channel"] == "settings")
+
+        for _ in range(100):                                                    # espera o realm ser detectado
+            reply = ask({"type": "settings"})
+            if reply["realms"]:
+                break
+        assert [r["id"] for r in reply["realms"]] == ["alpha"] and reply["preferences"]["recent_days"] == 10
+        reply = ask({"type": "preferences", "hidden_realms": ["alpha"], "recent_days": 20})
+        assert reply.get("error") is None and reply["realms"][0]["hidden"] and reply["preferences"]["recent_days"] == 20
+        bad = ask({"type": "preferences", "recent_days": 9999})
+        assert "entre 1 e 365" in bad["error"] and bad["preferences"]["recent_days"] == 20          # recusa e mantém o que valia
+        assert ask({"type": "preferences", "hidden_realms": 7})["error"]
+        worlds = []
+        for _ in range(100):
+            message = ws.receive_json()
+            if message["channel"] == "world":
+                worlds.append(message["world"])
+                if worlds[-1]["hidden_realms"] == ["alpha"]:
+                    break
+        assert worlds and worlds[-1]["realms"] == []                            # a cidade mudou para quem está conectado
+
+
+def test_what_happens_in_a_hidden_realm_is_not_sent_to_the_clients_and_a_new_hidden_one_never_shows(machine, tmp_path):
+    alpha, beta = machine.project("alpha"), machine.project("beta")
+    hermes_session(machine, "H1", alpha, days_ago=1)
+    hub = hub_with_prefs(machine, tmp_path / "orb")
+    hub.poll_once()
+    hub.update_preferences({"hidden_realms": ["alpha"]})
+    hermes_session(machine, "H2", alpha, days_ago=0)
+    hub.observatory.refresh_index(force=True)
+    applied, changed = hub.poll_once()
+    assert applied == [] and changed is False                                   # nada de um realm escondido é distribuído
+    assert "hermes:H2" in {e.id for e in hub.world.realms["alpha"].values()}    # mas o mundo continua sabendo
+    hermes_session(machine, "H3", beta, days_ago=0)
+    hub.observatory.refresh_index(force=True)
+    applied, _ = hub.poll_once()
+    assert {e["realm"] for e in applied} == {"beta"}

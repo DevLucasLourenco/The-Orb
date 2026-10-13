@@ -3,7 +3,7 @@ import * as THREE from "three";
 import { Stage } from "./scene.js";
 import { RealmBuilding } from "./realm3d.js";
 import { Avatar } from "./avatar.js";
-import { renderHistory, renderOverview, renderRealmList, renderTopbar, summarize } from "./hud.js";
+import { renderHistory, renderOverview, renderRealmList, renderSettings, renderTopbar, summarize } from "./hud.js";
 import { InnerWorld } from "./innerworld.js";
 import { connectWorld } from "./net.js";
 import { PROVIDERS, isAsleep } from "./providers.js";
@@ -97,6 +97,8 @@ function syncWorld(raw) {
   }
   for (const [id, a] of avatars) if (!alive.has(id)) { a.dispose(); avatars.delete(id); }
 
+  if (selectedRealm && !world.realms.some((r) => r.id === selectedRealm)) overview();     // o realm foi escondido: fecha o overview e o Inner World
+  else if (inner.current?.kind === "ego" && !egoIndex.has(inner.current.ego.id)) inner.close();                    // a sessão saiu da sala (prazo menor): idem
   renderTopbar(world);
   renderRealmList(world, selectedRealm, selectRealm);
   renderOverview(world.realms.find((r) => r.id === selectedRealm), openEgo);
@@ -147,6 +149,7 @@ const net = connectWorld({
   },
   onEvent: (event) => inner.push(event),
   onFeed: (egoId, events) => inner.setFeed(egoId, events),
+  onSettings: (settings) => renderSettings(settings, (changes) => net.savePreferences(changes)),
   onHistory: (realm, sessions, total) => {
     realmHistory.set(realm, { sessions, total });
     if (realm === selectedRealm) renderHistory({ sessions, total });
@@ -173,6 +176,10 @@ stage.renderer.domElement.addEventListener("pointerup", (e) => {
 });
 
 window.addEventListener("keydown", (e) => {
+  if (!settingsBox.classList.contains("hidden")) {      // com a janela aberta, o teclado é dela (Esc fecha, mesmo dentro de um campo)
+    if (e.key === "Escape") toggleSettings(false);
+    return;
+  }
   const tag = e.target?.tagName;
   if (tag === "INPUT" || tag === "SELECT" || e.target?.closest?.(".xterm")) return;
   if (e.key === "Escape") overview();
@@ -180,6 +187,22 @@ window.addEventListener("keydown", (e) => {
   else if (e.key.toLowerCase() === "f" && selectedRealm) selectRealm(selectedRealm);
 });
 document.getElementById("ov-close").onclick = overview;
+
+// Configurações (R29): o servidor manda os realms detectados e as opções; as mudanças voltam como um pedido só.
+const settingsBox = document.getElementById("settings");
+const settingsButton = document.getElementById("open-settings");
+function toggleSettings(open) {
+  settingsBox.classList.toggle("hidden", !open);
+  if (open) {
+    net.requestSettings();
+    document.getElementById("settings-close").focus();
+  } else {
+    settingsButton.focus();                               // o foco volta ao botão que abriu a janela
+  }
+}
+settingsButton.onclick = () => toggleSettings(settingsBox.classList.contains("hidden"));
+document.getElementById("settings-close").onclick = () => toggleSettings(false);
+settingsBox.addEventListener("pointerdown", (e) => { if (e.target === settingsBox) toggleSettings(false); });
 
 // Nova sessão: o terminal real abre no realm selecionado; o personagem aparece sozinho.
 const select = document.getElementById("new-provider");

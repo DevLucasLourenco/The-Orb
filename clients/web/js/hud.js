@@ -134,6 +134,53 @@ export function renderHistory(history) {
   }));
 }
 
+// Tela de configurações (R29, V-HUD-5, V-HUD-7). As opções numéricas vêm da tabela do servidor (`options`): os tickets
+// que acrescentam uma opção só acrescentam uma linha lá, esta tela já sabe desenhá-la.
+export function renderSettings(settings, onChange) {
+  const body = document.getElementById("settings-body");
+  const focused = document.activeElement && body.contains(document.activeElement) ? document.activeElement.id : null;
+  const realms = el("div");
+  realms.append(el("h3", null, "Realms"), el("p", "hint", "Desmarcado = não aparece na cidade. O realm continua detectado."));
+  for (const realm of settings.realms) {
+    const row = el("div", "setting-row");
+    const box = document.createElement("input");
+    box.type = "checkbox";
+    box.id = `realm-${realm.id}`;
+    box.checked = !realm.hidden;
+    box.onchange = () => onChange({ hidden_realms: settings.realms
+      .filter((r) => (r.id === realm.id ? !box.checked : r.hidden)).map((r) => r.id) });
+    const label = el("label");
+    label.htmlFor = box.id;
+    label.append(el("span", null, realm.name || realm.id), el("span", "muted path", realm.cwd || ""));
+    row.append(box, label);
+    realms.append(row);
+  }
+  if (!settings.realms.length) realms.append(el("div", "empty", "Nenhum realm detectado ainda."));
+  const options = el("div");
+  options.append(el("h3", null, "Opções"));
+  for (const option of settings.options) {
+    if (option.kind !== "number") continue;                      // tipos novos de opção ganham o desenho deles quando o ticket que os cria chegar
+    const row = el("div", "setting-row");
+    const input = document.createElement("input");
+    input.type = "number";
+    input.id = `opt-${option.key}`;
+    Object.assign(input, { min: option.minimum, max: option.maximum, value: option.value, step: 1 });
+    input.onchange = () => onChange({ [option.key]: Number(input.value) });
+    const label = el("label", null, option.label);
+    label.htmlFor = input.id;
+    row.append(label, input, el("span", "muted", option.unit));
+    options.append(row);
+  }
+  body.replaceChildren(realms, options);
+  if (settings.persistent === false) body.append(el("p", "hint", "Sem pasta do Orb: as mudanças valem só até fechar."));
+  if (settings.error) {
+    const message = el("div", "setting-error", settings.error);
+    message.setAttribute("role", "alert");
+    body.append(message);
+  }
+  if (focused) document.getElementById(focused)?.focus();        // refazer a janela não tira o foco de quem está digitando
+}
+
 export function renderOverview(realm, onOpen) {
   const panel = document.getElementById("overview");
   if (!realm) {

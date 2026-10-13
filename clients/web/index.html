@@ -20,7 +20,18 @@
   <div class="brand"><span class="orb-dot"></span>THE ORB</div>
   <div id="mankind" class="stats"></div>
   <div id="conn" class="conn">conectando…</div>
+  <button class="icon-btn" id="open-settings" title="Configurações" aria-label="Configurações">⚙</button>
 </header>
+
+<section id="settings" class="modal hidden" role="dialog" aria-modal="true" aria-label="Configurações do Orb">
+  <div class="modal-card">
+    <div class="panel-head">
+      <div><div class="eyebrow">Orb</div><h2>Configurações</h2></div>
+      <button class="icon-btn" id="settings-close" title="Fechar (Esc)" aria-label="Fechar">✕</button>
+    </div>
+    <div id="settings-body" class="settings-body"></div>
+  </div>
+</section>
 
 <nav id="realms" aria-label="Realms"></nav>
 
