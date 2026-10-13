@@ -285,7 +285,7 @@ ticket existir.
 | Deduplicação | Janela limitada por Alter Ego (memória constante) |
 | Deltas de streaming (`outputDelta`, `agentMessage/delta`) | Não viram eventos um a um; o item completo (`item/completed`) carrega o texto |
 | Envio ao cliente | Snapshot ao conectar, depois deltas; bytes do terminal nunca são descartados |
-| Polling (nível 0) | **250 ms** para realms com sessão ativa (medido: ~270–470 ms ponta a ponta); varredura de sessões novas a cada **2 s** (D-087). **Feito (ticket 06):** `POLL_SECONDS` = 250 ms quando alguma sessão da sala está ativa (`World.any_active`); sem nenhuma, `IDLE_POLL_SECONDS` = 2 s (granularidade do mundo todo, não por realm: Q-T06-3) |
+| Polling (nível 0) | **250 ms** para realms com sessão ativa (medido: ~270–470 ms ponta a ponta); varredura de sessões novas a cada **2 s** (D-087). **Feito (ticket 06):** `POLL_SECONDS` = 250 ms quando alguma sessão da sala está ativa (`World.any_active`); sem nenhuma, `IDLE_POLL_SECONDS` = 2 s (granularidade do mundo todo, não por realm: D-142) |
 | Histórico (R48, D-088) | **Duas camadas:** índice de metadados de todas as sessões (pasta, datas, título, provider), barato; conteúdo lido incrementalmente só das sessões da sala; o passado lido uma vez em segundo plano, com o ponto de parada no registro local |
 
 ## 6. Lógica bem estruturada
