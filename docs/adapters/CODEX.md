@@ -179,6 +179,10 @@ Só estrutura e contagens, nos 12 rollouts mais recentes (176 linhas `agent_mess
   (`session_meta`) é lida à parte; a árvore de sessões é varrida no máximo a cada 2 s.
 - O Orb não consegue dar o id da thread à TUI hospedada (não há `--session-id`); o vínculo com o
   Alter Ego vem de `thread/started` (nível 1) ou de `cwd` + horário (nível 0).
+- **Índice (ticket 03):** `RolloutIndex` lê só a primeira linha (`session_meta`) de cada rollout, **uma única
+  vez** (428 rollouts: ~5 s na primeira varredura, ~20 ms nas seguintes), e o nome da conversa do
+  `session_index.jsonl`; `cwd`, `parent_thread_id` e a data de início vêm da `session_meta`, e a última escrita do
+  arquivo. Não lê o resto do conteúdo.
 - **Título da sessão:** `~/.codex/session_index.jsonl` guarda `{id, thread_name, updated_at}` por
   linha (a última vence). O leitor relê o arquivo só quando ele muda e emite `session.updated`.
 - O modelo padrão do `config.toml` do Lucas (`gpt-6-luna`, na máquina do Spike 4) não era aceito

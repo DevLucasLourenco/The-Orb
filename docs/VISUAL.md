@@ -4,7 +4,7 @@
 > ([RULES.md](RULES.md)): todo elemento que parece dado **é** dado; o resto é **cenário**, declarado
 > aqui. Um elemento novo só entra no mundo depois de ter uma linha nesta tabela.
 
-Última atualização: 2026-10-09 · Decisões em ordem: [DECISIONS.md](DECISIONS.md)
+Última atualização: 2026-10-13 · Decisões em ordem: [DECISIONS.md](DECISIONS.md)
 
 Tipo: **Dado** (vem da telemetria) · **Legenda** (código fixo de cores/formas, sempre o mesmo
 significado) · **Cenário** (sem significado, só ambiente) · **Heurística** (deduzido pelo Orb;
@@ -28,7 +28,7 @@ Situação: ✅ como está · ❌ precisa mudar · ❓ precisa de decisão.
 
 | Id | Elemento | Tipo | Significado / fonte | Situação |
 |---|---|---|---|---|
-| V-REALM-1 | Existir um prédio | Dado | Todo projeto que algum provider já registrou (R3, R3a), menos os escondidos pelo Lucas na lista (R3c) e as sessões fora de projeto (R3b) | ❌ Hoje vem de `--root`/`--realm`, inclusive pastas sem sessão |
+| V-REALM-1 | Existir um prédio | Dado | Todo projeto que algum provider já registrou (R3, R3a), menos os escondidos pelo Lucas na lista (R3c) e as sessões fora de projeto (R3b) | ✅ Detectado pelo índice de sessões (ticket 03); falta esconder pela lista (R3c) |
 | V-REALM-2 | **Altura** | Dado | Linhas de código do projeto, ignorando o `.gitignore` (R19), em **escala absoluta por classes** (Casa a Arranha-céu), com saltos entre as classes (§8). Não depende dos outros prédios | ❌ Altura fixa igual para todos |
 | V-REALM-12 | **Altura de cada andar** | Dado | Parcela das linhas do projeto que está naquela pasta de 1º nível; pastas pequenas demais se juntam em "demais pastas" (§8) | ⏳ |
 | V-REALM-13 | **Cintas de luz neutra no topo** (e antena no Arranha-céu) | Legenda | A classe do prédio por faixa de linhas: uma cinta a mais por classe (§8) | ⏳ |

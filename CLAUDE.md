@@ -75,8 +75,8 @@ tem entrada em VISUAL.md com tipo e fonte? Algum invariante da §4 é afetado?
    nunca um estado inventado. Decoração só como **Cenário declarado** em VISUAL.md (R12a). Nada de
    padrões aleatórios que pareçam informação.
 2. **Realms detectados pelos providers (R3, R3a–d).** Nunca crie opção, parâmetro ou configuração
-   para o Lucas informar caminhos de projetos. `--root`, `--realm` e `--lookback` são provisórios e
-   vão sair.
+   para o Lucas informar caminhos de projetos. `--root`, `--realm` e `--lookback` são só opções de
+   depuração: o servidor sobe sem nenhum argumento.
 3. **Somente leitura (R16).** Arquivos e bancos dos providers e dos projetos são abertos só para
    leitura (SQLite com `mode=ro`). **Nunca grave no `.git`**: git só com `--no-optional-locks` (ou
    `GIT_OPTIONAL_LOCKS=0`). A única escrita é o Terminal Host levando ao CLI o que o Lucas digitou.
@@ -202,7 +202,7 @@ pip install -e ".[dev]"
 ```
 
 ```bash
-python -m orb.gateway.app --root ".."
+python -m orb.gateway.app
 ```
 
 O servidor escuta só em `127.0.0.1`, com token por execução e `Origin` local obrigatória; abra a URL

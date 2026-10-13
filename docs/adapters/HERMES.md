@@ -50,6 +50,11 @@ sabe, por exemplo, se o Lucas já tem hooks ou webhooks configurados.
 | `messages/tool` | `result` | — |
 | `messages/assistant.stop` (`finish_reason = "stop"`, líder) | — | `idle` |
 
+- **Índice (ticket 03):** `SessionsIndex` faz uma consulta à tabela `sessions` (`cwd`, `git_repo_root`, `title`,
+  `model`, `started_at`, `last_activity_at`, `source`, `parent_session_id`), sem tocar em `messages`. `git_repo_root`,
+  a raiz do projeto que o próprio Hermes informa, vem vazio em todas as sessões desta máquina; quando vier, vence a
+  subida até o repositório git. Sessão sem `cwd` fica de fora. A abertura (`session.started`) leva a hora da
+  mensagem que revelou a sessão (D-128).
 - **Subagente** = sessão com `source = "subagent"` e `parent_session_id` (`tools/delegate_tool.py:1942-1989`).
   `parent_session_id` também é usado por compactação e `/branch`: esses **não** são subagentes.
 - A tabela de ferramentas é **heurística por palavra-chave** (`delegate`/`subagent` → `DELEGATING`,
