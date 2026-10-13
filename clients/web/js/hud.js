@@ -104,6 +104,36 @@ function sessionCard(ego, onOpen) {
   return card;
 }
 
+function shortDate(iso) {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "—";
+  const sameYear = d.getFullYear() === new Date().getFullYear();
+  return d.toLocaleDateString("pt-BR", sameYear ? { day: "2-digit", month: "short" } : { day: "2-digit", month: "short", year: "numeric" });
+}
+
+// Histórico do realm (R28a, V-HUD-6): as sessões que já saíram da sala. Nenhuma some; só mudam de lugar.
+export function renderHistory(history) {
+  const box = document.getElementById("ov-history");
+  const sessions = history ? history.sessions : null;
+  if (!sessions || !sessions.length) {
+    box.classList.add("hidden");
+    changed("history", null);
+    return;
+  }
+  if (!changed("history", history)) return;
+  box.classList.remove("hidden");
+  const total = history.total || sessions.length;
+  const count = total > sessions.length ? `${sessions.length} de ${total}` : String(total);      // nada é escondido sem avisar
+  box.replaceChildren(el("h3", null, `Histórico do realm · ${count}`), ...sessions.map((s) => {
+    const row = el("div", "hist-row");
+    row.style.setProperty("--pc", provider(s.provider).color);
+    if (s.name) row.append(el("span", "ego-name", s.name));
+    row.append(el("span", "prov", provider(s.provider).label), el("span", "title", s.title || s.session.slice(0, 8)),
+               el("span", "when", `${shortDate(s.started_at)} → ${shortDate(s.updated_at)}`));
+    return row;
+  }));
+}
+
 export function renderOverview(realm, onOpen) {
   const panel = document.getElementById("overview");
   if (!realm) {
@@ -124,7 +154,7 @@ export function renderOverview(realm, onOpen) {
   const list = document.getElementById("ov-sessions");
   const egos = [...realm.alter_egos].sort((a, b) => rank(a) - rank(b) || (b.last_ts || "").localeCompare(a.last_ts || ""));
   if (!egos.length) {
-    list.replaceChildren(el("div", "empty", "Nenhuma sessão ativa neste realm. Abra uma aqui embaixo, ou use o CLI na pasta do projeto: ela aparece sozinha."));
+    list.replaceChildren(el("div", "empty", "Nenhuma sessão recente neste realm. Abra uma aqui embaixo, ou use o CLI na pasta do projeto: ela aparece sozinha."));
   } else {
     list.replaceChildren(...egos.map((e) => sessionCard(e, onOpen)));
   }

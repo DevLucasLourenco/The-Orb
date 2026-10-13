@@ -92,10 +92,12 @@ export class RealmBuilding {
     this.roomEdges = new THREE.LineSegments(new THREE.EdgesGeometry(roomGeo),
       new THREE.LineBasicMaterial({ color: 0x7cc4ff, toneMapped: false, transparent: true, opacity: 0.85 }));
     this.roomEdges.position.copy(glass.position);
-    const light = new THREE.PointLight(0x9cc8ff, 22, 30, 1.4);
-    light.position.y = this.floorY + ROOM_H + 2.5;
+    this.glass = glass;
+    this.light = new THREE.PointLight(0x9cc8ff, 22, 30, 1.4);
+    this.light.position.y = this.floorY + ROOM_H + 2.5;
+    this.night = false;          // "noite" (D-059): nenhuma sessão nos últimos 10 dias; o mundo diz, aqui só se desenha
 
-    this.group.add(plinth, tower, edges, slab, glass, this.roomEdges, light);
+    this.group.add(plinth, tower, edges, slab, glass, this.roomEdges, this.light);
     this._areas();
     this._beacon();
 
@@ -114,6 +116,7 @@ export class RealmBuilding {
 
   _areas() {
     this.areaLabels = [];
+    this.roomLights = [];        // o que se apaga de noite: pisos das áreas e anel do lobby
     for (const [name, a] of Object.entries(AREAS)) {
       const pad = new THREE.Mesh(new THREE.BoxGeometry(a.w, 0.12, a.d),
         new THREE.MeshStandardMaterial({ color: a.color, emissive: a.color, emissiveIntensity: 0.18, transparent: true, opacity: 0.35, roughness: 0.4 }));
@@ -125,12 +128,14 @@ export class RealmBuilding {
       const label = new CSS2DObject(el("div", "lbl-area", name));
       label.position.set(a.x, this.floorY + 0.2, a.z + a.d / 2 - 0.4);
       this.areaLabels.push(label);
+      this.roomLights.push(pad, edge);
       this.group.add(pad, edge, label);
     }
     const lobby = new THREE.Mesh(new THREE.RingGeometry(LOBBY.r - 0.12, LOBBY.r, 48),
       new THREE.MeshBasicMaterial({ color: 0x7cc4ff, toneMapped: false, transparent: true, opacity: 0.5, side: THREE.DoubleSide }));
     lobby.rotation.x = -Math.PI / 2;
     lobby.position.set(LOBBY.x, this.floorY + 0.03, LOBBY.z);
+    this.roomLights.push(lobby);
     this.group.add(lobby);
   }
 
@@ -158,6 +163,7 @@ export class RealmBuilding {
   setData(realm, summary) {
     this.activity = Math.min(1, summary.active / 3);
     this.waiting = summary.waiting;
+    this.night = Boolean(realm.night);
     this.labelEl.replaceChildren(
       el("div", "n", realm.name || realm.id),
       (() => {
@@ -190,7 +196,13 @@ export class RealmBuilding {
     this.beacon.material.opacity = this.waiting ? 0.10 + 0.14 * pulse : 0;
     this.beaconRing.material.opacity = this.waiting ? 0.35 + 0.5 * pulse : 0;
     this.roomEdges.material.color.setHex(this.waiting ? 0xffc46b : 0x7cc4ff);
-    for (const label of this.areaLabels) label.visible = near;
+    // Noite: a sala do teto apaga (luz, pisos das áreas, arestas); as janelas da fachada seguem como estão.
+    const lit = !this.night;
+    this.light.visible = lit;
+    for (const mesh of this.roomLights) mesh.visible = lit;
+    this.roomEdges.visible = lit;
+    this.glass.visible = lit;
+    for (const label of this.areaLabels) label.visible = near && lit;
     this.label.visible = !focused;      // de perto o nome do prédio só atrapalha a sala
   }
 

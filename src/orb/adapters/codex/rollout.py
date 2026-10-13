@@ -86,9 +86,13 @@ class RolloutReader:
     `realm`) ou vários (`realm_of`: a loja do Codex é única, então lê-la uma vez basta)."""
 
     def __init__(self, cwd: str | None = None, *, realm: str = "", since: float | None = None,
-                 home: Path | None = None, replay: bool = False, realm_of: RealmOf | None = None) -> None:
+                 fresh_after: float | None = None, home: Path | None = None, replay: bool = False,
+                 realm_of: RealmOf | None = None) -> None:
+        """`since`: só threads escritas depois disto são acompanhadas (a sala, R28a). `fresh_after`: threads
+        criadas depois disto são lidas desde o começo; as mais velhas, só do fim (nada é relido, R48)."""
         self.realm_of = realm_of or single_realm(cwd, realm)
         self.since = time.time() if since is None else since
+        self.fresh_after = self.since if fresh_after is None else fresh_after
         self.home = home
         self.replay = replay
         self._threads: dict[Path, _Thread] = {}
@@ -134,7 +138,7 @@ class RolloutReader:
             born = getattr(stat, "st_birthtime", stat.st_ctime)
             parent = meta.get("parent_thread_id") if isinstance(meta.get("parent_thread_id"), str) else None
             self._threads[path] = _Thread(meta["id"], parent or None,
-                                          JsonlFollower(path, start_at_end=not self.replay and born < self.since), meta, realm)
+                                          JsonlFollower(path, start_at_end=not self.replay and born < self.fresh_after), meta, realm)
 
     def _factory(self, realm: str, root: str) -> EventFactory:
         factory = self._factories.get(root)

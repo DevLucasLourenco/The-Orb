@@ -96,6 +96,11 @@ button, select { font: inherit; color: inherit; }
 .team { margin-top: 6px; display: flex; flex-wrap: wrap; gap: 4px; }
 .sub { font-size: 10.5px; padding: 1px 6px; border-radius: 6px; border: 1px solid var(--line); color: #c7d2e3; }
 .sub.done { opacity: .5; }
+.history { max-height: 34%; overflow: auto; padding: 8px 12px; border-top: 1px solid var(--line); }
+.history h3 { margin: 0 0 6px; font-size: 10px; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); font-weight: 600; }
+.hist-row { display: flex; align-items: baseline; gap: 8px; padding: 3px 0; font-size: 12px; border-left: 3px solid var(--pc, var(--line)); padding-left: 8px; }
+.hist-row .title { font-weight: 500; }
+.hist-row .when { color: var(--muted); font-size: 11px; white-space: nowrap; font-variant-numeric: tabular-nums; }
 .panel-foot { display: flex; gap: 8px; padding: 10px 12px; border-top: 1px solid var(--line); }
 select, .btn {
   background: rgba(255, 255, 255, .04); border: 1px solid var(--line-strong); border-radius: 8px; padding: 6px 10px; cursor: pointer;

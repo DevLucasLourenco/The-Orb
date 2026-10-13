@@ -132,8 +132,10 @@ class TranscriptReader:
     """
 
     def __init__(self, cwd: str | None = None, *, realm: str | None = None, session_id: str | None = None,
-                 since: float | None = None, home: Path | None = None, replay: bool = False,
-                 subfolders: bool = True, realm_of: RealmOf | None = None) -> None:
+                 since: float | None = None, fresh_after: float | None = None, home: Path | None = None,
+                 replay: bool = False, subfolders: bool = True, realm_of: RealmOf | None = None) -> None:
+        """`since`: só transcripts escritos depois disto são acompanhados (a sala, R28a). `fresh_after`: os criados
+        depois disto são lidos desde o começo; os mais velhos, só do fim (nada é relido, R48)."""
         self.cwd = cwd or ""
         self.city = realm_of is not None
         self.realm_of = realm_of
@@ -147,6 +149,7 @@ class TranscriptReader:
         self.realm = realm or (realm_id_for(cwd) if cwd else "")
         self.session_id = session_id
         self.since = time.time() if since is None else since
+        self.fresh_after = self.since if fresh_after is None else fresh_after
         self.home = home
         self.replay = replay
         self._sessions: dict[Path, _Session] = {}
@@ -220,7 +223,7 @@ class TranscriptReader:
             born = getattr(stat, "st_birthtime", stat.st_ctime)
             self._sessions[path] = _Session(
                 session_id=path.stem,
-                follower=JsonlFollower(path, start_at_end=not self.replay and born < self.since),
+                follower=JsonlFollower(path, start_at_end=not self.replay and born < self.fresh_after),
                 factory=EventFactory(provider=mapping.PROVIDER, source=SOURCE, realm=realm,
                                      session=path.stem),
                 cwd=cwd, last_write=stat.st_mtime)

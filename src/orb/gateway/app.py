@@ -31,7 +31,7 @@ from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from ..adapters._shared import alter_ego_id
-from ..core import NameBook, NameSource, World
+from ..core import NameBook, NameSource, World, rules
 from ..protocol import validate
 from ..registry import LocalRegistry, orb_home
 from ..terminal_host import (HostedTerminal, InvalidLaunchValue, Launch, ProviderNotInstalled,
@@ -42,7 +42,9 @@ from .realms import Feed, Observatory
 REPO_ROOT = Path(__file__).resolve().parents[3]
 WEB_CLIENT = REPO_ROOT / "clients" / "web"
 ALLOWED_HOSTS = frozenset({"127.0.0.1", "localhost"})
-POLL_SECONDS = 0.5
+POLL_SECONDS = 0.25            # leitura dos realms com sessão ativa (D-087)
+HISTORY_LIMIT = 1000           # sessões do Histórico enviadas por pedido; o total sempre vai junto, nada é escondido
+IDLE_POLL_SECONDS = 2.0        # sem sessão ativa: só a varredura de sessões novas, a cada 2 s (D-087)
 CLIENT_QUEUE = 2000            # mensagens pendentes por cliente do mundo; além disso, só o snapshot
 FEED_ON_CONNECT = 80           # linhas de Inner World por sessão enviadas a quem acabou de conectar
 TIME_TICK_SECONDS = 15.0       # de quanto em quanto tempo se reavalia o que só o tempo muda (dormindo, sem sinal)
@@ -55,7 +57,9 @@ class GatewayConfig:
     token: str = field(default_factory=lambda: secrets.token_urlsafe(24))
     home: Path | None = None               # raiz das pastas dos providers (testes)
     poll_seconds: float = POLL_SECONDS
-    lookback_minutes: float = 30.0
+    idle_poll_seconds: float = IDLE_POLL_SECONDS
+    recent_seconds: float = rules.RECENT_SESSION_SECONDS   # o prazo da sala (R28a): o ticket 07 o torna configurável
+    lookback_minutes: float | None = None                  # [depuração] estreita a leitura do conteúdo
     state_dir: Path | None = None          # pasta do Orb (registro local, R36); sem ela os nomes vivem só em memória
 
 
@@ -75,7 +79,7 @@ class Hub:
                  names: NameSource | None = None) -> None:
         self.observatory = observatory
         self.clock = clock or (lambda: datetime.now(UTC))
-        self.world = World(names=names)
+        self.world = World(names=names, recent_seconds=observatory.recent_seconds)
         self.feed = Feed()
         self.clients: set[asyncio.Queue[dict[str, Any]]] = set()
         self._published_time_key: tuple | None = None      # o que os clientes viram da última vez
@@ -95,7 +99,7 @@ class Hub:
         world["generated_at"] = now.isoformat()
         known = {realm["id"] for realm in world["realms"]}
         # Todo realm observado existe na cidade, mesmo sem nenhuma sessão ainda.
-        world["realms"] += [{"id": rid, "alter_egos": []} for rid in self.observatory.realms if rid not in known]
+        world["realms"] += [{"id": rid, "alter_egos": [], "night": True} for rid in self.observatory.realms if rid not in known]
         for realm in world["realms"]:
             if realm["id"] in self.observatory.realms:
                 realm.update({k: v for k, v in self.observatory.describe(realm["id"]).items() if k != "id"})
@@ -110,7 +114,32 @@ class Hub:
             if validate(event) is None and self.world.apply(event):
                 applied.append(event)
                 self.feed.add(event)
+        for realm_id in self.observatory.realms:
+            self.world.add_realm(realm_id)           # todo realm detectado existe, mesmo "de noite" (D-059)
         return applied, bool(applied) or len(self.observatory.realms) != known
+
+    def history(self, realm_id: str) -> list[dict[str, Any]]:
+        """O Histórico do realm: as sessões mais antigas que a sala, com o nome histórico quando já foi sorteado."""
+        metas = self._history_metas(realm_id)[:HISTORY_LIMIT]
+        egos = [alter_ego_id(meta.provider, meta.session_id) for meta in metas]
+        names = self.world.names.names_of(egos) if self.world.names is not None else {}
+        return [{"alter_ego": ego, "provider": meta.provider, "session": meta.session_id, "name": names.get(ego),
+                 "title": meta.title, "model": meta.model, "started_at": meta.started_at, "updated_at": meta.updated_at}
+                for ego, meta in zip(egos, metas, strict=True)]
+
+    def _history_metas(self, realm_id: str) -> list:
+        if realm_id not in self.observatory.realms:
+            return []
+        return self.observatory.history(realm_id, now=self.clock().timestamp())      # a hora do mundo, a mesma do Core (R47)
+
+    def history_total(self, realm_id: str) -> int:
+        """Quantas sessões o Histórico do realm tem (a lista enviada pode vir cortada em `HISTORY_LIMIT`)."""
+        return len(self._history_metas(realm_id))
+
+    def poll_interval(self, fast: float, idle: float) -> float:
+        """Quanto esperar até a próxima leitura: `fast` com alguma sessão ativa, `idle` sem nenhuma (D-087). A
+        varredura de sessões novas continua a cada 2 s de qualquer jeito (cada leitor espaça a dele)."""
+        return fast if self.world.any_active(self.clock()) else max(fast, idle)
 
     def publish(self, message: dict[str, Any]) -> None:
         for queue in list(self.clients):
@@ -129,7 +158,7 @@ class Hub:
         último mundo enviado? Assim os clientes são avisados sem esperar um evento novo."""
         return self.world.time_key(self.clock()) != self._published_time_key
 
-    async def run(self, poll_seconds: float) -> None:
+    async def run(self, poll_seconds: float, idle_poll_seconds: float | None = None) -> None:
         last_tick = time.monotonic()
         while True:
             try:
@@ -147,19 +176,20 @@ class Hub:
                 last_tick = now
                 if self.time_changed():
                     self.publish_world()
-            await asyncio.sleep(poll_seconds)
+            await asyncio.sleep(self.poll_interval(poll_seconds, idle_poll_seconds if idle_poll_seconds is not None else poll_seconds))
 
 
 def create_app(config: GatewayConfig, *, pty_factory: Callable = winpty_factory,
                check_installed: bool = True, observatory: Observatory | None = None) -> FastAPI:
     names = LocalRegistry(config.state_dir) if config.state_dir is not None else NameBook()
     hub = Hub(observatory if observatory is not None else
-              Observatory(config.realms, roots=config.roots, lookback_minutes=config.lookback_minutes, home=config.home),
+              Observatory(config.realms, roots=config.roots, lookback_minutes=config.lookback_minutes,
+                          recent_seconds=config.recent_seconds, home=config.home),
               names=names)
 
     @contextlib.asynccontextmanager
     async def lifespan(_app: FastAPI):
-        task = asyncio.create_task(hub.run(config.poll_seconds))
+        task = asyncio.create_task(hub.run(config.poll_seconds, config.idle_poll_seconds))
         try:
             yield
         finally:
@@ -207,7 +237,11 @@ def create_app(config: GatewayConfig, *, pty_factory: Callable = winpty_factory,
                     msg = json.loads(raw)
                 except json.JSONDecodeError:
                     continue
-                if isinstance(msg, dict) and msg.get("type") == "feed" and isinstance(msg.get("alter_ego"), str):
+                if isinstance(msg, dict) and msg.get("type") == "history" and isinstance(msg.get("realm"), str):
+                    sessions = await asyncio.to_thread(hub.history, msg["realm"])    # nomes vêm do disco: fora do loop
+                    await queue.put({"channel": "history", "realm": msg["realm"], "sessions": sessions,
+                                     "total": max(len(sessions), hub.history_total(msg["realm"]))})
+                elif isinstance(msg, dict) and msg.get("type") == "feed" and isinstance(msg.get("alter_ego"), str):
                     await queue.put({"channel": "feed", "alter_ego": msg["alter_ego"],
                                      "events": hub.feed.history(msg["alter_ego"])})
         except WebSocketDisconnect:
@@ -301,7 +335,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     debug.add_argument("--root", action="append", default=[], help="pasta cujas subpastas viram realms, mesmo sem sessão")
     debug.add_argument("--realm", action="append", default=[], help="pasta que vira um realm, mesmo sem sessão (repita para vários)")
     debug.add_argument("--cwd", action="append", default=[], help="o mesmo que --realm")
-    debug.add_argument("--lookback", type=float, default=30.0, help="minutos: sessões ativas nesse intervalo têm o conteúdo lido")
+    debug.add_argument("--lookback", type=float, default=None, help="minutos: estreita a leitura do conteúdo (padrão: a sala de 10 dias)")
     return parser.parse_args(argv)
 
 

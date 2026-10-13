@@ -44,7 +44,7 @@ Situação: ✅ como está · ❌ precisa mudar · ❓ precisa de decisão.
 | V-REALM-9 | Anel no centro da sala (lobby) | Legenda | Lugar de quem não está numa área: pensando, parado, esperando, delegando | ✅ |
 | V-REALM-10 | Fileira na frente da sala | Heurística | Sessões "dormindo" (parada há mais de 15 min, ou encerrada). Encerradas **não são excluídas** (R28). **Na sala só ficam as ativas e as dos últimos 10 dias** (configurável, R28a); as demais vão para o Histórico do realm | ✅ Prazo (R28a) e limite de 15 min (R31) decididos |
 | V-REALM-11 | Luz interna da sala, sombras | Cenário | Iluminação | ✅ (R12a) |
-| V-REALM-14 | **"Noite"**: sala do teto apagada | Dado | Nenhuma sessão nos últimos 10 dias (o prazo de sessões recentes, R28a); as janelas seguem mostrando as alterações locais; acende quando surge uma sessão (D-059) | ⏳ |
+| V-REALM-14 | **"Noite"**: sala do teto apagada | Dado | Nenhuma sessão nos últimos 10 dias (o prazo de sessões recentes, R28a); as janelas seguem mostrando as alterações locais; acende quando surge uma sessão (D-059) | ✅ Ticket 06: o mundo manda `night` por realm; de noite apagam a luz do teto, o vidro, as arestas, os pisos das áreas e os nomes das áreas (só se diminui o que já existe: nenhuma cor nova) |
 
 ## 3. O personagem (Alter Ego) e os subagentes
 
@@ -76,7 +76,7 @@ Situação: ✅ como está · ❌ precisa mudar · ❓ precisa de decisão.
 | V-HUD-3 | Inner World: linha do tempo | Dado | Eventos nativos com o texto do provider; rótulo = `native.kind` | ✅ |
 | V-HUD-4 | Inner World: terminal | Dado | Terminal real do CLI (só para sessões abertas pelo painel; R9) | ⚠️ |
 | V-HUD-5 | **Lista de realms com marcação** | Dado | Todos os realms detectados; desmarcar esconde o prédio da cidade (R3c). A escolha fica guardada pelo Orb | ⏳ |
-| V-HUD-6 | **Histórico do realm** | Dado | Sessões encerradas ou paradas há mais que o prazo (10 dias, R28a), no overview do realm; nenhuma some | ⏳ |
+| V-HUD-6 | **Histórico do realm** | Dado | Sessões encerradas ou paradas há mais que o prazo (10 dias, R28a), no overview do realm; nenhuma some | ✅ Ticket 06: lista no overview, mais recentes primeiro, com nome (só se a sessão já ganhou um), provider, título e as datas de início e da última atividade |
 | V-HUD-8 | **Papel** do Alter Ego no overview (ex.: "revisor") | Dado | O que a sessão mais fez, por contagem das atividades observadas; sem modelo, sem tokens (R40, R38) | ⏳ |
 | V-HUD-7 | **Tela de configurações do Orb** | Dado | Realms escondidos, prazo das sessões recentes e outras preferências, guardadas no arquivo próprio do Orb (R29) | ⏳ |
 | V-HUD-9 | **Energy**: tokens e custo por sessão e realm (overview), total de hoje (barra de cima), limites da conta (painel) | Dado | Só o que o provider informa, nunca estimado (R43) | ⚠️ Só por sessão hoje |

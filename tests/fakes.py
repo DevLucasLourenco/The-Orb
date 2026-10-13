@@ -30,9 +30,9 @@ def hermes_db(home):
     home.mkdir(parents=True, exist_ok=True)
     conn = sqlite3.connect(home / "state.db")
     conn.executescript("""
-        CREATE TABLE sessions (id TEXT PRIMARY KEY, source TEXT, model TEXT, parent_session_id TEXT, cwd TEXT,
+        CREATE TABLE IF NOT EXISTS sessions (id TEXT PRIMARY KEY, source TEXT, model TEXT, parent_session_id TEXT, cwd TEXT,
                                title TEXT, started_at REAL, last_activity_at REAL, git_repo_root TEXT, extra_future_column TEXT);
-        CREATE TABLE messages (id INTEGER PRIMARY KEY AUTOINCREMENT, session_id TEXT, content TEXT);
+        CREATE TABLE IF NOT EXISTS messages (id INTEGER PRIMARY KEY AUTOINCREMENT, session_id TEXT, content TEXT);
     """)
     return conn
 

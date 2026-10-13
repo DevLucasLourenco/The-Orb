@@ -143,7 +143,7 @@ Todo adapter expõe a mesma forma (`orb.adapters._shared.base`):
   hora (relógio injetável): pede o mundo ao Core com a hora do servidor e, a cada 15 s, reavalia o que
   só o tempo muda (quem dormiu, quem ficou sem sinal) e avisa os clientes sem esperar um evento novo.
 - `/world?token=…`: o mundo para o cliente 3D — snapshot, depois `event` (linhas de Inner World),
-  `world` (snapshot quando algo muda) e `feed` (histórico de uma sessão, sob pedido).
+  `world` (snapshot quando algo muda), `feed` (linhas de uma sessão, sob pedido) e `history` (Histórico do realm, sob pedido).
 - `/ws?token=…&realm=…&provider=…&model=…`: abre o terminal real de uma sessão nova num realm e
   devolve `term`, `exit`, `system` (com o `alter_ego` quando o Orb escolhe o id, no Claude).
 - Segurança: escuta só em `127.0.0.1`, token por execução, `Origin` local obrigatória, lista fixa
@@ -186,14 +186,23 @@ projeto.
    nunca muda de id** (D-131). Uma pasta de sessão que já não existe (ex.: worktree apagado) entra no realm
    conhecido que a contém; sem ele, não entra.
 4. **Descoberta contínua.** Sessão de um projeto novo cria o prédio na hora (o leitor pergunta ao
-   Observatório) ou, no mais tardar, na próxima varredura do índice. O **conteúdo** continua lido de forma
-   incremental só das sessões ativas dentro de `--lookback` (30 min por padrão), até o ticket da sala de 10 dias
-   (R28a): hoje a cidade mostra todos os projetos, e a sala só as sessões recentes. Cada provider tem **um** leitor
+   Observatório) ou, no mais tardar, na próxima varredura do índice. O **conteúdo** é lido de forma
+   incremental só das sessões da **sala** (R28a, ticket 06): as escritas nos últimos 10 dias
+   (`rules.RECENT_SESSION_SECONDS`, um só valor; `--lookback` [depuração] só o estreita). O que já existia antes do Orb abrir é lido só
+   do fim (`fresh_after`: só as criadas nos últimos 30 min são lidas desde o começo); o passado fica para a camada de histórico
+   (R48, ticket 25). A cidade mostra todos os projetos, e a sala só as sessões da janela. Cada provider tem **um** leitor
    para a cidade inteira; o do Claude identifica cada pasta de `~/.claude/projects/` pelo `cwd` gravado nela.
-5. **Hora de abertura (D-128).** Os eventos que abrem uma sessão ou um subagente do Claude levam a hora da
+5. **A sala, o Histórico do realm e a noite (ticket 06, R28a, D-059).** O Core marca cada Alter Ego com `in_room`
+   (último evento nos últimos 10 dias, pela hora recebida) e cada realm com `night` (nenhuma sessão na sala; `World.add_realm`
+   cria o realm mesmo sem sessão). Cada sessão da sala que o índice lista ganha **um evento de presença** (`session.updated`,
+   só identidade: título, modelo, pasta; hora = última atividade): o Hermes e o opencode só falam quando há mensagem nova.
+   As sessões mais antigas ficam só no índice: o **Histórico do realm** é pedido pelo cliente no `/world`
+   (`{type: "history", realm}` → `{channel: "history", sessions, total}`, até 1000 por pedido com o `total` junto (nada é escondido sem aviso), mais recentes primeiro; o nome histórico
+   só aparece se a sessão já ganhou um, `NameSource.name_of`). Nada some.
+6. **Hora de abertura (D-128).** Os eventos que abrem uma sessão ou um subagente do Claude levam a hora da
    **última escrita do arquivo** (e os do Hermes, a da mensagem que revelou a sessão), nunca a hora da leitura:
    um subagente antigo nasce já sem sinal, em vez de parecer "recém-ativo" por 5 min (D-132).
-6. `--root`, `--realm` e `--lookback` ficam só como **opções de depuração** (o servidor sobe sem nenhum
+7. `--root`, `--realm` e `--lookback` ficam só como **opções de depuração** (o servidor sobe sem nenhum
    argumento); o que for preferência do Lucas vai para a tela de configurações do Orb (R29).
 
 **Limites conhecidos:** um realm cuja pasta é apagada com o Orb aberto só sai da cidade na próxima vez que o servidor
@@ -276,7 +285,7 @@ ticket existir.
 | Deduplicação | Janela limitada por Alter Ego (memória constante) |
 | Deltas de streaming (`outputDelta`, `agentMessage/delta`) | Não viram eventos um a um; o item completo (`item/completed`) carrega o texto |
 | Envio ao cliente | Snapshot ao conectar, depois deltas; bytes do terminal nunca são descartados |
-| Polling (nível 0) | **250 ms** para realms com sessão ativa (medido: ~270–470 ms ponta a ponta); varredura de sessões novas a cada **2 s** (D-087). Hoje o servidor usa 500 ms (`POLL_SECONDS`): a corrigir no ticket |
+| Polling (nível 0) | **250 ms** para realms com sessão ativa (medido: ~270–470 ms ponta a ponta); varredura de sessões novas a cada **2 s** (D-087). **Feito (ticket 06):** `POLL_SECONDS` = 250 ms quando alguma sessão da sala está ativa (`World.any_active`); sem nenhuma, `IDLE_POLL_SECONDS` = 2 s (granularidade do mundo todo, não por realm: D-142) |
 | Histórico (R48, D-088) | **Duas camadas:** índice de metadados de todas as sessões (pasta, datas, título, provider), barato; conteúdo lido incrementalmente só das sessões da sala; o passado lido uma vez em segundo plano, com o ponto de parada no registro local |
 
 ## 6. Lógica bem estruturada

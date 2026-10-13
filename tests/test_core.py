@@ -325,3 +325,68 @@ def test_a_rejected_event_does_not_use_up_a_name():
     assert world.apply(bad) is False
     assert len(book.bag.remaining) == 60 and book.assigned == {}
 
+
+
+# --- a sala e o Histórico do realm (R28, R28a, D-027, D-059): quem está na sala depende só da hora recebida ---
+
+def room_ids(world, days):
+    snap = world.snapshot(T0 + timedelta(days=days))
+    return {e["id"] for r in snap["realms"] for e in r["alter_egos"] if e["in_room"]}
+
+
+def test_the_room_window_is_one_value_in_the_rules_table():
+    assert rules.RECENT_SESSION_SECONDS == 10 * 24 * 3600                 # R28a: o ticket 07 torna configurável
+
+
+def test_a_session_stays_in_the_room_for_ten_days_after_its_last_event_then_goes_to_history():
+    world = World()
+    world.apply(at(0, {"type": "idle"}))
+    assert room_ids(world, 0) == {"claude:s1"}
+    assert room_ids(world, 10) == {"claude:s1"}                          # exatamente 10 dias ainda é da sala
+    assert room_ids(world, 10.01) == set()                               # passou: Histórico do realm
+
+
+def test_a_session_that_left_the_room_is_never_deleted_and_comes_back_with_new_activity():
+    world = World()
+    world.apply(at(0, {"type": "session.ended"}))
+    gone = world.snapshot(T0 + timedelta(days=30))["realms"][0]["alter_egos"]
+    assert [(e["id"], e["in_room"], e["ended"]) for e in gone] == [("claude:s1", False, True)]    # R28: continua existindo
+    world.apply(at(30 * 24 * 60, {"type": "activity", "activity": "CODING"}))
+    assert room_ids(world, 30) == {"claude:s1"}                          # voltou a trabalhar: volta para a sala
+
+
+def test_a_realm_without_a_session_in_the_window_is_night_and_lights_up_with_a_new_one():
+    world = World()
+    world.apply(at(0, {"type": "idle"}))
+    assert world.snapshot(T0 + timedelta(days=1))["realms"][0]["night"] is False
+    assert world.snapshot(T0 + timedelta(days=11))["realms"][0]["night"] is True        # D-059
+    world.apply(at(11 * 24 * 60, {"type": "session.started"}, ego="claude:s2"))
+    assert world.snapshot(T0 + timedelta(days=11))["realms"][0]["night"] is False
+
+
+def test_a_known_realm_with_no_session_at_all_is_night():
+    world = World()
+    world.add_realm("parado")
+    world.add_realm("parado")                                            # idempotente
+    realm = world.snapshot(T0)["realms"][0]
+    assert (realm["id"], realm["alter_egos"], realm["night"]) == ("parado", [], True)
+
+
+def test_the_window_can_be_changed_without_touching_the_rules():
+    world = World(recent_seconds=3600)
+    world.apply(at(0, {"type": "idle"}))
+    assert world.snapshot(T0 + timedelta(minutes=59))["realms"][0]["alter_egos"][0]["in_room"] is True
+    assert world.snapshot(T0 + timedelta(minutes=61))["realms"][0]["alter_egos"][0]["in_room"] is False
+
+
+def test_without_a_trusted_hour_nobody_is_sent_to_history():
+    world = World()
+    world.apply(at(0, {"type": "idle"}))
+    snap = world.snapshot()                                              # sem hora: o mundo não afirma nada que dependa do tempo
+    assert snap["realms"][0]["alter_egos"][0]["in_room"] is True and snap["realms"][0]["night"] is False
+
+
+def test_the_world_tells_when_a_session_leaves_the_room():
+    world = World()
+    world.apply(at(0, {"type": "idle"}))
+    assert world.time_key(T0 + timedelta(days=9)) != world.time_key(T0 + timedelta(days=11))

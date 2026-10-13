@@ -224,3 +224,26 @@ def test_city_reader_sends_each_project_folder_to_the_realm_the_resolver_decides
     opening = next(e for e in events if e["signal"] and e["signal"]["type"] == "session.started")
     assert opening["signal"]["cwd"] == CWD                    # a pasta gravada, não a de um realm
 
+
+
+def test_only_transcripts_written_inside_the_window_are_followed_and_old_ones_are_read_from_the_end(tmp_path, jsonl):
+    import os
+    recent = session_file(tmp_path, SID)
+    jsonl(recent, [{"type": "user", "uuid": "u1", "timestamp": "2026-10-07T10:00:00Z", "message": {"content": "oi"}}])
+    old = session_file(tmp_path, "22222222-2222-4222-8222-222222222222")
+    jsonl(old, [{"type": "user", "uuid": "u2", "timestamp": "2026-09-01T10:00:00Z", "message": {"content": "velho"}}])
+    three_days, forty_days = time.time() - 3 * 86400, time.time() - 40 * 86400
+    os.utime(recent, (three_days, three_days))
+    os.utime(old, (forty_days, forty_days))
+    window = time.time() - 10 * 86400                                  # a sala: os últimos 10 dias (R28a)
+    # Criado depois de `fresh_after`: lido desde o começo; fora da janela: nem entra.
+    events = TranscriptReader(CWD, realm="demo", since=window, fresh_after=window, home=tmp_path).poll()
+    assert {e["alter_ego"] for e in events} == {f"claude:{SID}"}
+    assert [e["inner"]["text"] for e in events if e["inner"]] == ["oi"]
+    # Criado antes de `fresh_after`: a sessão aparece, mas o passado não é relido (só o que for escrito depois).
+    tail = TranscriptReader(CWD, realm="demo", since=window, fresh_after=time.time() + 100, home=tmp_path)
+    first = tail.poll()
+    assert {e["alter_ego"] for e in first} == {f"claude:{SID}"} and not [e for e in first if e["inner"]]
+    with open(recent, "a", encoding="utf-8") as fh:
+        fh.write(json.dumps({"type": "user", "uuid": "u3", "timestamp": "2026-10-07T10:05:00Z", "message": {"content": "novo"}}) + "\n")
+    assert [e["inner"]["text"] for e in tail.poll() if e["inner"]] == ["novo"]
