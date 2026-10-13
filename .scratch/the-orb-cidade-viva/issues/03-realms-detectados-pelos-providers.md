@@ -57,7 +57,7 @@ pela Observação: índice e regras de pasta, depois um leitor por provider. Só
   snapshot), sem o "recém-ativo" de 5 min do ticket 01 (D-128).
 - **Medido:** índice dos 4 providers com 486 sessões: ~5 s na primeira varredura (Codex, 428 rollouts) e ~30 ms nas
   seguintes; resolução de 41 pastas distintas em 190 ms.
-- **Decisões:** o Lucas confirmou Q-T03-1 a Q-T03-5 em 2026-10-13 (D-129 a D-133 em `docs/DECISIONS.md`; o invariante 11 do CLAUDE.md fica como está). **Aguarda resposta:** Q-T03-6 (casos de borda das regras de pasta) e o envio da branch com PR.
+- **Decisões:** o Lucas confirmou Q-T03-1 a Q-T03-6 em 2026-10-13 (D-129 a D-134 em `docs/DECISIONS.md`; o invariante 11 do CLAUDE.md fica como está) e aprovou o envio da branch com PR.
 - **Revisões (2026-10-13):** padrões e spec feitas; corrigidos: valor malformado de `cwd` derrubava o leitor, o leitor ao vivo ignorava a raiz do provider, relógio injetável no Observatório, erros de índice no HUD, índice do Claude relia pasta sem `cwd`, nomes (`StateDbIndex`, `OpencodeDbIndex`), testes e docs. Não corrigidos, com motivo: título e modelo ausentes no índice do Claude e do Codex (exigem abrir o conteúdo); `isdir` em caminho de rede pode bloquear a thread de leitura; `session_meta` do Codex lida uma vez no índice e outra no leitor das sessões ativas (custo único).
 - **Fora deste ticket:** esconder realms pela lista (R3c); a sala de 10 dias e o conteúdo só das sessões da sala (R48,
   camada 2, ticket 06); o realm de uma pasta apagada com o Orb aberto só sai na próxima subida do servidor.

@@ -148,6 +148,7 @@ ele revisar, e a proposta está escrita no documento do assunto.
 | D-131 | 2026-10-13 | **Dois projetos com o mesmo nome ganham sufixo numérico pela ordem dos caminhos** (`app`, `app-2`, `app-3`) num mesmo lote; quem já está na cidade nunca muda de id. O id de um nome repetido pode variar entre execuções até o registro local (R36) fixá-lo | Lucas | Q-T03-3, R3, R36 |
 | D-132 | 2026-10-13 | **A abertura de sessão e de subagente leva a hora da última escrita** do arquivo (Claude) ou da mensagem que revelou a sessão (Hermes), **não a data de início**: ajusta o D-128 para que um subagente ainda ativo não pisque "sem sinal". O índice guarda `started_at` e `updated_at` | Lucas | Q-T03-4, D-128, R7, R47 |
 | D-133 | 2026-10-13 | **Pasta sem repositório git: a pasta da sessão é o projeto, e uma subpasta de um realm já conhecido entra no realm da pasta mãe** (no mesmo lote, a pasta mais curta vem primeiro). Custo aceito: subpasta vista antes da pasta mãe nasce como prédio separado | Lucas | Q-T03-5, D-031, R3a |
+| D-134 | 2026-10-13 | **Casos de borda das regras de pasta confirmados:** submódulo (`.git` arquivo sem `commondir`) é projeto próprio; worktree cujo repositório principal sumiu não entra (R3d); a raiz que o provider informa só vale se contém a pasta da sessão (senão sobe até o git); repositório git na pasta do usuário (dotfiles) não engole os projetos abaixo dele; `--cwd` segue como apelido de `--realm` (depuração). Custo aceito: worktree órfão com sessão antiga não aparece na cidade | Lucas | Q-T03-6, D-029, D-031, R3b, R3d |
 
 ## Decisões revistas
 
@@ -357,7 +358,7 @@ forma provisória (regra P2). Todos estão cobertos por teste nos leitores dos C
 Ao implementar o ticket 03 ([.scratch/the-orb-cidade-viva/issues/03-realms-detectados-pelos-providers.md](../.scratch/the-orb-cidade-viva/issues/03-realms-detectados-pelos-providers.md)),
 seis pontos **não estavam escritos** e foram escolhidos de forma provisória (regra P2). Todos estão cobertos por
 teste (as leituras do mundo real e os leitores dos CLIs).
-**O Lucas confirmou as cinco primeiras em 2026-10-13 (D-129 a D-133); a Q-T03-6 aguarda resposta.**
+**O Lucas confirmou as seis em 2026-10-13 (D-129 a D-134).**
 
 | Id | Pergunta | Proposta (já aplicada, provisória) |
 |---|---|---|
@@ -366,4 +367,4 @@ teste (as leituras do mundo real e os leitores dos CLIs).
 | ~~Q-T03-3~~ D-131 | Dois projetos com o mesmo nome em lugares diferentes: qual ganha o sufixo? | Num mesmo lote, a ordem dos caminhos (o primeiro fica com o nome simples, os outros `-2`, `-3`); **quem já está na cidade nunca muda de id**. O id de um nome repetido pode variar entre execuções se a ordem de chegada mudar, até o registro local (R36) fixá-lo. Alternativa: sufixo derivado do caminho (ex.: pasta pai), estável mas menos legível |
 | ~~Q-T03-4~~ D-132 | O D-128 fala em "data de início" para a abertura de sessão e de subagente. Um subagente que **ainda trabalha** mas começou há horas piscaria "sem sinal" até o primeiro evento novo | A abertura leva a hora da **última escrita** do arquivo (Claude) ou da mensagem que revelou a sessão (Hermes): um subagente parado há 20 min já nasce sem sinal, e um ativo nasce ativo. O índice guarda as duas datas (`started_at` e `updated_at`) |
 | ~~Q-T03-5~~ D-133 | Pasta **sem repositório git**: a própria pasta da sessão é o projeto. E uma subpasta dela? | Uma subpasta de um realm já conhecido entra nele (senão `scripts/a` e `scripts/b` virariam dois prédios); no mesmo lote, a pasta mais curta vem primeiro. Custo: se a subpasta for vista antes da pasta mãe, nasce um prédio separado |
-| Q-T03-6 | Casos de borda das regras de pasta que o D-029 e o D-031 não cobrem | **Submódulo** (`.git` arquivo sem `commondir`) é um projeto próprio; **worktree cujo repositório principal sumiu** não entra (R3d); a **raiz que o provider informa só vale se contém a pasta** da sessão (senão sobe até o git); um **repositório git na pasta do usuário** (dotfiles) não engole os projetos abaixo dele; `--cwd` segue como apelido de `--realm` (depuração) |
+| ~~Q-T03-6~~ D-134 | Casos de borda das regras de pasta que o D-029 e o D-031 não cobrem | **Submódulo** (`.git` arquivo sem `commondir`) é um projeto próprio; **worktree cujo repositório principal sumiu** não entra (R3d); a **raiz que o provider informa só vale se contém a pasta** da sessão (senão sobe até o git); um **repositório git na pasta do usuário** (dotfiles) não engole os projetos abaixo dele; `--cwd` segue como apelido de `--realm` (depuração) |
