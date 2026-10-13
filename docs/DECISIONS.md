@@ -5,7 +5,7 @@
 > [ARCHITECTURE.md](ARCHITECTURE.md), [adr/](adr/)…). Decisões difíceis de reverter também têm um ADR.
 > Nada é apagado: uma decisão revista fica listada, com a que a substituiu.
 
-Última atualização: 2026-10-09
+Última atualização: 2026-10-13
 
 Quem: **Lucas** = decidido por ele · **Delegada** = o Lucas deixou a definição com o Claude; vale até
 ele revisar, e a proposta está escrita no documento do assunto.
@@ -328,3 +328,15 @@ cinco comportamentos **não estavam escritos** e foram escolhidos de forma provi
 | ~~Q-T01-4~~ D-122 | Um líder **dormindo** esconde a Team? | **Não** (só uma sessão **encerrada** esconde): os subagentes "sem sinal" ficam cinza no lugar onde estavam, como pede R7. Com muitos, o ticket 13 limita a 8 por área e mostra "+N" |
 | ~~Q-T01-5~~ D-123 | Só dorme quem está `IDLE`? Uma sessão presa em `READING`/`CODING` há horas (CLI morto) nunca dorme | **Manter:** é o comportamento que o cliente já tinha, e "esperando você" nunca deve dormir. Alternativa a estudar: sem nenhum evento há mais de X min, qualquer estado de trabalho vira `NO_SIGNAL` |
 
+### Rodada: o que a implementação do ticket 02 decidiu por conta própria (aberta em 2026-10-13)
+
+Ao implementar o ticket 02 ([.scratch/the-orb-cidade-viva/issues/02-ajustes-dos-adapters.md](../.scratch/the-orb-cidade-viva/issues/02-ajustes-dos-adapters.md)),
+o que a estrutura dos dados reais mostrou deixou quatro pontos **sem decisão escrita**; foram escolhidos de
+forma provisória (regra P2). Todos estão cobertos por teste nos leitores dos CLIs. O Lucas responde por número.
+
+| Id | Pergunta | Proposta (já aplicada, provisória) |
+|---|---|---|
+| Q-T02-1 | `inter_agent_communication_metadata` e `event_msg/thread_settings_applied` do Codex: **mapear ou ignorar**? (D-089 deixou os dois "a avaliar") | **Ignorar os dois.** O primeiro só traz `trigger_turn` e vem sempre antes de um `agent_message`; o segundo repete o modelo que já vem de `turn_context` (125 de 125) e carrega `developer_instructions`. Custo: se um dia o Orb quiser mostrar esforço de raciocínio ou política de aprovação, falta o sinal no vocabulário (PROTOCOL.md primeiro) |
+| Q-T02-2 | O `agent_message` é **fala entre agentes** (`/root` ↔ `/root/<nome>`), não a fala do Codex ao Lucas que o D-089 supunha. Ele aparece como narração simples ou deve **mostrar quem fala**? | **Narração simples**, como o D-089 decidiu; autor e destinatário ficam no corpo nativo. Na thread raiz aparece o relato do subagente com o mesmo visual da narração do líder. Alternativa: prefixar o texto com "`/root/<nome>` →" (custo: texto fabricado pelo Orb na linha) |
+| Q-T02-3 | **Fidelidade quando a estrutura não confirma:** `raw` ou `summary`? Confirmado só um modelo (nemotron) no Hermes e no opencode | **`raw` por padrão**; `summary` só com marcador estrutural (Hermes: `codex_reasoning_items`). Alternativa: marcar `summary` quando não confirmado (afirma menos, mas o rótulo `summary` passaria a significar "não confirmado como bruto") |
+| Q-T02-4 | Modelos gpt-5.x no Hermes pelo caminho de chat entregam **resumo sem marcador** e ficariam `raw`. Aceitar até observar uma sessão real ou já criar uma tabela de modelos? | **Aceitar e registrar a dúvida** (HERMES.md §1): nenhuma sessão assim existe nesta máquina para comprovar; a tabela por modelo seria regra sem evidência local |

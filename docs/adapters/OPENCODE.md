@@ -4,7 +4,7 @@
 > Código: `src/orb/adapters/opencode/` · Equivalentes: [CLAUDE.md](CLAUDE.md), [CODEX.md](CODEX.md),
 > [HERMES.md](HERMES.md).
 
-Última atualização: 2026-10-07 · opencode `2.0.23` (instalado nesta máquina via npm)
+Última atualização: 2026-10-13 · opencode `2.0.23` (instalado nesta máquina via npm; mesma versão em 2026-10-13)
 
 ## Como isto foi verificado
 
@@ -13,6 +13,7 @@
 | `opencode --help`, `opencode <sub> --help`, `opencode debug paths` | Flags, subcomandos, pastas | **Alta** |
 | Estrutura do `opencode.db` desta máquina: tabelas, colunas, **chaves** dos JSON e contagens (sem ler conteúdo) | Esquema, tipos de mensagem, blocos, ferramentas | **Alta** |
 | Adapter rodado sobre o banco real (2026-10-07, só contagens) | 730 eventos, 2 sessões, **0 inválidos** | **Alta** |
+| Blocos `reasoning` e `tokens` de `session_message`, **só estrutura e contagens** (2026-10-13, ticket 02) | Fidelidade do pensamento (§2) | **Alta** para o modelo observado; amostra pequena |
 | opencode hospedado ao vivo no Orb; servidor `opencode serve` | — | **Não verificado** |
 
 ## 1. Onde fica
@@ -53,7 +54,7 @@ criação): o cursor é `(time_updated, id)` e cada bloco é emitido **uma vez**
 | `session_message/assistant:tool` (`name`, `state.input`) | `tool` | `activity` pela ferramenta |
 | `session_message/assistant:tool_result` (`state.content`) | `result` | — |
 | `session_message/assistant:text` | `narration` | — |
-| `session_message/assistant:reasoning` | `thought` · `raw` | `activity: THINKING` |
+| `session_message/assistant:reasoning` | `thought` · `raw` (ver fidelidade abaixo) | `activity: THINKING` |
 | `session_message/assistant:usage` (`tokens.input/output/reasoning/cache.read`, `cost`) | — | `usage` |
 | `session_message/idle` (`outcome`) | — | `idle` |
 
@@ -62,6 +63,15 @@ classificador de comandos; `todowrite` → `THINKING`; `webfetch`/`websearch` �
 `task` → `DELEGATING` (nomes previstos, ainda não vistos nesta máquina).
 
 O tipo nativo (`user`, `synthetic`, `system`) aparece no rótulo de cada linha do Inner World.
+
+**Fidelidade do `reasoning` (R14, ticket 02): `raw`, confirmado pela estrutura só no modelo observado**
+(`nvidia/nemotron-3-ultra-550b-a55b`, 5 blocos em 5 mensagens). Cada bloco tem só `type`, `text` e `time`
+(sem item cifrado, assinatura nem metadado do provedor); `tokens.reasoning` é 0 (não informado). O texto
+visível (raciocínio + resposta + argumentos das ferramentas) dá 3,38 caracteres por token de saída (2.047
+caracteres para 605 tokens; de 2,85 a 4,36 por mensagem), faixa de texto comum e sem folga para
+raciocínio escondido. **Dúvida:** uma amostra pequena, de um único modelo; nos modelos que só entregam
+resumo (como os gpt-5.x, [CODEX.md](CODEX.md) §4) não se conhece marcador estrutural nos blocos, então o
+adapter marcaria `raw` (Q-T02-3).
 
 ## 3. Sessão = Alter Ego
 
@@ -92,7 +102,7 @@ de eventos e confirmar que nada muda na configuração do Lucas.
 
 | Capacidade | Valor |
 |---|---|
-| Pensamento | Blocos `reasoning` (5 em 2 sessões); `raw` ou resumo conforme o modelo (a confirmar) |
+| Pensamento | Blocos `reasoning` (5, de um único modelo); `raw` confirmado só para ele (§2) |
 | Aprovações | Tabela `permission` existe, vazia nesta máquina; não mapeada |
 | Subagentes | Sim (`session_v2.parent_id`); nenhum observado ainda |
 | Tempo real | Não (nível 1 a implementar) |
@@ -104,3 +114,4 @@ de eventos e confirmar que nada muda na configuração do Lucas.
 2. `--session` com id escolhido pelo Orb (vínculo exato sessão ↔ Alter Ego).
 3. Nível 1 pelo servidor próprio + `--server`.
 4. Aprovações (`permission`) e subagentes ao vivo.
+5. Fidelidade do pensamento em outros modelos (§2, dúvida).

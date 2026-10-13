@@ -13,10 +13,10 @@ confirmada pela estrutura dos dados.
 
 ## Critérios de aceite
 
-- [ ] Linhas `response_item/agent_message` do rollout do Codex viram narração no Inner World, com o nome nativo.
-- [ ] `inter_agent_communication_metadata` e `event_msg/thread_settings_applied` avaliados pela estrutura; a decisão (mapear ou ignorar, e por quê) fica no documento do adapter do Codex.
-- [ ] A fidelidade do pensamento do Hermes e do opencode é confirmada só pela estrutura (campos e contagens, sem ler conteúdo) e o adapter marca `raw` ou `summary` conforme o resultado; sem como confirmar, a dúvida fica registrada no documento do adapter.
-- [ ] Documentos dos adapters do Codex, do Hermes e do opencode atualizados com a versão do CLI observada.
+- [x] Linhas `response_item/agent_message` do rollout do Codex viram narração no Inner World, com o nome nativo.
+- [x] `inter_agent_communication_metadata` e `event_msg/thread_settings_applied` avaliados pela estrutura; a decisão (mapear ou ignorar, e por quê) fica no documento do adapter do Codex.
+- [x] A fidelidade do pensamento do Hermes e do opencode é confirmada só pela estrutura (campos e contagens, sem ler conteúdo) e o adapter marca `raw` ou `summary` conforme o resultado; sem como confirmar, a dúvida fica registrada no documento do adapter.
+- [x] Documentos dos adapters do Codex, do Hermes e do opencode atualizados com a versão do CLI observada.
 
 ## Testes
 
@@ -32,3 +32,18 @@ Ponto de teste: os leitores dos CLIs (arquivos e bancos sintéticos → eventos)
 - Uma branch e um PR para este ticket (D-114).
 
 ## Comments
+
+Implementado em 2026-10-13 (branch `ticket/02-ajustes-dos-adapters`). Só estrutura e contagens dos dados
+reais; nenhum conteúdo foi lido nem versionado.
+
+- **`agent_message` é fala entre agentes**, não a fala do agente ao Lucas (autor e destinatário são caminhos
+  `/root` e `/root/<nome>`): vira narração mesmo assim (D-089), com o autor no corpo nativo. Ver Q-T02-2.
+- **`inter_agent_communication_metadata`** (só `trigger_turn`) e **`thread_settings_applied`** (o modelo já
+  vem de `turn_context`) ficam ignorados, com o motivo em `docs/adapters/CODEX.md` §8. Ver Q-T02-1.
+- **Fidelidade:** Hermes e opencode seguem `raw`, agora confirmado pela estrutura no modelo observado (todo o
+  texto guardado explica os tokens de saída); o Hermes passa a marcar `summary` quando a linha traz itens da
+  Responses API (`codex_reasoning_items`). Ver Q-T02-3 e Q-T02-4.
+- **Dúvidas que seguem abertas** (em `docs/adapters/HERMES.md` §1 e `OPENCODE.md` §2): modelos gpt-5.x pelo caminho
+  de chat e Anthropic no Hermes; só um modelo foi observado nos dois CLIs.
+- Versões: Codex `0.160.1` (rollouts de `0.142.5` a `0.162.0`), Hermes `0.20.5`, opencode `2.0.23`.
+- Decisões a confirmar: Q-T02-1 a Q-T02-4 em `docs/DECISIONS.md`.

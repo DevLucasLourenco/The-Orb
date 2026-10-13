@@ -3,8 +3,8 @@
 > O que o Hermes Agent expõe e como o Orb o observa sem mexer na configuração do Lucas.
 > Código: `src/orb/adapters/hermes/` · Equivalentes: [CLAUDE.md](CLAUDE.md), [CODEX.md](CODEX.md).
 
-Última atualização: 2026-10-07 · Hermes Agent `0.20.5` (instalado nesta máquina em
-`%LOCALAPPDATA%\hermes`, instalação por git)
+Última atualização: 2026-10-13 · Hermes Agent `0.20.5` (instalado nesta máquina em
+`%LOCALAPPDATA%\hermes`, instalação por git; mesma versão em 2026-10-13)
 
 ## Como isto foi verificado
 
@@ -13,6 +13,7 @@
 | **Código-fonte** do Hermes 0.20.5 (`%LOCALAPPDATA%\hermes\hermes-agent`), lido sem executar o agente | Hooks, servidores, esquema do `state.db`, sessões, subagentes, aprovações, diálogos | **Alta** para o código lido (citações de arquivo:linha abaixo) |
 | `hermes --help`, `hermes sessions/serve/acp --help` | Flags | **Alta** |
 | Adapter de nível 0 rodado sobre o `state.db` real desta máquina, **só contagens** (2026-10-07) | 1.528 eventos em 20 sessões, **0 inválidos**; `mode=ro` funciona com o banco em WAL no Windows; `finish_reason = "stop"` existe | **Alta** |
+| `state.db` real, **só estrutura e contagens** (2026-10-13, ticket 02): colunas de raciocínio, contagens por modelo e relação entre o tamanho do texto e os tokens de saída | Fidelidade do pensamento (§1) | **Alta** para o modelo observado; **dúvida** para os outros |
 | Hermes rodando ao vivo com o Orb | — | **Não verificado** |
 
 Não foram lidos `config.yaml`, memórias, nem o conteúdo de sessões (privacidade). Por isso não se
@@ -43,7 +44,7 @@ sabe, por exemplo, se o Lucas já tem hooks ou webhooks configurados.
 | `native.kind` | `inner` | `signal` |
 |---|---|---|
 | `messages/user` | `prompt` | — |
-| `messages/assistant.reasoning` (`reasoning` com texto) | `thought` · `raw` | `activity: THINKING` |
+| `messages/assistant.reasoning` (`reasoning` com texto) | `thought` · `raw` ou `summary` (ver fidelidade abaixo) | `activity: THINKING` |
 | `messages/assistant` (`content`) | `narration` | — |
 | `messages/assistant.tool_call` (um por item de `tool_calls`) | `tool` | `activity` por palavra-chave do nome da ferramenta; `terminal` pelo classificador de comandos |
 | `messages/tool` | `result` | — |
@@ -54,8 +55,26 @@ sabe, por exemplo, se o Lucas já tem hooks ou webhooks configurados.
 - A tabela de ferramentas é **heurística por palavra-chave** (`delegate`/`subagent` → `DELEGATING`,
   `web`/`browser`/`mcp` → `RESEARCHING`, `write`/`patch`/`edit` → `CODING`, `read`/`search_files`
   → `READING`), porque a lista completa de ferramentas ainda não foi levantada.
-- `fidelity` do `reasoning`: depende do modelo por trás (OpenAI gpt-5.x só envia resumo). Hoje o
-  adapter marca `raw`; **a confirmar por modelo** (`reasoning_content`, `codex_reasoning_items`).
+- **Fidelidade do `reasoning` (R14, ticket 02).** O adapter marca `summary` quando a linha traz
+  `codex_reasoning_items` com um item `reasoning` (itens da Responses API: resumo mais blob cifrado, o
+  mesmo formato dos rollouts do Codex; o blob não vai no evento nativo) e `raw` nos demais casos.
+  **Confirmado pela estrutura no `state.db` desta máquina (2026-10-13), num único modelo,
+  `nvidia/nemotron-3-ultra-550b-a55b`:** 484 mensagens do assistente, 476 com `reasoning` (19 sessões);
+  `reasoning_content` igual a `reasoning` em 476 de 476; `reasoning_details`, `codex_reasoning_items` e
+  `codex_message_items` vazios em todas; `sessions.reasoning_tokens` é 0 (o provedor não informa o
+  raciocínio à parte). Como não há esse número, a prova vem do total: raciocínio + resposta + argumentos
+  das ferramentas dão 4,29 caracteres por token de saída (de 3,46 a 7,2 nas 15 sessões com mais de 1.000
+  tokens), faixa de texto comum e sem folga para raciocínio escondido. Logo o texto guardado é a cadeia
+  inteira: `raw`.
+- **Dúvidas registradas** (não verificáveis aqui; decisão Q-T02-3 e Q-T02-4):
+  1. `codex_reasoning_items` nunca apareceu nos dados reais: a regra `summary` vem do código do Hermes
+     (`agent/codex_responses_adapter.py`) e do formato dos rollouts do Codex (§4 de [CODEX.md](CODEX.md)).
+  2. Modelos OpenAI gpt-5.x pelo caminho de chat (ex.: Nous Portal) entregam o resumo em
+     `reasoning_content`, sem `codex_reasoning_items` (`agent/reasoning_summaries.py`): o adapter os
+     marcaria `raw`, e a estrutura da linha não permite distinguir. Antes de criar uma tabela por modelo,
+     observar uma sessão real com esse modelo (tamanho do texto × tokens de saída).
+  3. Anthropic (blocos `thinking` em `reasoning_details`, `agent/transports/anthropic.py`): sem marcador
+     estrutural; o adapter marca `raw` sem confirmação.
 
 ## 2. Nível 1: eventos em tempo real — ainda não implementado
 
@@ -96,7 +115,7 @@ do Orb.
 
 | Capacidade | Valor |
 |---|---|
-| Pensamento | Coluna `reasoning`; `raw` ou `summary` conforme o modelo (a confirmar) |
+| Pensamento | Coluna `reasoning`: `summary` com `codex_reasoning_items`, `raw` no resto; confirmado só no modelo observado (§1) |
 | Aprovações | Não registradas no banco (só o texto do resultado); nível 1 traria `approval.request` |
 | Subagentes | Sim (`source = subagent` + `parent_session_id`) |
 | Tempo real | Não (nível 1 a implementar pelo sidecar da TUI) |
@@ -109,3 +128,4 @@ do Orb.
 3. Lista completa de ferramentas.
 4. Vínculo sessão hospedada ↔ Alter Ego sem flag de id (`--source`?).
 5. Tokens/custo por sessão (Energy).
+6. Fidelidade do pensamento nos modelos ainda não observados (§1, dúvidas 1 a 3).

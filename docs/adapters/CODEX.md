@@ -4,8 +4,9 @@
 > [PROTOCOL.md](../PROTOCOL.md). Código: `src/orb/adapters/codex/` · Equivalente:
 > [CLAUDE.md](CLAUDE.md).
 
-Última atualização: 2026-10-07 · Levantado com Codex `0.149.0` (Spike 4, 2026-10-06) e revisto com
-`0.160.1` (esta máquina, 2026-10-07)
+Última atualização: 2026-10-13 · Levantado com Codex `0.149.0` (Spike 4, 2026-10-06), revisto com
+`0.160.1` (esta máquina, 2026-10-07) e reconferido em 2026-10-13 (CLI `0.160.1` instalado; rollouts
+locais de `0.142.5` a `0.162.0`)
 
 ## Como isto foi verificado
 
@@ -15,6 +16,7 @@
 | Execução real de uma thread via app-server (cliente A) com um observador (cliente B), Spike 4 | Fluxo de eventos, inscrição de um 2º cliente | **Alta** |
 | Rollouts reais em `~/.codex/sessions/` (153 em 2026-10-06; 25 recentes em 2026-10-07, **só estrutura e contagens**) | Formato do arquivo, pensamento, subagentes, ferramentas | **Alta** |
 | Adapter de rollout rodado sobre 30 dias de sessões desta máquina (2026-10-07) | 62.520 eventos, 31 sessões, 230 subagentes, **0 inválidos** | **Alta** |
+| 427 rollouts desta máquina, **só estrutura e contagens** (2026-10-13, ticket 02) | Forma de `agent_message`, `inter_agent_communication_metadata` e `thread_settings_applied`; versões em que surgem | **Alta** |
 | Docs de hooks (resumo) | Eventos e tipos de hook | **Média** |
 | TUI com `--remote` apontando para o app-server do Orb | Só a abertura (diálogos); a conversa completa na TUI **não** foi capturada | Parcial |
 | Aprovações ao vivo, hooks ao vivo, subagentes no app-server ao vivo | — | **Não verificado** |
@@ -143,8 +145,30 @@ diálogo de atualização só na sessão, mas **o Orb não o usa por padrão**: 
 | `*_call_output` | `result` |
 | `event_msg/task_started` · `task_complete` · `turn_aborted` | `THINKING` · `idle` · `idle` |
 | `token_usage_record` (`usage`: `input_tokens`, `cached_input_tokens`, `output_tokens`, `reasoning_output_tokens`) | `usage` |
-| `event_msg/token_count`, `item_completed`, `turn_context`, `world_state`, `compacted` | Ignorados (redundantes ou sem trabalho visível). **Revisão (2026-10-09):** `event_msg/item_completed` traz `item.exit_code` dos comandos (Q-TEC-1) |
-| `response_item/agent_message`, `inter_agent_communication_metadata`, `event_msg/thread_settings_applied` | **Não mapeados** (vistos em 2026-10-09 nos rollouts desta máquina, só estrutura). **Decidido (D-089):** `agent_message` vira narração; os outros dois a avaliar |
+| `turn_context` (`model`, `effort`, `cwd`), só na thread raiz | `session.updated` com o `model`, só quando muda |
+| `event_msg/token_count`, `item_completed`, `world_state`, `compacted` | Ignorados (redundantes ou sem trabalho visível). **Revisão (2026-10-09):** `event_msg/item_completed` traz `item.exit_code` dos comandos (Q-TEC-1) |
+| `response_item/agent_message` (`author`, `recipient`, `content[]`, `id`, `internal_chat_message_metadata_passthrough`) | `narration`, com o nome nativo no rótulo (**D-089**, ticket 02). O texto vem das partes `input_text`; o blob cifrado (`encrypted_content`) não é mostrado nem guardado, e uma linha sem texto não vira entrada |
+| `inter_agent_communication_metadata` (linha de topo; `payload.trigger_turn`) | **Ignorado** (ticket 02): só diz se a mensagem recebida dispara um turno; vem sempre antes de um `agent_message`, que já mostra a fala, e o início do turno já vem de `task_started` |
+| `event_msg/thread_settings_applied` (`thread_id`, `thread_settings`: modelo, `cwd`, `approval_policy`, `reasoning_effort`, perfil de permissão, `developer_instructions`…) | **Ignorado** (ticket 02): o modelo já vem de `turn_context` (igual em 125 de 125 turnos conferidos), o resto não tem sinal no [vocabulário](../PROTOCOL.md) e carrega instruções do desenvolvedor, que não devem ir para o Inner World |
+
+### O que `agent_message` é (estrutura verificada em 2026-10-13)
+
+Só estrutura e contagens, nos 12 rollouts mais recentes (176 linhas `agent_message`):
+
+- É **mensagem entre agentes**, não a fala do agente ao Lucas (essa continua em
+  `response_item/message`, papel `assistant`). `author` e `recipient` são caminhos: `/root` é a thread
+  raiz e `/root/<nome>` um subagente. Na thread raiz há 147 linhas, todas relatos de subagentes
+  (`/root/<nome>` → `/root`); em threads de subagente há 29: 14 instruções do líder (`/root` →
+  `/root/<nome>`) e 15 relatos do próprio subagente.
+- O texto é único: nenhuma das 176 repete uma mensagem do assistente nem uma saída de ferramenta, então
+  mapear não duplica linhas no Inner World.
+- 161 das 176 vêm logo depois de `inter_agent_communication_metadata`; as 15 sem ela são os relatos que o
+  próprio subagente envia (mensagem enviada, não recebida).
+- O Inner World mostra o texto como narração da thread onde ele foi gravado. Autor e destinatário ficam no
+  corpo nativo (Q-T02-2: mostrar quem fala é decisão do Lucas).
+- **Versões:** `agent_message` e `inter_agent_communication_metadata` aparecem a partir de
+  `0.146.0-alpha.3.1`, a mais antiga com elas nesta máquina (128 dos 427 rollouts);
+  `thread_settings_applied` já existe na mais antiga (`0.142.5`).
 
 - **Desempenho:** há rollouts de 145 MB. Arquivo que já existia começa **do fim**; a primeira linha
   (`session_meta`) é lida à parte; a árvore de sessões é varrida no máximo a cada 2 s.
