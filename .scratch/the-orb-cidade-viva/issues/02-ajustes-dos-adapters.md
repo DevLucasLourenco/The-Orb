@@ -1,6 +1,6 @@
 # 02: Ajustes dos adapters: fala do Codex e fidelidade do pensamento
 
-Status: ready-for-agent
+Status: concluído (2026-10-13)
 Blocked by: None (can start immediately)
 Origem: R13, R14; D-089
 Spec: [../spec.md](../spec.md)
@@ -33,7 +33,7 @@ Ponto de teste: os leitores dos CLIs (arquivos e bancos sintéticos → eventos)
 
 ## Comments
 
-Implementado em 2026-10-13 (branch `ticket/02-ajustes-dos-adapters`). Só estrutura e contagens dos dados
+Implementado em 2026-10-13 (branch `ticket/02-ajustes-dos-adapters`, PR 2 mesclado). Só estrutura e contagens dos dados
 reais; nenhum conteúdo foi lido nem versionado.
 
 - **`agent_message` é fala entre agentes**, não a fala do agente ao Lucas (autor e destinatário são caminhos
