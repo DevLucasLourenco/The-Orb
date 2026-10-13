@@ -1,6 +1,6 @@
 # 04: Registro local e nome histórico
 
-Status: ready-for-agent
+Status: concluído (2026-10-13)
 Blocked by: None (can start immediately)
 Origem: R36, R37; D-062 a D-067
 Spec: [../spec.md](../spec.md)
@@ -35,7 +35,7 @@ Ponto de teste: o mundo (o nome entra no estado do Alter Ego) e o registro local
 
 ## Comments
 
-Implementado em 2026-10-13 (branch `ticket/04-registro-local-e-nome-historico`). Só estrutura e contagens dos dados reais.
+Implementado em 2026-10-13 (branch `ticket/04-registro-local-e-nome-historico`, PR 4 mesclado). Só estrutura e contagens dos dados reais.
 
 - **O que mudou:** `orb.core.names` (os 60 nomes de VISUAL.md §9, `NameBag`, `NameBook`, `NameSource`); `World(names=...)` dá o
   `name` ao Alter Ego quando a sessão aparece (subagente fica sem nome); pacote `orb.registry` (`LocalRegistry`,
