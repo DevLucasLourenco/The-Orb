@@ -1,6 +1,6 @@
 # 07: Preferências e tela de configurações
 
-Status: ready-for-agent
+Status: concluído (2026-10-13)
 Blocked by: 03, 06
 Origem: R29, R3c; D-022, D-030, D-032
 Spec: [../spec.md](../spec.md)
@@ -34,7 +34,7 @@ Ponto de teste: o mundo (realm escondido sai do estado da cidade) e as leituras 
 
 ## Comments
 
-Implementado em 2026-10-13 (branch `ticket/07-preferencias-e-tela-de-configuracoes`). Só estrutura e contagens dos dados reais.
+Implementado em 2026-10-13 (branch `ticket/07-preferencias-e-tela-de-configuracoes`, PR 6 mesclado). Só estrutura e contagens dos dados reais.
 
 - **O que mudou:** `registry/preferences.py` (`Preferences`, `PreferencesFile`, tabela `SETTINGS`); `World.set_hidden` e `hidden_realms` no snapshot;
   `Observatory.set_recent_seconds`; `Hub.update_preferences` e `Hub.settings`; mensagens `settings` e `preferences` no `/world`; no cliente, o ⚙ da barra,
