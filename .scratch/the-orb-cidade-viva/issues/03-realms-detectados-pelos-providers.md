@@ -1,6 +1,6 @@
 # 03: Realms detectados pelos providers
 
-Status: ready-for-agent
+Status: concluído (2026-10-13)
 Blocked by: None (can start immediately)
 Origem: R3, R3a, R3b, R3d, R48 (camada 1); D-018, D-021, D-023, D-029, D-031, D-088, D-128 (achado do ticket 01)
 Spec: [../spec.md](../spec.md)
@@ -48,7 +48,7 @@ subagentes ativos ficaram "sem sinal" 5 min depois do primeiro poll. O índice d
 datas de início; a abertura passa a usá-las (último critério de aceite). Se o ticket for dividido (ver
 Observação), este item vai com "um leitor por provider".
 
-Implementado em 2026-10-13 (branch `ticket/03-realms-detectados-pelos-providers`), numa só branch, na ordem sugerida
+Implementado em 2026-10-13 (branch `ticket/03-realms-detectados-pelos-providers`, PR 3 mesclado), numa só branch, na ordem sugerida
 pela Observação: índice e regras de pasta, depois um leitor por provider. Só estrutura e contagens dos dados reais.
 
 - **Ao vivo, sem nenhum argumento:** o servidor detectou 23 projetos nesta máquina (23 ids únicos, 2 com sufixo), todos
