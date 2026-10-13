@@ -115,7 +115,10 @@ export class Avatar {
     const status = this.waiting
       ? `esperando você · ${ego.waiting?.[0]?.action || ""}`
       : `${STATE_LABEL[ego.state] || ego.state}${ego.last_action ? " · " + ego.last_action : ""}`;
-    this.labelEl.replaceChildren(el("div", "t", `${provider(ego.provider).label} · ${sessionTitle(ego)}`), el("div", "s", status));
+    // Nome histórico em destaque (identidade, V-EGO-11); embaixo "provider · título"; depois atividade e última ação (V-EGO-8).
+    const lines = [el("div", "t", `${provider(ego.provider).label} · ${sessionTitle(ego)}`), el("div", "s", status)];
+    if (ego.name) lines.unshift(el("div", "n", ego.name));
+    this.labelEl.replaceChildren(...lines);
   }
 
   // O mundo decide quem está sem sinal (`no_signal`); aqui só se desenha.

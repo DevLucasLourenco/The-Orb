@@ -82,6 +82,7 @@ button, select { font: inherit; color: inherit; }
 .card.waiting { box-shadow: 0 0 0 1px var(--wait) inset; }
 .card.asleep { opacity: .55; }
 .card-top { display: flex; align-items: center; gap: 8px; }
+.ego-name { font-weight: 700; white-space: nowrap; }
 .prov { font-size: 10px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--pc); }
 .title { font-weight: 600; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .chip { font-size: 10px; font-weight: 700; letter-spacing: .06em; padding: 2px 7px; border-radius: 999px; background: rgba(124, 196, 255, .14); color: var(--accent); }
@@ -141,7 +142,8 @@ select option { background: #0c111c; }
   pointer-events: none; padding: 4px 8px; border-radius: 8px; background: rgba(6, 9, 16, .78); border: 1px solid var(--line);
   border-top: 2px solid var(--pc); max-width: 220px; transform: translateY(-4px);
 }
-.lbl-ego .t { font-weight: 600; font-size: 11.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lbl-ego .n { font-weight: 700; font-size: 13.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lbl-ego .t { font-weight: 500; font-size: 10.5px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .lbl-ego .s { font-size: 10px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .lbl-ego.waiting { border-color: var(--wait); }
 .lbl-ego.waiting .s { color: var(--wait); }

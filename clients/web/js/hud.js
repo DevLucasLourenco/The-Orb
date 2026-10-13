@@ -59,7 +59,7 @@ export function renderRealmList(world, selected, onSelect) {
       const d = el("span", "dot");
       d.style.background = provider(ego.provider).color;
       d.style.opacity = isAsleep(ego) ? 0.3 : 1;
-      d.title = `${provider(ego.provider).label} · ${sessionTitle(ego)}`;
+      d.title = `${ego.name ? ego.name + " · " : ""}${provider(ego.provider).label} · ${sessionTitle(ego)}`;
       dots.append(d);
     }
     btn.append(dots);
@@ -75,6 +75,7 @@ function sessionCard(ego, onOpen) {
   const card = el("div", `card${waiting ? " waiting" : ""}${asleep ? " asleep" : ""}`);
   card.style.setProperty("--pc", p.color);
   const top = el("div", "card-top");
+  if (ego.name) top.append(el("span", "ego-name", ego.name));
   top.append(el("span", "prov", p.label), el("span", "title", sessionTitle(ego)),
              el("span", `chip ${ego.state}`, asleep ? "dormindo" : STATE_LABEL[ego.state] || ego.state));
   card.append(top);

@@ -270,3 +270,51 @@ def test_the_server_needs_no_arguments_and_no_project_paths():
     debug = config_from_args(parse_args(["--realm", ".", "--lookback", "5"]))
     assert len(debug.realms) == 1 and debug.lookback_minutes == 5     # opções de depuração continuam valendo
 
+
+def test_each_alter_ego_shows_its_historical_name_and_keeps_it_after_the_orb_restarts(tmp_path):
+    from orb.core import NAMES
+    from orb.gateway import Hub, Observatory
+    from orb.registry import LocalRegistry
+    project = r"C:\p\proj"
+    _claude_session(tmp_path, project, "11111111-1111-4111-8111-111111111111", "Sessão A")
+    seen = []
+    for _ in range(2):                                                  # o segundo Hub é o Orb reiniciado
+        hub = Hub(Observatory([project], home=tmp_path), names=LocalRegistry(tmp_path / "orb"))
+        hub.poll_once()
+        seen.append(hub.snapshot()["realms"][0]["alter_egos"][0]["name"])
+    assert seen[0] in NAMES and seen[0] == seen[1]
+
+
+def test_the_app_keeps_the_local_registry_in_the_state_folder(tmp_path):
+    from orb.gateway import GatewayConfig, create_app
+    from orb.registry import REGISTRY_FILE
+    config = GatewayConfig(token="tok", home=tmp_path, state_dir=tmp_path / "orb")
+    create_app(config, check_installed=False)
+    assert (tmp_path / "orb" / REGISTRY_FILE).is_file()
+
+
+def test_the_app_without_a_state_folder_writes_nothing_and_still_names_in_memory(tmp_path):
+    from orb.gateway import GatewayConfig, create_app
+    app = create_app(GatewayConfig(token="tok", home=tmp_path), check_installed=False)
+    assert app.state.hub.world.names is not None and list(tmp_path.iterdir()) == []
+
+
+def test_the_server_with_no_arguments_keeps_its_registry_in_the_orb_folder(monkeypatch, tmp_path):
+    from orb.gateway.app import config_from_args, parse_args
+    monkeypatch.setenv("LOCALAPPDATA", str(tmp_path))
+    monkeypatch.setenv("XDG_DATA_HOME", str(tmp_path))
+    assert config_from_args(parse_args([])).state_dir == tmp_path / "the-orb"
+
+
+def test_config_says_why_the_registry_is_not_saving_names(tmp_path):
+    pytest.importorskip("httpx", reason="TestClient do FastAPI precisa de httpx")
+    from fastapi.testclient import TestClient
+
+    from orb.gateway import GatewayConfig, create_app
+    from orb.registry import REGISTRY_FILE
+    (tmp_path / "orb").mkdir()
+    (tmp_path / "orb" / REGISTRY_FILE).write_bytes(b"nao e um banco " * 50)
+    app = create_app(GatewayConfig(token="tok", home=tmp_path, state_dir=tmp_path / "orb"), check_installed=False)
+    with TestClient(app) as client:
+        assert "memória" in client.get("/config").json()["registry_error"]
+
