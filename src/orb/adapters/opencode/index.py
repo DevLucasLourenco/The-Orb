@@ -2,7 +2,7 @@
 
 Só `session_v2` (ALLOWED_TABLES): o banco também guarda credenciais e o Orb nunca as lê. Por isso a raiz
 do projeto não vem da tabela `project` do opencode: a pasta (`directory`) sobe até o repositório git no
-Observatório (pergunta Q-T03-1).
+Observatório (decisão D-129).
 """
 from __future__ import annotations
 

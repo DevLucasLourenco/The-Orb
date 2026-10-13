@@ -320,7 +320,7 @@ Um mundo 3D navegável que se monta sozinho a partir do que os quatro CLIs já g
 
 - O Observatório passa a ler **todas** as sessões de todos os providers, sem filtro por pasta (R3, R3a).
   Pasta → projeto: vence a raiz informada pelo provider (Hermes `git_repo_root`, ~~opencode
-  `project.worktree`~~: não lido, Q-T03-1, invariante 11); senão sobe-se até o repositório git lendo arquivos, sem executar nada; worktrees
+  `project.worktree`~~: não lido, D-129, invariante 11); senão sobe-se até o repositório git lendo arquivos, sem executar nada; worktrees
   contam para o principal. Ignora pasta do usuário, sistema e temporárias (R3b) e pastas inexistentes
   (R3d). Ids por nome da pasta, com sufixo em caso de nomes iguais.
 - **Duas camadas de leitura** (R48): índice barato de todas as sessões (cidade, sala, Histórico do

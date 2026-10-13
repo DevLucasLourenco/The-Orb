@@ -166,22 +166,22 @@ projeto.
    | Claude (`TranscriptIndex`) | Campo `cwd` das primeiras linhas de um transcript da pasta; uma pasta por projeto em `~/.claude/projects/` | — | Uma leitura por pasta; datas vêm do arquivo (título e modelo exigem abrir o conteúdo e ficam para as sessões da sala) |
    | Codex (`RolloutIndex`) | `session_meta.cwd` (1ª linha do rollout, lida **uma única vez** por arquivo) | — (`session_meta.git` traz branch, commit e URL, não a pasta) | 428 rollouts: ~5 s na primeira varredura, ~20 ms nas seguintes |
    | Hermes (`StateDbIndex`) | `sessions.cwd` no `state.db` | `sessions.git_repo_root` (vazio em todas as sessões desta máquina) | Uma consulta à tabela `sessions`, sem tocar em `messages` |
-   | opencode (`OpencodeDbIndex`) | `session_v2.directory` no `opencode.db` | ~~`project.worktree`~~ (a spec previa lê-la; o Orb não lê a tabela `project`: o banco guarda credenciais e só `session_v2` e `session_message` são lidas; Q-T03-1) | Uma consulta, só `session_v2` |
+   | opencode (`OpencodeDbIndex`) | `session_v2.directory` no `opencode.db` | ~~`project.worktree`~~ (a spec previa lê-la; o Orb não lê a tabela `project`: o banco guarda credenciais e só `session_v2` e `session_message` são lidas; D-129) | Uma consulta, só `session_v2` |
 
 2. **Pasta → projeto** (`gateway/projects.py`, `ProjectResolver`; só lê arquivos, nada é executado nem gravado).
    Vence a raiz que o provider informa, se ela contém a pasta. Senão, sobe da pasta até o repositório git
    (`.git` como pasta é o repositório; como arquivo, `commondir` leva ao repositório **principal**, que é o
    projeto de um worktree; sem `commondir` é um submódulo e a pasta é o projeto). Fora de um repositório, a
-   própria pasta da sessão é o projeto, mas uma subpasta de um realm já conhecido entra nele (Q-T03-5).
+   própria pasta da sessão é o projeto, mas uma subpasta de um realm já conhecido entra nele (D-133).
    **Ficam de fora (R3b, R3d):** a pasta do usuário em si (não as subpastas), `AppData` e `Downloads` do
    usuário, as pastas temporárias (`TEMP`, `TMP`, `TMPDIR`, a do Python e `/tmp`), as de sistema (`SystemRoot`,
    `ProgramFiles`, `ProgramFiles(x86)`, `ProgramData`), a raiz do disco e qualquer pasta que não exista mais
-   (Q-T03-2). A subida para antes de qualquer pasta excluída: um repositório de dotfiles na pasta do usuário
+   (D-130). A subida para antes de qualquer pasta excluída: um repositório de dotfiles na pasta do usuário
    não engole os projetos abaixo dele. Um worktree cujo repositório principal sumiu também não entra.
 3. **Projeto → realm.** O id é o nome da pasta do projeto (`trisafe-enhanced`); a comparação de caminhos
    é por segmento, então "trisafe" nunca captura "trisafe-enhanced". Dois projetos com o mesmo nome em lugares
    diferentes ganham sufixo (`app`, `app-2`): num mesmo lote vale a ordem dos caminhos, e **quem já está na cidade
-   nunca muda de id** (Q-T03-3). Uma pasta de sessão que já não existe (ex.: worktree apagado) entra no realm
+   nunca muda de id** (D-131). Uma pasta de sessão que já não existe (ex.: worktree apagado) entra no realm
    conhecido que a contém; sem ele, não entra.
 4. **Descoberta contínua.** Sessão de um projeto novo cria o prédio na hora (o leitor pergunta ao
    Observatório) ou, no mais tardar, na próxima varredura do índice. O **conteúdo** continua lido de forma
@@ -190,7 +190,7 @@ projeto.
    para a cidade inteira; o do Claude identifica cada pasta de `~/.claude/projects/` pelo `cwd` gravado nela.
 5. **Hora de abertura (D-128).** Os eventos que abrem uma sessão ou um subagente do Claude levam a hora da
    **última escrita do arquivo** (e os do Hermes, a da mensagem que revelou a sessão), nunca a hora da leitura:
-   um subagente antigo nasce já sem sinal, em vez de parecer "recém-ativo" por 5 min (Q-T03-4).
+   um subagente antigo nasce já sem sinal, em vez de parecer "recém-ativo" por 5 min (D-132).
 6. `--root`, `--realm` e `--lookback` ficam só como **opções de depuração** (o servidor sobe sem nenhum
    argumento); o que for preferência do Lucas vai para a tela de configurações do Orb (R29).
 

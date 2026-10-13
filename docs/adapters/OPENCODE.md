@@ -67,7 +67,7 @@ O tipo nativo (`user`, `synthetic`, `system`) aparece no rótulo de cada linha d
 **Índice (ticket 03):** `OpencodeDbIndex` faz uma consulta só à `session_v2` (`id`, `parent_id`, `directory`, `title`,
 `model`, `time_created`, `time_updated`). A raiz do projeto **não** vem da tabela `project` (`worktree`, via
 `session_v2.project_id`): o banco guarda credenciais, e o adapter só lê `session_v2` e `session_message`; a pasta
-(`directory`) sobe até o repositório git no Observatório (Q-T03-1).
+(`directory`) sobe até o repositório git no Observatório (D-129).
 
 **Fidelidade do `reasoning` (R14, ticket 02): `raw`, confirmado pela estrutura só no modelo observado**
 (`nvidia/nemotron-3-ultra-550b-a55b`, 5 blocos em 5 mensagens). Cada bloco tem só `type`, `text` e `time`
