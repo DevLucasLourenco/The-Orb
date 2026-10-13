@@ -3,7 +3,7 @@ import * as THREE from "three";
 import { Stage } from "./scene.js";
 import { RealmBuilding } from "./realm3d.js";
 import { Avatar } from "./avatar.js";
-import { renderHistory, renderOverview, renderRealmList, renderTopbar, summarize } from "./hud.js";
+import { renderHistory, renderOverview, renderRealmList, renderSettings, renderTopbar, summarize } from "./hud.js";
 import { InnerWorld } from "./innerworld.js";
 import { connectWorld } from "./net.js";
 import { PROVIDERS, isAsleep } from "./providers.js";
@@ -147,6 +147,7 @@ const net = connectWorld({
   },
   onEvent: (event) => inner.push(event),
   onFeed: (egoId, events) => inner.setFeed(egoId, events),
+  onSettings: (settings) => renderSettings(settings, (changes) => net.savePreferences(changes)),
   onHistory: (realm, sessions, total) => {
     realmHistory.set(realm, { sessions, total });
     if (realm === selectedRealm) renderHistory({ sessions, total });
@@ -175,11 +176,24 @@ stage.renderer.domElement.addEventListener("pointerup", (e) => {
 window.addEventListener("keydown", (e) => {
   const tag = e.target?.tagName;
   if (tag === "INPUT" || tag === "SELECT" || e.target?.closest?.(".xterm")) return;
-  if (e.key === "Escape") overview();
+  if (e.key === "Escape") {
+    if (!settingsBox.classList.contains("hidden")) toggleSettings(false);
+    else overview();
+  }
   else if (/^[1-9]$/.test(e.key) && world.realms[Number(e.key) - 1]) selectRealm(world.realms[Number(e.key) - 1].id);
   else if (e.key.toLowerCase() === "f" && selectedRealm) selectRealm(selectedRealm);
 });
 document.getElementById("ov-close").onclick = overview;
+
+// Configurações (R29): o servidor manda os realms detectados e as opções; as mudanças voltam como um pedido só.
+const settingsBox = document.getElementById("settings");
+function toggleSettings(open) {
+  settingsBox.classList.toggle("hidden", !open);
+  if (open) net.requestSettings();
+}
+document.getElementById("open-settings").onclick = () => toggleSettings(settingsBox.classList.contains("hidden"));
+document.getElementById("settings-close").onclick = () => toggleSettings(false);
+settingsBox.addEventListener("pointerdown", (e) => { if (e.target === settingsBox) toggleSettings(false); });
 
 // Nova sessão: o terminal real abre no realm selecionado; o personagem aparece sozinho.
 const select = document.getElementById("new-provider");

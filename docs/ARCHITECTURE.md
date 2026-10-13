@@ -254,6 +254,15 @@ ticket existir.
   memória que segue a mesma sacola; o disco é tentado de novo a cada pedido (uma falha passageira não desliga
   o registro); o arquivo nunca é apagado nem alterado, e `/config` informa o motivo em `registry_error`
   (nenhuma tela mostra isso hoje). Quem sorteia espera o banco por até 5 s, na thread de leitura (`to_thread`).
+- **Preferências do Orb** (R29, D-030, D-032; ticket 07): `preferences.json` na pasta do Orb (`orb_home()`), JSON legível com
+  `version`, gravado de uma vez (arquivo temporário e troca). Hoje guarda `hidden_realms` (os projetos escondidos, **pelo caminho**
+  normalizado: o id pode mudar, o caminho não) e `recent_days` (1 a 365, padrão 10). As opções numéricas ficam na tabela
+  `SETTINGS` (`registry/preferences.py`): a tela é montada a partir dela, então os tickets 09 e 11 só acrescentam linhas;
+  opções que esta versão não conhece são guardadas como estão. Arquivo ilegível: valem os padrões, `error` diz o motivo e o arquivo é copiado
+  para `.bad` antes de ser reescrito. No `/world`: `{type: "settings"}` devolve `{channel: "settings", realms, options, preferences, error}`
+  e `{type: "preferences", hidden_realms?, recent_days?}` valida, grava (fora do loop), aplica na hora (`Hub.update_preferences`) e
+  republica a cidade para todos os clientes; valor inválido volta como `error` e nada é gravado. Realm escondido (`World.set_hidden`)
+  sai do snapshot (cidade e Mankind) e continua detectado e lido.
 - **Contador de linhas** (R19, D-053 a D-056): faz parte dos Probes; conta linhas não vazias dos
   arquivos acompanhados pelo git, sem os ignorados e sem os gerados da lista de exclusões, e
   recalcula ao abrir e quando as alterações locais mudam (até 1×/min por realm). Somente leitura.
@@ -306,6 +315,7 @@ ticket existir.
 | Classificador de comandos | Tabela de casos | `tests/test_commands.py` |
 | Terminal Host | PTY falsa (sempre) + terminal real (quando `pywinpty` e o CLI existem) | `tests/test_terminal_host.py` |
 | Gateway | Validação de mensagens; app com terminal falso | `tests/test_gateway.py` |
+| Preferências | Arquivo numa pasta temporária (grava, relê, opção desconhecida, arquivo ilegível); realm escondido no mundo e no Hub; tela pelo `/world` | `tests/test_preferences.py`, `tests/test_realms.py` |
 | Nomes e registro local | Sacola e livro de nomes sem disco; registro numa pasta temporária (reabrir, falhas de disco) | `tests/test_names.py`, `tests/test_registry.py` |
 | Detecção de realms (as leituras do mundo real) | Pastas de CLIs e de projetos falsas → realms; regras de pasta → projeto; índice de sessões | `tests/test_realms.py`, `tests/test_projects.py`, `tests/test_session_index.py` (arquivos falsos em `tests/fakes.py`) |
 
@@ -334,7 +344,7 @@ The Orb/
 ├── src/orb/
 │   ├── protocol/        events.py · vocab.py
 │   ├── core/            world.py · rules.py · names.py
-│   ├── registry/        store.py · paths.py
+│   ├── registry/        store.py · preferences.py · paths.py
 │   ├── adapters/
 │   │   ├── _shared/     base.py · commands.py · index.py · jsonl.py · sqlite.py
 │   │   ├── claude/      mapping.py · transcript.py · index.py · hooks.py

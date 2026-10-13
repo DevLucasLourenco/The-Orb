@@ -7,6 +7,7 @@ mesma hora -> mesmo mundo.
 from __future__ import annotations
 
 from collections import deque
+from collections.abc import Iterable
 from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any
@@ -150,6 +151,15 @@ class World:
         self.rejected = 0
         self.names = names
         self._recent_seconds = recent_seconds       # o prazo da sala (R28a): quem sai dele vai para o Histórico do realm
+        self.hidden: frozenset[str] = frozenset()   # realms que o Lucas escondeu (R3c): saem do estado da cidade
+
+    def set_recent_seconds(self, seconds: float) -> None:
+        """O prazo da sala mudou na tela de configurações (R28a, R29)."""
+        self._recent_seconds = seconds
+
+    def set_hidden(self, realm_ids: Iterable[str]) -> None:
+        """Esconde estes realms da cidade (R3c). Eles continuam detectados e recebendo eventos: nada é apagado."""
+        self.hidden = frozenset(realm_ids)
 
     def add_realm(self, realm_id: str) -> None:
         """Um realm conhecido (detectado pelos providers) existe na cidade mesmo sem nenhuma sessão: fica de
@@ -290,6 +300,8 @@ class World:
         realms = []
         total_egos = active_subs = waiting = 0
         for realm_id in sorted(self.realms):
+            if realm_id in self.hidden:
+                continue
             egos = [ego.snapshot(now, self._recent_seconds) for ego in self.realms[realm_id].values()]
             # "Noite" (D-059, R47): nenhuma sessão na sala. O cliente só desenha a sala do teto apagada.
             realms.append({"id": realm_id, "alter_egos": egos, "night": not any(ego["in_room"] for ego in egos)})
@@ -297,7 +309,7 @@ class World:
                 total_egos += 1
                 active_subs += ego["active_subagents"]
                 waiting += len(ego["waiting"])
-        return {"realms": realms,
+        return {"realms": realms, "hidden_realms": sorted(self.hidden),
                 "mankind": {"alter_egos": total_egos, "active_subagents": active_subs, "waiting": waiting}}
 
     def time_key(self, now: datetime) -> tuple:

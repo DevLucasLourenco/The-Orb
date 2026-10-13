@@ -75,10 +75,10 @@ Situação: ✅ como está · ❌ precisa mudar · ❓ precisa de decisão.
 | V-HUD-2 | Overview do realm (cartões das sessões, com o nome histórico de cada uma) | Dado | R18: o que faz agora, espera, subagentes, tokens/custo, há quanto tempo | ✅ |
 | V-HUD-3 | Inner World: linha do tempo | Dado | Eventos nativos com o texto do provider; rótulo = `native.kind` | ✅ |
 | V-HUD-4 | Inner World: terminal | Dado | Terminal real do CLI (só para sessões abertas pelo painel; R9) | ⚠️ |
-| V-HUD-5 | **Lista de realms com marcação** | Dado | Todos os realms detectados; desmarcar esconde o prédio da cidade (R3c). A escolha fica guardada pelo Orb | ⏳ |
+| V-HUD-5 | **Lista de realms com marcação** | Dado | Todos os realms detectados; desmarcar esconde o prédio da cidade (R3c). A escolha fica guardada pelo Orb | ✅ Ticket 07: dentro da tela de configurações (V-HUD-7), uma caixa por realm detectado; só o nome do prédio e a pasta, sem cor nova |
 | V-HUD-6 | **Histórico do realm** | Dado | Sessões encerradas ou paradas há mais que o prazo (10 dias, R28a), no overview do realm; nenhuma some | ✅ Ticket 06: lista no overview, mais recentes primeiro, com nome (só se a sessão já ganhou um), provider, título e as datas de início e da última atividade |
 | V-HUD-8 | **Papel** do Alter Ego no overview (ex.: "revisor") | Dado | O que a sessão mais fez, por contagem das atividades observadas; sem modelo, sem tokens (R40, R38) | ⏳ |
-| V-HUD-7 | **Tela de configurações do Orb** | Dado | Realms escondidos, prazo das sessões recentes e outras preferências, guardadas no arquivo próprio do Orb (R29) | ⏳ |
+| V-HUD-7 | **Tela de configurações do Orb** | Dado | Realms escondidos, prazo das sessões recentes e outras preferências, guardadas no arquivo próprio do Orb (R29) | ✅ Ticket 07: janela aberta pelo ⚙ da barra de cima, com a lista de realms e as opções numéricas (prazo das sessões recentes); as mudanças valem na hora, sem botão Salvar. Fundo e texto neutros |
 | V-HUD-9 | **Energy**: tokens e custo por sessão e realm (overview), total de hoje (barra de cima), limites da conta (painel) | Dado | Só o que o provider informa, nunca estimado (R43) | ⚠️ Só por sessão hoje |
 | V-HUD-10 | **Chronicle**: barra de tempo no rodapé | Dado | Arrastar mostra a cidade como era, pelo registro local do Orb (R44) | ⏳ |
 | V-HUD-11 | **Archive**: aba no Inner World | Dado | Instruções, skills e memória da sessão: nome, tamanho e data; conteúdo só ao abrir (R45) | ⏳ |

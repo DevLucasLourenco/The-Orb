@@ -410,3 +410,17 @@ mundo, os leitores dos CLIs e as leituras do mundo real). **O Lucas confirmou as
 | ~~Q-T06-5~~ D-144 | As sessões que entram na sala ao subir gastam nomes da sacola de 60 | Aceito: nesta máquina são ~34 sessões. Com mais de 60 sessões na sala os nomes passam a repetir entre salas diferentes (D-136) |
 | ~~Q-T06-6~~ D-145 | O que `--lookback` faz agora? | Opção de depuração que só **estreita a leitura do conteúdo**; o padrão é a sala inteira (10 dias). A sala e o Histórico seguem o valor único de `rules.RECENT_SESSION_SECONDS` |
 
+### Rodada: o que a implementação do ticket 07 decidiu por conta própria (aberta em 2026-10-13)
+
+Ao implementar o ticket 07 ([.scratch/the-orb-cidade-viva/issues/07-preferencias-e-configuracoes.md](../.scratch/the-orb-cidade-viva/issues/07-preferencias-e-configuracoes.md)),
+cinco pontos **não estavam escritos** e foram escolhidos de forma provisória (regra P2). Todos estão cobertos por teste (o
+mundo e as leituras do mundo real, com o arquivo numa pasta temporária). O Lucas responde por número.
+
+| Id | Pergunta | Proposta (já aplicada, provisória) |
+|---|---|---|
+| Q-T07-1 | Formato e lugar do arquivo de preferências | `preferences.json` na pasta do Orb, ao lado do `registry.db`, em JSON legível com `version`, gravado de uma vez. Separado do SQLite: o Lucas pode abrir e entender. Opções desconhecidas são preservadas; arquivo ilegível vira padrões e é copiado para `.bad` antes de ser reescrito. Alternativa: uma tabela no `registry.db` |
+| Q-T07-2 | Como guardar "este realm está escondido"? | **Pelo caminho do projeto** (normalizado), não pelo id: o id pode ganhar sufixo (`app-2`) conforme a ordem de chegada. Escondido sai da cidade e do Mankind, mas **continua detectado e lido**; consequência: uma sessão esperando o Lucas num realm escondido **não acende nada**. Alternativa: manter o feixe "esperando" mesmo escondido |
+| Q-T07-3 | Faixa e efeito do prazo das sessões recentes | **1 a 365 dias** (padrão 10), vale **na hora, sem reiniciar**: aumentar traz para a sala as sessões que já estavam no índice; diminuir manda para o Histórico. Não há opção para desligar a sala |
+| Q-T07-4 | Como é a tela | Janela aberta pelo **⚙** da barra de cima; lista de realms com caixa + as opções numéricas, **montada de uma tabela do servidor** (os tickets 09 e 11 só acrescentam linhas). As mudanças **valem na hora**, sem botão Salvar; erro de validação aparece na própria janela. Fecha com Esc, ✕ ou clicando fora |
+| Q-T07-5 | Quem pode mudar as preferências | Qualquer cliente conectado ao `/world` (já protegido por token por execução e `Origin` local, como o terminal); a mudança vale para todos os conectados |
+

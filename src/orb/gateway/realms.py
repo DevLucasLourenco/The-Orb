@@ -69,8 +69,10 @@ class Observatory:
         estreita a leitura do conteúdo."""
         start = time.time() if now is None else now
         self.recent_seconds = recent_seconds
-        self._window = recent_seconds if lookback_minutes is None else lookback_minutes * 60
+        self._narrow = None if lookback_minutes is None else lookback_minutes * 60      # [depuração]
+        self._window = self._narrow or recent_seconds
         self._rolling = now is None                 # com `now` fixo (testes) a janela não anda
+        self._start = start
         self.since = start - self._window
         self.fresh_after = start - REPLAY_SECONDS
         self.home = home
@@ -212,6 +214,16 @@ class Observatory:
                 self._rostered.add(key)
                 self._roster.append(_presence(meta, realm))
         self._sessions = by_realm
+
+    def set_recent_seconds(self, seconds: float) -> None:
+        """O prazo da sala mudou na tela de configurações (R28a, R29): a leitura passa a cobrir a janela nova e o
+        índice é varrido de novo já na próxima leitura (sessões que entram na sala ganham a presença)."""
+        self.recent_seconds = seconds
+        self._window = self._narrow or seconds
+        self.since = (self._wall() if self._rolling else self._start) - self._window
+        for reader in self.readers.values():
+            reader.since = self.since
+        self._last_index = float("-inf")
 
     def _in_room(self, meta: SessionMeta, now: float | None = None) -> bool:
         """A mesma regra do Core (`rules.in_room`) sobre a última atividade que o índice informa. Sem data legível a
