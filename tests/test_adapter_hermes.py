@@ -18,16 +18,17 @@ def make_db(home):
                                title TEXT, started_at REAL, extra_future_column TEXT);
         CREATE TABLE messages (id INTEGER PRIMARY KEY AUTOINCREMENT, session_id TEXT, role TEXT, content TEXT,
                                tool_call_id TEXT, tool_calls TEXT, tool_name TEXT, timestamp REAL,
-                               finish_reason TEXT, reasoning TEXT, active INTEGER DEFAULT 1);
+                               finish_reason TEXT, reasoning TEXT, codex_reasoning_items TEXT, active INTEGER DEFAULT 1);
     """)
     return conn
 
 
 def add(conn, session, role, content="", **kw):
-    conn.execute("INSERT INTO messages (session_id, role, content, tool_calls, timestamp, finish_reason, reasoning, active) "
-                 "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+    conn.execute("INSERT INTO messages (session_id, role, content, tool_calls, timestamp, finish_reason, reasoning, "
+                 "codex_reasoning_items, active) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
                  (session, role, content, json.dumps(kw.get("tool_calls")) if kw.get("tool_calls") else None,
-                  1_760_000_000.0, kw.get("finish_reason"), kw.get("reasoning"), kw.get("active", 1)))
+                  1_760_000_000.0, kw.get("finish_reason"), kw.get("reasoning"),
+                  json.dumps(kw.get("codex_reasoning_items")) if kw.get("codex_reasoning_items") else None, kw.get("active", 1)))
     conn.commit()
 
 
@@ -83,3 +84,39 @@ def test_missing_db_and_home_resolution(tmp_path):
     assert StateDbReader(CWD, realm="demo", home=tmp_path / "nada").poll() == []
     assert hermes_home({"HERMES_HOME": "X:/h"}).as_posix() == "X:/h"
     assert hermes_home({"LOCALAPPDATA": "C:/L"}).as_posix() == "C:/L/hermes"
+
+
+def thoughts(events):
+    return [e["inner"]["fidelity"] for e in events if e["inner"] and e["inner"]["role"] == "thought"]
+
+
+def test_thought_fidelity_follows_the_structure_of_the_row(tmp_path):
+    """O texto de `reasoning` é `summary` quando a linha traz itens de raciocínio da Responses API
+    (`codex_reasoning_items`: resumo + blob cifrado); sem esse marcador é a cadeia de pensamento como veio (`raw`)."""
+    home = tmp_path / "hermes"
+    conn = make_db(home)
+    conn.execute("INSERT INTO sessions VALUES ('S1', 'cli', 'm', NULL, ?, 't', 0, NULL)", (CWD,))
+    conn.commit()
+    r = StateDbReader(CWD, realm="demo", home=home, replay=True)
+    r.poll()
+    item = {"type": "reasoning", "id": "rs_1", "summary": [{"type": "summary_text", "text": "plano"}], "encrypted_content": "zzz"}
+    add(conn, "S1", "assistant", "", reasoning="pensei em voz alta")
+    add(conn, "S1", "assistant", "Feito.", reasoning="plano", codex_reasoning_items=[item])
+    add(conn, "S1", "assistant", "", reasoning="outro", codex_reasoning_items=[{"type": "compaction", "encrypted_content": "zzz"}])
+    events = r.poll()
+    assert all(validate(e) is None for e in events)
+    assert thoughts(events) == ["raw", "summary", "raw"]      # compactação não é pensamento resumido
+    assert all("codex_reasoning_items" not in e["native"]["body"] for e in events)   # o blob cifrado não vai no evento
+
+
+def test_thought_is_raw_when_the_schema_has_no_reasoning_items_column(tmp_path):
+    home = tmp_path / "hermes"
+    conn = make_db(home)
+    conn.execute("ALTER TABLE messages DROP COLUMN codex_reasoning_items")     # esquema de outra versão do Hermes
+    conn.execute("INSERT INTO sessions VALUES ('S1', 'cli', 'm', NULL, ?, 't', 0, NULL)", (CWD,))
+    conn.execute("INSERT INTO messages (session_id, role, content, timestamp, reasoning) VALUES ('S1', 'assistant', '', 1.0, 'x')")
+    conn.commit()
+    r = StateDbReader(CWD, realm="demo", home=home, replay=True)
+    r.poll()                                      # o primeiro poll só fixa o cursor
+    assert thoughts(r.poll()) == ["raw"]
+
