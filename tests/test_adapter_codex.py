@@ -223,3 +223,48 @@ def test_rollout_subagent_and_start_from_end(tmp_path, jsonl):
     assert sub["alter_ego"] == f"codex:{TID}" and sub["signal"]["type"] == "subagent.started"
     jsonl(child, [line(1, "event_msg", {"type": "task_complete"})], append=True)
     assert [e["native"]["kind"] for e in r.poll()] == ["event_msg/task_complete"]
+
+
+def agent_message(author, recipient, text, *, encrypted=False):
+    """Forma verificada em 0.160.x (só estrutura): `content[]` com `input_text` e, às vezes, `encrypted_content`."""
+    content = [{"type": "input_text", "text": text}] if text else []
+    if encrypted:
+        content.append({"type": "encrypted_content", "encrypted_content": "zzz"})
+    return {"type": "agent_message", "id": "am1", "author": author, "recipient": recipient, "content": content,
+            "internal_chat_message_metadata_passthrough": {"create_time": 1.5, "turn_id": "t1"}}
+
+
+def test_rollout_agent_message_becomes_narration_with_its_native_name(tmp_path, jsonl):
+    """D-089: a fala entre agentes (`/root` <-> `/root/<nome>`) aparece no Inner World como narração."""
+    cwd = r"C:\proj\demo"
+    rollout(tmp_path, TID, [
+        meta(TID, cwd),
+        line(1, "inter_agent_communication_metadata", {"trigger_turn": True}),
+        line(2, "response_item", agent_message("/root/explorer", "/root", "achei o login", encrypted=True)),
+        line(3, "event_msg", {"type": "thread_settings_applied", "thread_id": TID,
+                              "thread_settings": {"model": "gpt-5.6-luna", "cwd": cwd, "approval_policy": "never"}}),
+    ], jsonl)
+    events = RolloutReader(cwd, realm="demo", since=time.time() - 5, home=tmp_path).poll()
+    assert all(validate(e) is None for e in events)
+    # `inter_agent_communication_metadata` (só `trigger_turn`) e `thread_settings_applied` (o modelo já vem de
+    # `turn_context`) não viram evento: a decisão está em docs/adapters/CODEX.md §8.
+    assert [e["native"]["kind"] for e in events] == ["session_meta", "response_item/agent_message"]
+    said = events[1]
+    assert said["inner"] == {"role": "narration", "text": "achei o login"} and said["signal"] is None
+    assert said["native"]["body"]["author"] == "/root/explorer"          # o evento nativo segue intacto (R13)
+    assert said["native"]["body"]["content"] == [{"type": "input_text", "text": "achei o login"}]   # sem o blob cifrado
+
+
+def test_rollout_agent_message_without_text_and_in_a_subagent(tmp_path, jsonl):
+    cwd = r"C:\proj\demo"
+    rollout(tmp_path, TID, [meta(TID, cwd)], jsonl)
+    rollout(tmp_path, "child", [
+        meta("child", cwd, parent=TID),
+        line(1, "response_item", agent_message("/root/explorer", "/root", "", encrypted=True)),      # só conteúdo cifrado
+        line(2, "response_item", agent_message("/root", "/root/explorer", "leia o MVP")),
+    ], jsonl)
+    events = RolloutReader(cwd, realm="demo", since=time.time() - 5, home=tmp_path).poll()
+    said = [e for e in events if e["native"]["kind"] == "response_item/agent_message"]
+    assert [e["inner"]["text"] for e in said] == ["leia o MVP"]
+    assert said[0]["agent"] == "child" and said[0]["alter_ego"] == f"codex:{TID}"       # entra na Team da thread raiz
+

@@ -47,6 +47,11 @@ def _first_line(path: Path) -> dict[str, Any] | None:
     return entry if isinstance(entry, dict) else None
 
 
+def _parts_text(parts: Any) -> str:
+    """Junta o `text` das partes de um conteúdo (`input_text`, `summary_text`…); parte cifrada não tem texto."""
+    return "\n".join(str(part["text"]) for part in parts or [] if isinstance(part, dict) and part.get("text"))
+
+
 @dataclass
 class _Thread:
     thread_id: str
@@ -192,17 +197,25 @@ class RolloutReader:
         if etype == "response_item":
             if ptype == "message":
                 role = payload.get("role")
-                text = "\n".join(str(part.get("text", "")) for part in payload.get("content") or []
-                                 if isinstance(part, dict) and part.get("text"))
+                text = _parts_text(payload.get("content"))
                 if role == "assistant":
                     inner = {"role": "narration", "text": text}
                 elif role == "user":
                     inner = {"role": "prompt", "text": text}
                 else:
                     return None              # instruções de developer/system: moldam o agente, não são trabalho
+            elif ptype == "agent_message":
+                # Fala entre agentes: `author` e `recipient` são caminhos ("/root", "/root/<nome>"). Na thread
+                # raiz é o relato do subagente; na do subagente, a instrução do líder ou o relato dele (D-089).
+                # Vira narração, com o nome nativo no rótulo; o blob cifrado não é mostrado nem guardado.
+                text = _parts_text(payload.get("content"))
+                if not text:
+                    return None              # só conteúdo cifrado: nada a mostrar
+                inner = {"role": "narration", "text": text}
+                payload = {**payload, "content": [part for part in payload.get("content") or []
+                                                  if isinstance(part, dict) and "encrypted_content" not in part]}
             elif ptype == "reasoning":
-                summary = "\n".join(str(part.get("text", "")) for part in payload.get("summary") or []
-                                    if isinstance(part, dict) and part.get("text"))
+                summary = _parts_text(payload.get("summary"))
                 signal = {"type": "activity", "activity": "THINKING"}
                 if summary:
                     inner = {"role": "thought", "text": summary, "fidelity": "summary"}
@@ -226,7 +239,10 @@ class RolloutReader:
             elif ptype == "task_started":
                 signal = {"type": "activity", "activity": "THINKING"}
             else:
-                return None                  # token_count/item_completed: redundantes com as linhas acima
+                # token_count/item_completed: redundantes com as linhas acima. thread_settings_applied: o modelo
+                # já vem de `turn_context` (igual em 125 de 125 turnos) e o resto das configurações não tem sinal
+                # no vocabulário (CODEX.md §8).
+                return None
         elif etype == "token_usage_record":
             usage = payload.get("usage") if isinstance(payload.get("usage"), dict) else None
             if usage is None:
@@ -243,6 +259,8 @@ class RolloutReader:
             payload = {"model": model, "effort": payload.get("effort"), "cwd": payload.get("cwd")}
             signal = {"type": "session.updated", "model": model}
         else:
-            return None                      # world_state, compacted…: sem trabalho visível
+            # world_state, compacted…: sem trabalho visível. inter_agent_communication_metadata (só
+            # `trigger_turn`, sempre antes de um agent_message): o agent_message já mostra a fala (CODEX.md §8).
+            return None
         return factory.make(key, ts, kind, payload, agent=agent, inner=inner, signal=signal)
 
