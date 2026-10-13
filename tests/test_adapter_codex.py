@@ -251,7 +251,7 @@ def test_rollout_agent_message_becomes_narration_with_its_native_name(tmp_path, 
     assert [e["native"]["kind"] for e in events] == ["session_meta", "response_item/agent_message"]
     said = events[1]
     assert said["inner"] == {"role": "narration", "text": "achei o login"} and said["signal"] is None
-    assert said["native"]["body"]["author"] == "/root/explorer"          # o evento nativo segue intacto (R13)
+    assert said["native"]["body"]["author"] == "/root/explorer"          # o evento nativo segue intacto (R13), menos o blob
     assert said["native"]["body"]["content"] == [{"type": "input_text", "text": "achei o login"}]   # sem o blob cifrado
 
 

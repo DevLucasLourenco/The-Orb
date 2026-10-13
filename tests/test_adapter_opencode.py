@@ -150,9 +150,10 @@ def test_missing_db_and_data_dir():
     assert opencode_data_dir({"XDG_DATA_HOME": "X:/d"}).as_posix() == "X:/d/opencode"
 
 
-def test_reasoning_block_with_the_verified_shape_is_raw(tmp_path, db):
-    """Forma levantada no opencode 2.0.23 (só estrutura): bloco `{type, text, time}` sem item cifrado nem assinatura,
-    e todo o texto guardado explica os `output` tokens (sem raciocínio escondido): o texto é a cadeia como veio."""
+def test_reasoning_block_with_the_observed_shape_is_declared_raw(tmp_path, db):
+    """Fixa a declaração de hoje para a forma levantada no opencode 2.0.23 (só estrutura): bloco `{type, text, time}`
+    sem item cifrado nem assinatura, e todo o texto guardado explica os `output` tokens. Não discrimina nada: o
+    opencode não tem marcador estrutural de resumo (Q-T02-3, docs/adapters/OPENCODE.md §2)."""
     db.session("ses_root1")
     r = reader(tmp_path, replay=True)
     db.put("m1", "ses_root1", "assistant", {

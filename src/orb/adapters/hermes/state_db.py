@@ -147,13 +147,13 @@ class StateDbReader:
         out: list[Event] = [announce] if announce else []
         # Os itens de raciocínio só dizem a fidelidade; o blob cifrado deles não vai no evento nativo.
         reasoning_items = _json_items(msg.get("codex_reasoning_items"))
-        msg = {k: v for k, v in msg.items() if k != "codex_reasoning_items"}
+        native = {k: v for k, v in msg.items() if k != "codex_reasoning_items"}
         if role == "user":
-            out.append(factory.make(key, ts, "messages/user", msg, agent=agent,
+            out.append(factory.make(key, ts, "messages/user", native, agent=agent,
                                     inner={"role": "prompt", "text": content}))
             return out
         if role == "tool":
-            out.append(factory.make(key, ts, "messages/tool", msg, agent=agent,
+            out.append(factory.make(key, ts, "messages/tool", native, agent=agent,
                                     inner={"role": "result", "text": content}))
             return out
         if role != "assistant":
@@ -164,7 +164,7 @@ class StateDbReader:
                                                         "fidelity": mapping.thought_fidelity(reasoning_items)},
                                     signal={"type": "activity", "activity": "THINKING"}))
         if content:
-            out.append(factory.make(key, ts, "messages/assistant", msg, agent=agent,
+            out.append(factory.make(key, ts, "messages/assistant", native, agent=agent,
                                     inner={"role": "narration", "text": content}))
         for index, call in enumerate(_json_items(msg.get("tool_calls"))):
             function = call.get("function") if isinstance(call.get("function"), dict) else {}
@@ -191,4 +191,4 @@ def _json_items(raw: Any) -> list[dict[str, Any]]:
             raw = json.loads(raw)
         except json.JSONDecodeError:
             return []
-    return [call for call in raw if isinstance(call, dict)] if isinstance(raw, list) else []
+    return [item for item in raw if isinstance(item, dict)] if isinstance(raw, list) else []
