@@ -13,12 +13,12 @@ das sessões passa a ser lido só para as que estão na sala, a 250 ms nos realm
 
 ## Critérios de aceite
 
-- [ ] O mundo separa sessões da sala (ativas + últimos 10 dias) das do Histórico do realm, pela hora recebida.
-- [ ] Sessões encerradas continuam existindo: na sala enquanto recentes, depois no Histórico.
-- [ ] O overview tem o Histórico do realm: nome, provider, título e datas de cada sessão antiga.
-- [ ] Realm sem sessão nos últimos 10 dias: sala do teto apagada ("noite"); acende quando surge uma sessão.
-- [ ] Conteúdo lido incrementalmente só das sessões da sala; leitura a 250 ms nos realms com sessão ativa; varredura de sessões novas a cada 2 s.
-- [ ] O prazo de 10 dias vem de um valor que o ticket 07 tornará configurável.
+- [x] O mundo separa sessões da sala (ativas + últimos 10 dias) das do Histórico do realm, pela hora recebida.
+- [x] Sessões encerradas continuam existindo: na sala enquanto recentes, depois no Histórico.
+- [x] O overview tem o Histórico do realm: nome, provider, título e datas de cada sessão antiga.
+- [x] Realm sem sessão nos últimos 10 dias: sala do teto apagada ("noite"); acende quando surge uma sessão.
+- [x] Conteúdo lido incrementalmente só das sessões da sala; leitura a 250 ms nos realms com sessão ativa; varredura de sessões novas a cada 2 s.
+- [x] O prazo de 10 dias vem de um valor que o ticket 07 tornará configurável.
 
 ## Testes
 
@@ -34,3 +34,17 @@ Ponto de teste: o mundo (eventos + hora) e os leitores dos CLIs (seleção do qu
 - Uma branch e um PR para este ticket (D-114).
 
 ## Comments
+
+Implementado em 2026-10-13 (branch `ticket/06-sala-com-sessoes-recentes-e-historico-do-realm`). Só estrutura e contagens dos dados reais.
+
+- **O que mudou:** `rules.RECENT_SESSION_SECONDS` (10 dias, um só valor), `World(recent_seconds=...)`, `in_room` por Alter Ego, `night` por realm,
+  `World.add_realm` e `World.any_active`; o Observatório lê só a sala (`since` = 10 dias; `fresh_after` separa o replay), anuncia a
+  presença das sessões da sala pelo índice e entrega o Histórico do realm; o Hub fala `history` no `/world` e escolhe o ritmo
+  (250 ms com sessão ativa, 2 s sem); o cliente mostra só a sala, apaga a sala do teto de noite e lista o Histórico no overview.
+- **Testes:** `test_core.py` (janela, noite, `add_realm`, `time_key`), `test_adapter_claude.py` e `test_adapter_codex.py` (seleção do que é
+  lido), `test_realms.py` (presença pelo índice, histórico, noite, ritmo, mensagem `history`). Suíte: 346 → 364 passed, 1 skipped.
+- **Conferido com dados reais** (pasta do Orb temporária; só contagens): 23 realms, 15 de noite e 8 acesos; 34 sessões na sala (27 dormindo), 34
+  nomes distintos; 79 sessões no Histórico dos 4 providers, nenhuma com nome; sem erro de leitor; console sem erros; o servidor usou ~130 MB.
+- **Decisões a confirmar:** Q-T06-1 a Q-T06-6 em `docs/DECISIONS.md`.
+- **Fora deste ticket:** a tela de configurações para mudar o prazo (ticket 07); a leitura única do passado em segundo plano (ticket 25);
+  nome para as sessões do Histórico; ritmo de leitura por realm.

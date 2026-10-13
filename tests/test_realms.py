@@ -252,3 +252,122 @@ def test_the_server_starts_with_no_arguments_and_serves_the_detected_realms(mach
             time.sleep(0.05)
         assert ids == {"alpha", "beta"}
 
+
+
+# --- a sala e o Histórico do realm (R28, R28a, R48 camada 2, D-027, D-059, D-087) ------------------------
+
+DAY = 86400
+
+
+def hermes_session(machine, sid, cwd, *, days_ago, title="t", parent=None, source="cli"):
+    import time
+    conn = hermes_db(machine.home / "hermes")
+    stamp = time.time() - days_ago * DAY
+    conn.execute("INSERT INTO sessions VALUES (?, ?, 'm', ?, ?, ?, ?, ?, NULL, NULL)", (sid, source, parent, str(cwd), title, stamp, stamp))
+    conn.commit()
+
+
+def egos_of(hub, realm):
+    return {e["id"]: e for r in hub.snapshot()["realms"] if r["id"] == realm for e in r["alter_egos"]}
+
+
+def test_a_session_of_the_last_ten_days_is_in_the_room_even_if_its_provider_says_nothing_now(machine):
+    alpha = machine.project("alpha")
+    hermes_session(machine, "H1", alpha, days_ago=3, title="Sessão de três dias")
+    hub = Hub(machine.observatory())
+    hub.poll_once()
+    egos = egos_of(hub, "alpha")
+    assert set(egos) == {"hermes:H1"}                                          # nenhuma mensagem nova: veio do índice
+    assert egos["hermes:H1"]["in_room"] and egos["hermes:H1"]["asleep"] and egos["hermes:H1"]["title"] == "Sessão de três dias"
+    hub.poll_once()
+    assert len(egos_of(hub, "alpha")) == 1 and hub.world.alter_ego("hermes:H1").events == 1     # anunciada uma vez só
+
+
+def test_older_sessions_stay_out_of_the_room_and_are_listed_in_the_realm_history_newest_first(machine):
+    alpha = machine.project("alpha")
+    hermes_session(machine, "H-recent", alpha, days_ago=2)
+    hermes_session(machine, "H-old", alpha, days_ago=30, title="Velha")
+    hermes_session(machine, "H-older", alpha, days_ago=60, title="Mais velha")
+    hermes_session(machine, "H-sub", alpha, days_ago=40, source="subagent", parent="H-old")        # subagente não é sessão
+    hub = Hub(machine.observatory())
+    hub.poll_once()
+    assert set(egos_of(hub, "alpha")) == {"hermes:H-recent"}                    # conteúdo e presença só da sala
+    history = hub.history("alpha")
+    assert [(h["session"], h["title"], h["provider"]) for h in history] == [("H-old", "Velha", "hermes"), ("H-older", "Mais velha", "hermes")]
+    assert history[0]["started_at"] and history[0]["updated_at"] and history[0]["name"] is None     # nome só se já foi sorteado
+    assert hub.history("nao-existe") == []
+
+
+def test_the_history_shows_the_historical_name_a_session_already_had(machine):
+    from orb.core import NameBook
+    alpha = machine.project("alpha")
+    hermes_session(machine, "H-old", alpha, days_ago=30)
+    names = NameBook(assigned={"hermes:H-old": "Turing"})
+    hub = Hub(machine.observatory(), names=names)
+    hub.poll_once()
+    assert hub.history("alpha")[0]["name"] == "Turing"
+    assert names.assigned == {"hermes:H-old": "Turing"}                         # olhar o histórico nunca sorteia
+
+
+def test_a_realm_with_only_old_sessions_is_night_and_a_new_session_lights_it(machine):
+    alpha, beta = machine.project("alpha"), machine.project("beta")
+    hermes_session(machine, "H-old", alpha, days_ago=30)
+    hermes_session(machine, "H-new", beta, days_ago=1)
+    machine.claude(alpha)                                                       # transcript de 2023: também fora da sala
+    hub = Hub(machine.observatory())
+    hub.poll_once()
+    night = {r["id"]: r["night"] for r in hub.snapshot()["realms"]}
+    assert night == {"alpha": True, "beta": False}                              # D-059: realm parado = sala apagada
+    hermes_session(machine, "H-wakes", alpha, days_ago=0)
+    hub.observatory.refresh_index(force=True)
+    hub.poll_once()
+    assert {r["id"]: r["night"] for r in hub.snapshot()["realms"]}["alpha"] is False
+
+
+def test_the_content_is_read_only_for_the_room_window_and_it_comes_from_one_value(machine):
+    from orb.core import rules
+    observatory = machine.observatory()
+    assert observatory.recent_seconds == rules.RECENT_SESSION_SECONDS == 10 * DAY
+    assert abs((observatory.fresh_after - observatory.since) - (10 * DAY - 30 * 60)) < 5           # replay só dos criados há pouco
+    assert all(r.since == observatory.since for r in observatory.readers.values())
+    narrow = machine.observatory(recent_seconds=3600)
+    assert Hub(narrow).world._recent_seconds == 3600                            # a sala e a leitura seguem o mesmo valor
+
+
+def test_the_reading_rhythm_is_250_ms_with_an_active_session_and_2_s_without_one(machine):
+    from datetime import UTC, datetime, timedelta
+
+    from orb.protocol import make_event
+    start = datetime(2026, 10, 7, 10, 0, 0, tzinfo=UTC)
+    now = [start]
+    hub = Hub(machine.observatory(), clock=lambda: now[0])
+    assert hub.poll_interval(0.25, 2.0) == 2.0                                   # ninguém trabalhando: só a varredura de 2 s
+    hub.world.apply(make_event(id="claude:s1:1", ts=start.isoformat(), provider="claude", source="x", realm="r", alter_ego="claude:s1",
+                               agent=None, seq=1, kind="x", body={}, signal={"type": "idle"}))
+    assert hub.poll_interval(0.25, 2.0) == 0.25                                  # D-087
+    now[0] = start + timedelta(minutes=20)
+    assert hub.poll_interval(0.25, 2.0) == 2.0                                   # parou: o personagem dormiu
+
+
+def test_the_world_stream_answers_a_history_request_with_the_sessions_that_left_the_room(machine):
+    pytest.importorskip("httpx", reason="TestClient do FastAPI precisa de httpx")
+    import json
+
+    from fastapi.testclient import TestClient
+
+    from orb.gateway import GatewayConfig, create_app
+    alpha = machine.project("alpha")
+    hermes_session(machine, "H-old", alpha, days_ago=30, title="Velha")
+    config = GatewayConfig(token="tok", home=machine.home, poll_seconds=0.05, idle_poll_seconds=0.05)
+    app = create_app(config, check_installed=False, observatory=machine.observatory())
+    with TestClient(app) as client, client.websocket_connect("/world?token=tok", headers={"origin": "http://127.0.0.1"}) as ws:
+        ws.receive_json()
+        for _ in range(100):                                                    # espera o realm ser detectado
+            ws.send_text(json.dumps({"type": "history", "realm": "alpha"}))
+            msg = next(m for m in iter(ws.receive_json, None) if m["channel"] == "history")
+            if msg["sessions"]:
+                break
+        assert [(s["session"], s["title"]) for s in msg["sessions"]] == [("H-old", "Velha")]
+        ws.send_text(json.dumps({"type": "history", "realm": 7}))                 # pedido malformado: ignorado, sem derrubar
+        ws.send_text(json.dumps({"type": "history", "realm": "alpha"}))
+        assert next(m for m in iter(ws.receive_json, None) if m["channel"] == "history")["realm"] == "alpha"

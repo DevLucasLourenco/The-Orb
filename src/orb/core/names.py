@@ -68,6 +68,10 @@ class NameSource(Protocol):
 
     def name_for(self, key: str, avoid: frozenset[str] = frozenset()) -> str: ...
 
+    def name_of(self, key: str) -> str | None:
+        """O nome já sorteado da sessão, sem sortear (o Histórico do realm mostra só nomes que existem)."""
+        ...
+
 
 class NameBook:
     """O livro de nomes em memória: sessão -> nome, sempre o mesmo, mais a sacola global (D-064).
@@ -85,3 +89,6 @@ class NameBook:
         if name is None:
             name = self.assigned[key] = self.bag.draw(avoid)
         return name
+
+    def name_of(self, key: str) -> str | None:
+        return self.assigned.get(key)

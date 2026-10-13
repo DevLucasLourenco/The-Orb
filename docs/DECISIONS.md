@@ -389,3 +389,18 @@ teste (o mundo e o registro local numa pasta temporária).
 | ~~Q-T04-4~~ D-138 | O invariante 3 do CLAUDE.md e a regra de ARCHITECTURE §2 diziam "a única escrita é o Terminal Host". O registro local grava | Reescritos como: a única escrita nos arquivos de **terceiros** é o Terminal Host; o Orb grava só nos **próprios** arquivos (registro local R36 e preferências R29). Nada muda para providers e projetos, que continuam só leitura |
 | ~~Q-T04-5~~ D-139 | Além do rótulo do personagem, o nome aparece no **cartão da sessão** do overview e na dica dos pontos da lista de realms? | **Sim**, em texto neutro (sem cor nova; V-HUD-2). Sem isso o Lucas não ligaria o cartão ao personagem. Alternativa: só no rótulo |
 
+### Rodada: o que a implementação do ticket 06 decidiu por conta própria (aberta em 2026-10-13)
+
+Ao implementar o ticket 06 ([.scratch/the-orb-cidade-viva/issues/06-sala-recentes-e-historico-do-realm.md](../.scratch/the-orb-cidade-viva/issues/06-sala-recentes-e-historico-do-realm.md)),
+seis pontos **não estavam escritos** e foram escolhidos de forma provisória (regra P2). Todos estão cobertos por teste (o
+mundo, os leitores dos CLIs e as leituras do mundo real). O Lucas responde por número.
+
+| Id | Pergunta | Proposta (já aplicada, provisória) |
+|---|---|---|
+| Q-T06-1 | Hermes e opencode só emitem evento quando há mensagem nova: como uma sessão deles dos últimos 10 dias entra na sala? | O **índice** (camada 1) dá a presença: cada sessão da sala ganha um evento `session.updated` (título, modelo, pasta; hora = última atividade), uma vez. Vale para os 4 providers e não muda o estado do personagem. Alternativa: cada leitor anunciar as sessões da janela (mais código por provider) |
+| Q-T06-2 | O que é a sala e o que vai ao Histórico do realm? | Sala = Alter Egos cujo **último evento** é dos últimos 10 dias; o mundo marca `in_room`. O Histórico é o que o **índice** lista como mais antigo (até 500 por realm), pedido sob demanda no `/world` (fora do snapshot, que sai várias vezes por segundo). Mostra nome, provider, título e datas; o **nome só aparece se a sessão já ganhou um** (D-064: o nome é sorteado quando a sessão aparece; sortear 80 nomes para o passado esvaziaria a sacola). Alternativa: sortear nome para todas |
+| Q-T06-3 | "250 ms nos realms com sessão ativa" e "2 s nos novos": por realm ou no mundo todo? | **No mundo todo:** 250 ms enquanto **alguma** sessão da sala estiver ativa (não dorme); senão 2 s. Cada leitor já espaça a descoberta de sessões novas a cada 2 s. Ritmo por realm exigiria um leitor por realm (hoje há um por provider, por desempenho). Custo: um realm parado é lido a 250 ms se outro estiver ativo |
+| Q-T06-4 | Sessão da sala criada antes de o Orb abrir: ler o conteúdo desde o começo? | **Não:** só do fim (nada é relido; o passado é a camada de histórico, R48/ticket 25). Só as criadas nos últimos 30 min antes de abrir são lidas desde o começo (como já era). Consequência: a linha do tempo de uma sessão de ontem começa vazia |
+| Q-T06-5 | As sessões que entram na sala ao subir gastam nomes da sacola de 60 | Aceito: nesta máquina são ~34 sessões. Com mais de 60 sessões na sala os nomes passam a repetir entre salas diferentes (D-136) |
+| Q-T06-6 | O que `--lookback` faz agora? | Opção de depuração que só **estreita a leitura do conteúdo**; o padrão é a sala inteira (10 dias). A sala e o Histórico seguem o valor único de `rules.RECENT_SESSION_SECONDS` |
+

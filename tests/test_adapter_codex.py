@@ -268,3 +268,18 @@ def test_rollout_agent_message_without_text_and_in_a_subagent(tmp_path, jsonl):
     assert [e["inner"]["text"] for e in said] == ["leia o MVP"]
     assert said[0]["agent"] == "child" and said[0]["alter_ego"] == f"codex:{TID}"       # entra na Team da thread raiz
 
+
+
+def test_only_rollouts_written_inside_the_window_are_followed_and_old_ones_are_read_from_the_end(tmp_path, jsonl):
+    import os
+    cwd = r"C:\proj\demo"
+    recent = rollout(tmp_path, TID, [meta(TID, cwd), line(1, "event_msg", {"type": "task_started", "turn_id": "t1"})], jsonl)
+    gone = rollout(tmp_path, "019a0000-0000-7000-8000-000000000002", [meta("019a0000-0000-7000-8000-000000000002", cwd)], jsonl)
+    three_days, forty_days = time.time() - 3 * 86400, time.time() - 40 * 86400
+    os.utime(recent, (three_days, three_days))
+    os.utime(gone, (forty_days, forty_days))
+    window = time.time() - 10 * 86400
+    events = RolloutReader(cwd, realm="demo", since=window, fresh_after=window, home=tmp_path).poll()
+    assert {e["alter_ego"] for e in events} == {f"codex:{TID}"} and "event_msg/task_started" in [e["native"]["kind"] for e in events]
+    tail = RolloutReader(cwd, realm="demo", since=window, fresh_after=time.time() + 100, home=tmp_path)
+    assert [e["native"]["kind"] for e in tail.poll()] == ["session_meta"]        # só a sessão aparece; o passado não é relido

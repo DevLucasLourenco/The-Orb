@@ -15,14 +15,23 @@ import time
 from collections import deque
 from collections.abc import Callable
 from dataclasses import dataclass
+from datetime import datetime
 from pathlib import Path
 from typing import Any, Protocol
 
-from ..adapters._shared import SessionIndex, norm_path, realm_id_for, realm_resolver
+from ..adapters._shared import (
+    EventFactory,
+    SessionIndex,
+    SessionMeta,
+    norm_path,
+    realm_id_for,
+    realm_resolver,
+)
 from ..adapters.claude import TranscriptIndex, TranscriptReader
 from ..adapters.codex import RolloutIndex, RolloutReader
 from ..adapters.hermes import StateDbIndex, StateDbReader
 from ..adapters.opencode import OpencodeDbIndex, OpencodeDbReader
+from ..core import rules
 from ..protocol import Event
 from .projects import Exclusions, ProjectResolver
 
@@ -30,6 +39,8 @@ FEED_PER_ALTER_EGO = 300       # linhas de Inner World guardadas por sessão (pa
 ROOT_RESCAN_SECONDS = 30.0     # [depuração] pastas novas dentro de um --root viram realms sozinhas
 INDEX_RESCAN_SECONDS = 30.0    # de quanto em quanto tempo o índice de sessões é varrido de novo
 NOT_A_PROJECT_RETRY = 60.0     # segundos até reavaliar uma pasta que ainda não era projeto (ex.: ainda não existia)
+REPLAY_SECONDS = 30 * 60       # sessão criada nesta janela antes do Orb abrir é lida desde o começo; as mais velhas, do fim
+HISTORY_LIMIT = 500            # sessões antigas devolvidas por realm (as mais recentes primeiro)
 
 
 class Reader(Protocol):
@@ -50,10 +61,17 @@ class Observatory:
     """Todos os realms observados e os leitores que os alimentam. É a borda que conhece o disco e o relógio
     (`clock`, em segundos monotônicos, entra por parâmetro para os testes)."""
 
-    def __init__(self, folders: list[str] = (), *, roots: list[str] = (), lookback_minutes: float = 30.0,
-                 home: Path | None = None, now: float | None = None, exclusions: Exclusions | None = None,
+    def __init__(self, folders: list[str] = (), *, roots: list[str] = (), lookback_minutes: float | None = None,
+                 recent_seconds: float = rules.RECENT_SESSION_SECONDS, home: Path | None = None,
+                 now: float | None = None, exclusions: Exclusions | None = None,
                  index_every: float = INDEX_RESCAN_SECONDS, clock: Callable[[], float] = time.monotonic) -> None:
-        self.since = (time.time() if now is None else now) - lookback_minutes * 60
+        """`recent_seconds` é o prazo da sala (R28a): as sessões desse período entram no mundo e têm o conteúdo
+        lido; as mais antigas ficam só no índice, no Histórico do realm. `lookback_minutes` [depuração] só
+        estreita a leitura do conteúdo."""
+        start = time.time() if now is None else now
+        self.recent_seconds = recent_seconds
+        self.since = start - (recent_seconds if lookback_minutes is None else lookback_minutes * 60)
+        self.fresh_after = start - REPLAY_SECONDS
         self.home = home
         self.roots = [Path(r) for r in roots]
         self.resolver = ProjectResolver(exclusions)
@@ -67,6 +85,10 @@ class Observatory:
         self._projects: dict[tuple, tuple[float, str | None]] = {}   # decisões já tomadas, com validade se negativas
         self._last_index = float("-inf")
         self._last_root_scan = float("-inf")
+        self._sessions: dict[str, list[SessionMeta]] = {}     # realm -> sessões (líderes) que o índice listou
+        self._rostered: set[tuple[str, str]] = set()          # (provider, sessão) cujo elenco já foi anunciado
+        self._wall = time.time if now is None else (lambda: start)
+        self._roster: list[Event] = []                        # eventos de presença à espera do próximo poll
         hermes_home = home / "hermes" if home else None
         opencode_dir = home / "opencode" if home else None
         self.indexes: dict[str, SessionIndex] = {
@@ -76,8 +98,8 @@ class Observatory:
             "opencode": OpencodeDbIndex(data_dir=opencode_dir),
         }
         self.readers: dict[str, Reader] = {
-            "claude": TranscriptReader(since=self.since, home=home, realm_of=self.realm_of),
-            "codex": RolloutReader(since=self.since, home=home, realm_of=self.realm_of),
+            "claude": TranscriptReader(since=self.since, fresh_after=self.fresh_after, home=home, realm_of=self.realm_of),
+            "codex": RolloutReader(since=self.since, fresh_after=self.fresh_after, home=home, realm_of=self.realm_of),
             "hermes": StateDbReader(since=self.since, home=hermes_home, realm_of=self.realm_of),
             "opencode": OpencodeDbReader(since=self.since, data_dir=opencode_dir, realm_of=self.realm_of),
         }
@@ -142,12 +164,14 @@ class Observatory:
             return
         self._last_index = now
         found: set[tuple[str, str | None]] = set()
+        listed: list[SessionMeta] = []
         for name, index in self.indexes.items():
             try:
                 for meta in index.scan():
                     if meta.parent_id:
                         continue                   # subagente é da Team, não define projeto
                     found.add((meta.cwd, meta.project_root))
+                    listed.append(meta)
                     if meta.project_root:
                         self._provider_roots[meta.cwd] = meta.project_root
                 self.errors.pop(f"index:{name}", None)
@@ -165,6 +189,32 @@ class Observatory:
             self._realm_id(project)
         for cwd, root in sorted(unresolved, key=lambda pair: (len(norm_path(pair[0])), norm_path(pair[0]))):
             self._realm_for(cwd, root)                           # a pasta mais curta primeiro: as de dentro entram nela
+        self._sort_sessions(listed)
+
+    def _sort_sessions(self, listed: list[SessionMeta]) -> None:
+        """Distribui as sessões do índice pelos realms. As da sala (últimos `recent_seconds`) ganham um evento de
+        presença, uma vez: o Alter Ego existe no mundo mesmo que o provider não escreva nada agora (Hermes e
+        opencode só falam quando há mensagem nova). As antigas ficam só aqui, no Histórico do realm."""
+        by_realm: dict[str, list[SessionMeta]] = {}
+        recent_from = self._wall() - self.recent_seconds
+        for meta in listed:
+            realm = self.realm_of(meta.cwd)
+            if realm is None:
+                continue
+            by_realm.setdefault(realm, []).append(meta)
+            key = (meta.provider, meta.session_id)
+            if key not in self._rostered and _seconds(meta.updated_at) >= recent_from:
+                self._rostered.add(key)
+                self._roster.append(_presence(meta, realm))
+        self._sessions = by_realm
+
+    def history(self, realm_id: str, limit: int = HISTORY_LIMIT) -> list[SessionMeta]:
+        """O Histórico do realm: as sessões mais antigas que o prazo da sala, as mais recentes primeiro. Nenhuma
+        some (R28): só deixam a sala."""
+        recent_from = self._wall() - self.recent_seconds
+        old = [m for m in self._sessions.get(realm_id, ()) if _seconds(m.updated_at) < recent_from]
+        old.sort(key=lambda m: (_seconds(m.updated_at), m.session_id), reverse=True)
+        return old[:limit]
 
     def sync_roots(self, force: bool = False) -> None:
         now = self._clock()
@@ -183,7 +233,8 @@ class Observatory:
         """Lê todos os leitores. A falha de um não afeta os outros."""
         self.sync_roots()
         self.refresh_index()
-        events: list[Event] = []
+        events: list[Event] = self._roster
+        self._roster = []
         for name, reader in list(self.readers.items()):
             try:
                 events.extend(reader.poll())
@@ -199,6 +250,26 @@ class Observatory:
             provider = name.removeprefix("index:")              # falha do índice e do leitor aparecem no mesmo provider
             errors[provider] = f"{errors[provider]}; {message}" if provider in errors else message
         return {"id": realm.id, "name": realm.name, "cwd": realm.cwd, "errors": errors}
+
+
+def _seconds(iso: str | None) -> float:
+    """Data ISO 8601 do índice -> segundos desde 1970; sem data legível, `-inf` (conta como antiga)."""
+    try:
+        return datetime.fromisoformat(iso).timestamp() if iso else float("-inf")
+    except ValueError:
+        return float("-inf")
+
+
+def _presence(meta: SessionMeta, realm: str) -> Event:
+    """O Alter Ego de uma sessão da sala, anunciado pelo índice (só identidade: não muda o estado dele)."""
+    factory = EventFactory(provider=meta.provider, source=f"{meta.provider}/index", realm=realm, session=meta.session_id)
+    signal: dict[str, Any] = {"type": "session.updated", "cwd": meta.cwd}
+    if meta.title:
+        signal["title"] = meta.title
+    if meta.model:
+        signal["model"] = meta.model
+    body = {"id": meta.session_id, "cwd": meta.cwd, "started_at": meta.started_at, "updated_at": meta.updated_at}
+    return factory.make("index", meta.updated_at, "index/session", body, signal=signal)
 
 
 class Feed:

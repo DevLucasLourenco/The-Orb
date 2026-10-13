@@ -121,13 +121,17 @@ class AlterEgo:
         return rules.is_asleep(ended=self.ended, state=self.state(now),
                                idle_seconds=_idle_seconds(self.last_ts, now))
 
-    def snapshot(self, now: datetime | None = None) -> dict[str, Any]:
+    def in_room(self, now: datetime | None = None, recent_seconds: float = rules.RECENT_SESSION_SECONDS) -> bool:
+        return rules.in_room(idle_seconds=_idle_seconds(self.last_ts, now), recent_seconds=recent_seconds)
+
+    def snapshot(self, now: datetime | None = None, recent_seconds: float = rules.RECENT_SESSION_SECONDS) -> dict[str, Any]:
         state = self.state(now)
         return {
             "id": self.id, "provider": self.provider, "session": self.session, "name": self.name,
             "title": self.title, "model": self.model, "cwd": self.cwd, "state": state, "area": rules.area_for(state),
             "target": self.target, "last_action": self.last_action,
-            "ended": self.ended, "asleep": self.asleep(now), "error": self.error,
+            "ended": self.ended, "asleep": self.asleep(now), "in_room": self.in_room(now, recent_seconds),
+            "error": self.error,
             "active_subagents": self.active_subagents(now),
             "waiting": [{"request": r, "action": a} for r, a in self.waiting.items()],
             "events": self.events, "seq_gaps": self.seq_gaps,
@@ -141,10 +145,16 @@ class World:
 
     `names` dá o nome histórico de cada sessão que aparece (R37); sem ele os Alter Egos ficam sem nome."""
 
-    def __init__(self, names: NameSource | None = None) -> None:
+    def __init__(self, names: NameSource | None = None, *, recent_seconds: float = rules.RECENT_SESSION_SECONDS) -> None:
         self.realms: dict[str, dict[str, AlterEgo]] = {}
         self.rejected = 0
         self.names = names
+        self._recent_seconds = recent_seconds       # o prazo da sala (R28a): quem sai dele vai para o Histórico do realm
+
+    def add_realm(self, realm_id: str) -> None:
+        """Um realm conhecido (detectado pelos providers) existe na cidade mesmo sem nenhuma sessão: fica de
+        "noite" até surgir uma (D-059). Idempotente."""
+        self.realms.setdefault(realm_id, {})
 
     def alter_ego(self, ego_id: str) -> AlterEgo | None:
         for egos in self.realms.values():
@@ -267,6 +277,12 @@ class World:
         elif kind == "waiting.resolved":
             ego.waiting.pop(str(signal["request"]), None)
 
+    def any_active(self, now: datetime) -> bool:
+        """Alguma sessão da sala está ativa (não dorme)? Quem lê os providers usa isto para escolher o ritmo da leitura (D-087)."""
+        _require_aware(now)
+        return any(not ego.asleep(now) and ego.in_room(now, self._recent_seconds)
+                   for egos in self.realms.values() for ego in egos.values())
+
     def snapshot(self, now: datetime | None = None) -> dict[str, Any]:
         """O estado do mundo. `now` (com fuso) é a hora de quem pede: com ela o mundo deriva o que
         depende do tempo (dormindo, sem sinal; R47). Sem `now`, nada que dependa do tempo é afirmado."""
@@ -274,8 +290,9 @@ class World:
         realms = []
         total_egos = active_subs = waiting = 0
         for realm_id in sorted(self.realms):
-            egos = [ego.snapshot(now) for ego in self.realms[realm_id].values()]
-            realms.append({"id": realm_id, "alter_egos": egos})
+            egos = [ego.snapshot(now, self._recent_seconds) for ego in self.realms[realm_id].values()]
+            # "Noite" (D-059, R47): nenhuma sessão na sala. O cliente só desenha a sala do teto apagada.
+            realms.append({"id": realm_id, "alter_egos": egos, "night": not any(ego["in_room"] for ego in egos)})
             total_egos += len(egos)
             for ego in egos:
                 active_subs += ego["active_subagents"]
@@ -286,7 +303,8 @@ class World:
     def time_key(self, now: datetime) -> tuple:
         """O que, no estado do mundo, só o passar do tempo muda: quem dorme e quem está sem sinal.
         Quem distribui o mundo compara esta chave para avisar os clientes sem esperar um evento novo.
-        Os tickets "noite" (06) e "hoje" (20) estendem a chave quando criarem estados novos de tempo."""
+        Fora da sala (R28a) também só o tempo muda. O ticket "hoje" (20) estende a chave quando criar estados novos de tempo."""
         _require_aware(now)
-        return tuple((ego.id, ego.asleep(now), tuple(sub.without_signal(now) for sub in ego.subagents.values()))
+        return tuple((ego.id, ego.asleep(now), ego.in_room(now, self._recent_seconds),
+                      tuple(sub.without_signal(now) for sub in ego.subagents.values()))
                      for egos in self.realms.values() for ego in egos.values())

@@ -59,6 +59,15 @@ class LocalRegistry:
         self.error = None
         return name
 
+    def name_of(self, key: str) -> str | None:
+        """O nome já sorteado da sessão `key`, sem sortear nem gravar nada."""
+        try:
+            with closing(sqlite3.connect(self.path, timeout=self._busy_seconds)) as conn:
+                row = conn.execute("SELECT name FROM names WHERE key = ?", (key,)).fetchone()
+        except _DISK_ERRORS:
+            return self._memory.name_of(key)
+        return row[0] if row is not None else self._memory.name_of(key)
+
     def _fail(self, exc: Exception) -> None:
         self.error = f"registro local indisponível, nomes só em memória por enquanto: {type(exc).__name__}: {exc}"
 

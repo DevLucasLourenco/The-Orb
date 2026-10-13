@@ -38,6 +38,8 @@ DEDUPE_WINDOW = 4096
 # valores decidem o que o tempo muda. Mudar um limite é mudar esta tabela.
 ASLEEP_AFTER_SECONDS = 15 * 60               # R31, D-044: sessão parada há mais que isto "dorme"
 SUBAGENT_NO_SIGNAL_AFTER_SECONDS = 5 * 60    # R7, D-045, D-050: subagente sem atividade fica "sem sinal"
+RECENT_SESSION_SECONDS = 10 * 24 * 3600      # R28a, D-027, D-059: a sala guarda as sessões dos últimos 10 dias;
+                                             # as mais antigas vão para o Histórico do realm (o ticket 07 torna isto configurável)
 
 
 def area_for(state: str) -> str | None:
@@ -51,6 +53,12 @@ def is_asleep(*, ended: bool, state: str, idle_seconds: float | None) -> bool:
     if ended:
         return True
     return state == "IDLE" and idle_seconds is not None and idle_seconds > ASLEEP_AFTER_SECONDS
+
+
+def in_room(*, idle_seconds: float | None, recent_seconds: float = RECENT_SESSION_SECONDS) -> bool:
+    """A sessão fica na sala enquanto o último evento dela for dos últimos `recent_seconds`; depois vai para
+    o Histórico do realm (nunca some, R28). Sem hora confiável não se afirma nada: fica na sala."""
+    return idle_seconds is None or idle_seconds <= recent_seconds
 
 
 def subagent_without_signal(*, active: bool, idle_seconds: float | None) -> bool:

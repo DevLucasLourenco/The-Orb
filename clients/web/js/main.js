@@ -3,7 +3,7 @@ import * as THREE from "three";
 import { Stage } from "./scene.js";
 import { RealmBuilding } from "./realm3d.js";
 import { Avatar } from "./avatar.js";
-import { renderOverview, renderRealmList, renderTopbar, summarize } from "./hud.js";
+import { renderHistory, renderOverview, renderRealmList, renderTopbar, summarize } from "./hud.js";
 import { InnerWorld } from "./innerworld.js";
 import { connectWorld } from "./net.js";
 import { PROVIDERS, isAsleep } from "./providers.js";
@@ -15,6 +15,7 @@ const avatars = new Map();       // alter ego / subagente -> Avatar
 const egoIndex = new Map();      // alter ego -> { ego, realm }
 let world = { realms: [] };
 let selectedRealm = null;
+const history = new Map();       // realm -> sessões que já saíram da sala (Histórico do realm)
 let layoutKey = "";
 const NEAR = 120;                 // distância da câmera em que os detalhes aparecem
 
@@ -41,7 +42,14 @@ function layout() {
   stage.setGroundRadius(half + 48);
 }
 
-function syncWorld(next) {
+// Na sala ficam só as sessões dos últimos 10 dias (R28a); o mundo marca quem já saiu (`in_room`) e as
+// mais antigas aparecem no Histórico do realm, nunca no prédio.
+function roomOnly(next) {
+  return { ...next, realms: next.realms.map((r) => ({ ...r, alter_egos: r.alter_egos.filter((e) => e.in_room !== false) })) };
+}
+
+function syncWorld(raw) {
+  const next = roomOnly(raw);
   world = next;
   const seen = new Set();
   for (const realm of world.realms) {
@@ -96,6 +104,8 @@ function syncWorld(next) {
 // ---------------------------------------------------------------------------------------------
 function selectRealm(id, fly = true) {
   selectedRealm = id;
+  renderHistory(history.get(id));
+  net.requestHistory(id);
   renderRealmList(world, selectedRealm, selectRealm);
   renderOverview(world.realms.find((r) => r.id === id), openEgo);
   const b = buildings.get(id);
@@ -104,6 +114,7 @@ function selectRealm(id, fly = true) {
 
 function overview() {
   selectedRealm = null;
+  renderHistory(null);
   inner.close();
   renderRealmList(world, null, selectRealm);
   renderOverview(null);
@@ -129,10 +140,15 @@ const net = connectWorld({
   },
   onEvent: (event) => inner.push(event),
   onFeed: (egoId, events) => inner.setFeed(egoId, events),
+  onHistory: (realm, sessions) => {
+    history.set(realm, sessions);
+    if (realm === selectedRealm) renderHistory(sessions);
+  },
   onStatus: (ok) => {
     const c = document.getElementById("conn");
     c.textContent = ok ? "ao vivo" : "reconectando…";
     c.className = `conn ${ok ? "ok" : "bad"}`;
+    if (ok && selectedRealm) net.requestHistory(selectedRealm);
   },
 });
 
