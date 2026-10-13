@@ -5,7 +5,7 @@
 > [ARCHITECTURE.md](ARCHITECTURE.md), [adr/](adr/)…). Decisões difíceis de reverter também têm um ADR.
 > Nada é apagado: uma decisão revista fica listada, com a que a substituiu.
 
-Última atualização: 2026-10-09
+Última atualização: 2026-10-13
 
 Quem: **Lucas** = decidido por ele · **Delegada** = o Lucas deixou a definição com o Claude; vale até
 ele revisar, e a proposta está escrita no documento do assunto.
@@ -138,6 +138,11 @@ ele revisar, e a proposta está escrita no documento do assunto.
 | D-121 | 2026-10-09 | **Os totais de subagentes ativos não contam os "sem sinal"**; eles seguem listados no overview, em cinza | Lucas | Q-T01-3, ticket 01 |
 | D-122 | 2026-10-09 | **Líder dormindo não esconde a Team**: só uma sessão encerrada a esconde; os "sem sinal" ficam cinza no lugar (R7); o limite por área é do ticket 13 | Lucas | Q-T01-4, ticket 01, ticket 13 |
 | D-123 | 2026-10-09 | **Só dorme quem está parado (`IDLE`)**: sessão presa em atividade (CLI morto) não dorme; "esperando você" nunca dorme | Lucas | Q-T01-5, R31 |
+| D-124 | 2026-10-13 | **Codex: `inter_agent_communication_metadata` e `event_msg/thread_settings_applied` ficam ignorados.** O primeiro só traz `trigger_turn`; o segundo repete o modelo que já vem de `turn_context` e carrega `developer_instructions`. Mostrar esforço de raciocínio ou política de aprovação exige antes um sinal novo no PROTOCOL.md | Lucas | Q-T02-1, D-089, [adapters/CODEX.md](adapters/CODEX.md) §8 |
+| D-125 | 2026-10-13 | **`agent_message` do Codex aparece como narração simples**, sem prefixo de quem fala e **sem deduplicar** entre a thread raiz e as de subagente (a mesma fala pode aparecer duas vezes na Team); autor e destinatário ficam no corpo nativo | Lucas | Q-T02-2, D-089, [adapters/CODEX.md](adapters/CODEX.md) §8 |
+| D-126 | 2026-10-13 | **Fidelidade do pensamento sem confirmação estrutural é `raw`**; `summary` só com marcador estrutural (Hermes: `codex_reasoning_items`, regra provisória, nunca vista em dado real) | Lucas | Q-T02-3, R14, [adapters/HERMES.md](adapters/HERMES.md) §1 |
+| D-127 | 2026-10-13 | **Sem tabela de modelos para a fidelidade do Hermes:** modelos gpt-5.x pelo caminho de chat ficariam `raw`; a dúvida fica registrada até haver uma sessão real que a comprove | Lucas | Q-T02-4, R14, [adapters/HERMES.md](adapters/HERMES.md) §1 |
+| D-128 | 2026-10-13 | **A hora de abertura de sessão e de subagente do Claude e do Hermes** (hoje a hora da leitura, o que deixa 117 de 120 subagentes "sem sinal") **é tratada no ticket 03**, com as datas de início do índice de sessões | Lucas | achado do ticket 01, ticket 03, R7, R47 |
 
 ## Decisões revistas
 
@@ -328,3 +333,16 @@ cinco comportamentos **não estavam escritos** e foram escolhidos de forma provi
 | ~~Q-T01-4~~ D-122 | Um líder **dormindo** esconde a Team? | **Não** (só uma sessão **encerrada** esconde): os subagentes "sem sinal" ficam cinza no lugar onde estavam, como pede R7. Com muitos, o ticket 13 limita a 8 por área e mostra "+N" |
 | ~~Q-T01-5~~ D-123 | Só dorme quem está `IDLE`? Uma sessão presa em `READING`/`CODING` há horas (CLI morto) nunca dorme | **Manter:** é o comportamento que o cliente já tinha, e "esperando você" nunca deve dormir. Alternativa a estudar: sem nenhum evento há mais de X min, qualquer estado de trabalho vira `NO_SIGNAL` |
 
+### Rodada: o que a implementação do ticket 02 decidiu por conta própria (aberta em 2026-10-13)
+
+Ao implementar o ticket 02 ([.scratch/the-orb-cidade-viva/issues/02-ajustes-dos-adapters.md](../.scratch/the-orb-cidade-viva/issues/02-ajustes-dos-adapters.md)),
+o que a estrutura dos dados reais mostrou deixou quatro pontos **sem decisão escrita**; foram escolhidos de
+forma provisória (regra P2). Todos estão cobertos por teste nos leitores dos CLIs.
+**O Lucas confirmou as quatro em 2026-10-13 (D-124 a D-127).**
+
+| Id | Pergunta | Proposta (já aplicada, provisória) |
+|---|---|---|
+| ~~Q-T02-1~~ D-124 | `inter_agent_communication_metadata` e `event_msg/thread_settings_applied` do Codex: **mapear ou ignorar**? (D-089 deixou os dois "a avaliar") | **Ignorar os dois.** O primeiro só traz `trigger_turn` e vem sempre antes de um `agent_message`; o segundo repete o modelo que já vem de `turn_context` (125 de 125; em threads de subagente o modelo não é lido por ninguém, e o vocabulário não tem modelo do subagente) e carrega `developer_instructions`. Custo: se um dia o Orb quiser mostrar esforço de raciocínio ou política de aprovação, falta o sinal no vocabulário (PROTOCOL.md primeiro) |
+| ~~Q-T02-2~~ D-125 | O `agent_message` é **fala entre agentes** (`/root` ↔ `/root/<nome>`), não a fala do Codex ao Lucas que o D-089 supunha. Ele aparece como narração simples ou deve **mostrar quem fala**? | **Narração simples**, como o D-089 decidiu; autor e destinatário ficam no corpo nativo. Na thread raiz aparece o relato do subagente com o mesmo visual da narração do líder, e **a mesma fala pode aparecer duas vezes** na Team (6 de 124 textos distintos estavam gravados na raiz e num subagente; ver CODEX.md §8). Nada é deduplicado. Alternativas: prefixar o texto com "`/root/<nome>` →" (custo: texto fabricado pelo Orb na linha); ou mostrar só o lado de quem recebe, sem repetir (custo: regra de deduplicação entre threads e escolha de qual lado vale) |
+| ~~Q-T02-3~~ D-126 | **Fidelidade quando a estrutura não confirma:** `raw` ou `summary`? Confirmado só um modelo (nemotron) no Hermes e no opencode | **`raw` por padrão**; `summary` só com marcador estrutural (Hermes: `codex_reasoning_items`). A regra do marcador `codex_reasoning_items` também é provisória: nunca apareceu em dado real, vem do código do Hermes. Alternativa: marcar `summary` quando não confirmado (afirma menos, mas o rótulo `summary` passaria a significar "não confirmado como bruto") |
+| ~~Q-T02-4~~ D-127 | Modelos gpt-5.x no Hermes pelo caminho de chat entregam **resumo sem marcador** e ficariam `raw`. Aceitar até observar uma sessão real ou já criar uma tabela de modelos? | **Aceitar e registrar a dúvida** (HERMES.md §1): nenhuma sessão assim existe nesta máquina para comprovar; a tabela por modelo seria regra sem evidência local |

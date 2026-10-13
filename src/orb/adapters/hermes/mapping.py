@@ -6,12 +6,14 @@ ferramentas do Hermes ainda não foi levantada.
 """
 from __future__ import annotations
 
+from typing import Any
+
 from .._shared import Capabilities, classify_command
 
 PROVIDER = "hermes"
 
 CAPABILITIES = Capabilities(
-    thought_fidelity=("raw", "summary"),    # depende do modelo por trás (colunas reasoning*)
+    thought_fidelity=("raw", "summary"),    # `summary` só com o marcador codex_reasoning_items (thought_fidelity())
     approvals="none",                        # sem registro de aprovações no state.db
     subagents=True,                          # sessões filhas: parent_session_id + source "subagent"
     realtime=False,                          # nível 1 (sidecar da TUI) ainda não implementado
@@ -38,3 +40,14 @@ def activity_for_tool(name: str, arguments: object) -> str:
         if any(word in lowered for word in words):
             return activity
     return "EXECUTING"
+
+
+def thought_fidelity(reasoning_items: list[dict[str, Any]]) -> str:
+    """Fidelidade do texto de `reasoning`, pela estrutura da linha (R14).
+
+    `summary` quando a linha traz itens de raciocínio da Responses API (`codex_reasoning_items`: resumo
+    mais blob cifrado, o mesmo formato dos rollouts do Codex). Sem esse marcador é `raw`: confirmado só no
+    modelo observado, em que todo o texto guardado explica os tokens de saída (sem raciocínio escondido).
+    Para outros modelos a dúvida está registrada em docs/adapters/HERMES.md §1.
+    """
+    return "summary" if any(item.get("type") == "reasoning" for item in reasoning_items) else "raw"

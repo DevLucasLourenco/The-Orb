@@ -25,8 +25,8 @@ SOURCE = "hermes/state-db"
 BATCH = 500
 
 _WANTED_MESSAGE_COLUMNS = ("id", "session_id", "role", "content", "tool_call_id", "tool_calls",
-                           "tool_name", "timestamp", "finish_reason", "reasoning", "active",
-                           "input_tokens", "output_tokens")
+                           "tool_name", "timestamp", "finish_reason", "reasoning", "codex_reasoning_items",
+                           "active", "input_tokens", "output_tokens")
 _WANTED_SESSION_COLUMNS = ("id", "source", "model", "parent_session_id", "cwd", "title",
                            "end_reason", "ended_at", "model_config")
 
@@ -145,12 +145,15 @@ class StateDbReader:
         role = msg.get("role")
         content = msg.get("content") if isinstance(msg.get("content"), str) else ""
         out: list[Event] = [announce] if announce else []
+        # Os itens de raciocínio só dizem a fidelidade; o blob cifrado deles não vai no evento nativo.
+        reasoning_items = _json_items(msg.get("codex_reasoning_items"))
+        native = {k: v for k, v in msg.items() if k != "codex_reasoning_items"}
         if role == "user":
-            out.append(factory.make(key, ts, "messages/user", msg, agent=agent,
+            out.append(factory.make(key, ts, "messages/user", native, agent=agent,
                                     inner={"role": "prompt", "text": content}))
             return out
         if role == "tool":
-            out.append(factory.make(key, ts, "messages/tool", msg, agent=agent,
+            out.append(factory.make(key, ts, "messages/tool", native, agent=agent,
                                     inner={"role": "result", "text": content}))
             return out
         if role != "assistant":
@@ -158,12 +161,12 @@ class StateDbReader:
         if isinstance(msg.get("reasoning"), str) and msg["reasoning"]:
             out.append(factory.make(f"{key}#reasoning", ts, "messages/assistant.reasoning", {"reasoning": msg["reasoning"]},
                                     agent=agent, inner={"role": "thought", "text": msg["reasoning"],
-                                                        "fidelity": "raw"},
+                                                        "fidelity": mapping.thought_fidelity(reasoning_items)},
                                     signal={"type": "activity", "activity": "THINKING"}))
         if content:
-            out.append(factory.make(key, ts, "messages/assistant", msg, agent=agent,
+            out.append(factory.make(key, ts, "messages/assistant", native, agent=agent,
                                     inner={"role": "narration", "text": content}))
-        for index, call in enumerate(_tool_calls(msg.get("tool_calls"))):
+        for index, call in enumerate(_json_items(msg.get("tool_calls"))):
             function = call.get("function") if isinstance(call.get("function"), dict) else {}
             name = str(function.get("name") or call.get("name") or "?")
             arguments = function.get("arguments")
@@ -181,10 +184,11 @@ class StateDbReader:
         return out
 
 
-def _tool_calls(raw: Any) -> list[dict[str, Any]]:
+def _json_items(raw: Any) -> list[dict[str, Any]]:
+    """Coluna JSON em texto (`tool_calls`, `codex_reasoning_items`) -> lista de objetos; o que não for isso, vazio."""
     if isinstance(raw, str):
         try:
             raw = json.loads(raw)
         except json.JSONDecodeError:
             return []
-    return [call for call in raw if isinstance(call, dict)] if isinstance(raw, list) else []
+    return [item for item in raw if isinstance(item, dict)] if isinstance(raw, list) else []

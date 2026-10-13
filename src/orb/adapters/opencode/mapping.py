@@ -12,7 +12,7 @@ from .._shared import Capabilities, classify_command
 PROVIDER = "opencode"
 
 CAPABILITIES = Capabilities(
-    thought_fidelity=("raw",),              # blocos `reasoning`; raw ou resumo conforme o modelo (a confirmar)
+    thought_fidelity=("raw",),              # confirmado pela estrutura só no modelo observado (docs/adapters/OPENCODE.md §2)
     approvals="none",                        # tabela `permission` existe, sem linhas observadas ainda
     subagents=True,                          # session_v2.parent_id
     realtime=False,                          # nível 1 (servidor próprio + --server) a validar
