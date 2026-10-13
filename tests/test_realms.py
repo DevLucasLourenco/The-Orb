@@ -1,12 +1,9 @@
 """As leituras do mundo real: pastas de CLIs falsas -> realms (R3, R3a, R3b, R3d). Sem rede, sem CLI, sem dados
 reais: a 'máquina' é montada em pastas temporárias, com a forma verificada dos arquivos de cada provider."""
-import json
 import os
-import time
 
 import pytest
 
-from orb.adapters.claude import project_dir
 from orb.gateway import Hub, Observatory
 from orb.gateway.projects import Exclusions
 

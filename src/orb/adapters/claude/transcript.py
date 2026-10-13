@@ -15,7 +15,7 @@ from pathlib import Path
 from typing import Any
 
 from ...protocol import Event
-from .._shared import EventFactory, JsonlFollower, RealmOf, realm_id_for, single_realm
+from .._shared import EventFactory, JsonlFollower, RealmOf, iso_from_seconds, realm_id_for, single_realm
 from . import mapping
 
 SOURCE = "claude/transcript"
@@ -55,6 +55,7 @@ class _Session:
     title: str | None = None
     model: str | None = None
     cwd: str = ""
+    last_write: float | None = None     # `st_mtime` quando a sessão foi achada: é a hora em que ela se abre (D-128)
 
 
 def recorded_cwd(folder: Path) -> str | None:
@@ -212,7 +213,7 @@ class TranscriptReader:
                 follower=JsonlFollower(path, start_at_end=not self.replay and born < self.since),
                 factory=EventFactory(provider=mapping.PROVIDER, source=SOURCE, realm=realm,
                                      session=path.stem),
-                cwd=cwd)
+                cwd=cwd, last_write=stat.st_mtime)
 
     def _discover_subagents(self) -> None:
         for session_path, session in self._sessions.items():
@@ -248,7 +249,7 @@ class TranscriptReader:
         session.announced = True
         session.title, session.model = _identity(session.follower.path)
         body = {"sessionId": session.session_id, "customTitle": session.title, "model": session.model}
-        return session.factory.make("session", None, "transcript/session", body,
+        return session.factory.make("session", iso_from_seconds(session.last_write), "transcript/session", body,
                                     signal={"type": "session.started", "cwd": session.cwd,
                                             "title": session.title, "model": session.model})
 
@@ -263,8 +264,12 @@ class TranscriptReader:
         if isinstance(tool_use, str) and sub.meta.get("requestShape") == "foreground":
             session.foreground_tools[tool_use] = sub.agent_id
         body = {"agentId": sub.agent_id, **{k: v for k, v in sub.meta.items() if k != "prompt"}}
+        try:
+            last_write = iso_from_seconds(sub.follower.path.stat().st_mtime)
+        except OSError:
+            last_write = None
         return session.factory.make(
-            f"{sub.agent_id}#meta", None, "subagent/meta", body, agent=sub.agent_id,
+            f"{sub.agent_id}#meta", last_write, "subagent/meta", body, agent=sub.agent_id,
             inner={"role": "system",
                    "text": f"{sub.meta.get('agentType', 'subagente')}: {sub.meta.get('description', '')}".strip()},
             signal={"type": "subagent.started", "kind": sub.meta.get("agentType")})

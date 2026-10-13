@@ -262,3 +262,12 @@ def test_hub_loop_republishes_when_only_time_changed_the_world(tmp_path, monkeyp
 
     message = asyncio.run(scenario())
     assert message["world"]["generated_at"].startswith("2026-10-07T10:16:00")
+
+
+def test_the_server_needs_no_arguments_and_no_project_paths():
+    from orb.gateway.app import config_from_args, parse_args
+    config = config_from_args(parse_args([]))
+    assert config.realms == [] and config.roots == []                 # R3: o Lucas nunca informa caminhos
+    debug = config_from_args(parse_args(["--realm", ".", "--lookback", "5"]))
+    assert len(debug.realms) == 1 and debug.lookback_minutes == 5     # opções de depuração continuam valendo
+

@@ -1,14 +1,12 @@
 """Gateway: o servidor local do The Orb.
 
-- Observa os realms (cada pasta de projeto, os 4 providers ao mesmo tempo) e mantém o mundo (Core).
+- Detecta os realms sozinho, pelas sessões que os 4 CLIs já gravaram, e os observa ao mesmo tempo (Core).
 - `/world`: o mundo para o cliente 3D — snapshot, depois deltas e as linhas de Inner World.
 - `/ws`: o terminal real de um Inner World (abre uma sessão nova do CLI num realm).
 - `/`: o cliente 3D (clients/web).
 
-Uso:  the-orb --root PASTA_DOS_PROJETOS          (cada subpasta é um realm)
-      the-orb --realm PASTA [--realm OUTRA ...]  (realms avulsos; dá para combinar com --root)
-      [--port 8765] [--lookback 30]
-      (ou: python -m orb.gateway.app ...). Abra a URL com token que o servidor imprime.
+Uso:  the-orb [--port 8765]        (ou: python -m orb.gateway.app). Abra a URL com token que o servidor imprime.
+      Opções de depuração: --root, --realm e --lookback (R3: o Lucas nunca informa caminhos de projetos).
 
 Segurança (o servidor abre shells): só 127.0.0.1, token por execução, `Origin` local obrigatória,
 lista fixa de executáveis, linha de comando validada (orb.terminal_host.launch).
@@ -19,7 +17,6 @@ import argparse
 import asyncio
 import contextlib
 import json
-import os
 import secrets
 import time
 import uuid
@@ -217,7 +214,7 @@ def create_app(config: GatewayConfig, *, pty_factory: Callable = winpty_factory,
         realms = hub.observatory.realms
         realm = realms.get(ws.query_params.get("realm") or "") or next(iter(realms.values()), None)
         if realm is None:
-            await ws.send_json({"channel": "system", "error": "nenhum realm configurado"})
+            await ws.send_json({"channel": "system", "error": "nenhum realm detectado ainda"})
             await ws.close()
             return
         loop = asyncio.get_running_loop()
@@ -286,26 +283,34 @@ def create_app(config: GatewayConfig, *, pty_factory: Callable = winpty_factory,
     return app
 
 
-def main() -> None:
+def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="The Orb — o mundo das suas sessões de IA")
-    parser.add_argument("--root", action="append", default=[], help="pasta cujas subpastas são projetos (cada uma vira um realm)")
-    parser.add_argument("--realm", action="append", default=[], help="pasta de um projeto (repita para vários)")
-    parser.add_argument("--cwd", action="append", default=[], help="o mesmo que --realm")
     parser.add_argument("--port", type=int, default=8765)
-    parser.add_argument("--lookback", type=float, default=30.0, help="minutos: sessões ativas nesse intervalo já aparecem")
-    args = parser.parse_args()
+    debug = parser.add_argument_group("depuração", "Os projetos são detectados sozinhos; estas opções existem só para depurar.")
+    debug.add_argument("--root", action="append", default=[], help="pasta cujas subpastas viram realms, mesmo sem sessão")
+    debug.add_argument("--realm", action="append", default=[], help="pasta que vira um realm, mesmo sem sessão (repita para vários)")
+    debug.add_argument("--cwd", action="append", default=[], help="o mesmo que --realm")
+    debug.add_argument("--lookback", type=float, default=30.0, help="minutos: sessões ativas nesse intervalo têm o conteúdo lido")
+    return parser.parse_args(argv)
+
+
+def config_from_args(args: argparse.Namespace) -> GatewayConfig:
+    """Sem argumentos nenhum realm é informado: a cidade se monta sozinha (R3)."""
+    return GatewayConfig(realms=[str(Path(p).resolve()) for p in (args.realm + args.cwd)],
+                         roots=[str(Path(p).resolve()) for p in args.root], lookback_minutes=args.lookback)
+
+
+def main() -> None:
+    args = parse_args()
     import uvicorn
 
-    folders = [str(Path(p).resolve()) for p in (args.realm + args.cwd)]
-    roots = [str(Path(p).resolve()) for p in args.root]
-    if not folders and not roots:
-        folders = [os.getcwd()]
-    config = GatewayConfig(realms=folders, roots=roots, lookback_minutes=args.lookback)
+    config = config_from_args(args)
     print("\nThe Orb")
-    for root in roots:
-        print(f"  · cada projeto em {root}")
-    for folder in folders:
-        print(f"  · {folder}")
+    print("  · os projetos são detectados pelas sessões dos CLIs")
+    for root in config.roots:
+        print(f"  · [depuração] cada projeto em {root}")
+    for folder in config.realms:
+        print(f"  · [depuração] {folder}")
     print(f"\nAbra: http://127.0.0.1:{args.port}/?token={config.token}\n", flush=True)
     uvicorn.run(create_app(config), host="127.0.0.1", port=args.port, log_level="warning")
 

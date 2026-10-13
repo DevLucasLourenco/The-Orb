@@ -185,3 +185,29 @@ def test_hook_translation_with_verified_fields():
         assert world.snapshot()["mankind"]["waiting"] == 1
         world.apply(t.translate("PostToolUse", {**base, "tool_name": "Edit", "tool_response": {}}))
         assert world.snapshot()["mankind"]["waiting"] == 0
+
+
+def test_session_and_subagent_open_at_the_last_write_of_their_files_not_at_read_time(tmp_path, jsonl):
+    """D-128: um subagente antigo não nasce "recém-ativo". A abertura leva a hora da última escrita do arquivo."""
+    import os
+    from datetime import UTC, datetime
+
+    from orb.adapters._shared import iso_from_seconds
+    last_write = time.time() - 20 * 60
+    stamp = iso_from_seconds(last_write)
+    folder = project_dir(CWD, home=tmp_path) / SID / "subagents"
+    jsonl(folder / "agent-ab12.jsonl", [{"type": "user", "uuid": "s1", "timestamp": stamp, "isSidechain": True,
+                                         "message": {"content": "conte"}}])
+    (folder / "agent-ab12.meta.json").write_text(json.dumps({"agentType": "Explore", "description": "contar"}))
+    jsonl(session_file(tmp_path), [{"type": "user", "uuid": "u1", "timestamp": stamp, "message": {"content": "oi"}}])
+    for path in (session_file(tmp_path), folder / "agent-ab12.jsonl"):
+        os.utime(path, (last_write, last_write))
+    events = TranscriptReader(CWD, realm="demo", session_id=SID, since=time.time() - 3600, home=tmp_path).poll()
+    opened = [e for e in events if e["signal"] and e["signal"]["type"] in ("session.started", "subagent.started")]
+    assert [e["ts"] for e in opened] == [stamp, stamp]
+    world = World()
+    for event in events:
+        world.apply(event)
+    (ego,) = world.snapshot(datetime.now(UTC))["realms"][0]["alter_egos"]
+    assert ego["team"][0]["no_signal"] is True               # 20 min sem atividade: já nasce cinza, sem piscar "ativo"
+

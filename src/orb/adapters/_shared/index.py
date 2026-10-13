@@ -7,7 +7,7 @@ Observatório (gateway), não o adapter.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any, Protocol
 
 
@@ -32,5 +32,5 @@ class SessionIndex(Protocol):
 def iso_from_seconds(value: Any) -> str | None:
     """Data em segundos desde 1970 (como `st_mtime` e as colunas do Hermes) -> ISO 8601 UTC."""
     if isinstance(value, (int, float)) and not isinstance(value, bool):
-        return datetime.fromtimestamp(float(value), tz=timezone.utc).isoformat(timespec="milliseconds")
+        return datetime.fromtimestamp(float(value), tz=UTC).isoformat(timespec="milliseconds")
     return None
