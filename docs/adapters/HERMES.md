@@ -75,6 +75,10 @@ sabe, por exemplo, se o Lucas já tem hooks ou webhooks configurados.
      observar uma sessão real com esse modelo (tamanho do texto × tokens de saída).
   3. Anthropic (blocos `thinking` em `reasoning_details`, `agent/transports/anthropic.py`): sem marcador
      estrutural; o adapter marca `raw` sem confirmação.
+  4. Na Responses API, o texto de mensagens de fase `commentary`/`analysis` também entra em `reasoning`
+     (`agent/codex_responses_adapter.py`, por volta da linha 1516) e `item.text` serve de alternativa ao
+     resumo (por volta da linha 1328): nesses casos a coluna não é só resumo do raciocínio. A linha com
+     `codex_reasoning_items` fica `summary` (o mais próximo), mas pode conter narração.
 
 ## 2. Nível 1: eventos em tempo real — ainda não implementado
 

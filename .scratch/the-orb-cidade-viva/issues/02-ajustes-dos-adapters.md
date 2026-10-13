@@ -47,3 +47,10 @@ reais; nenhum conteúdo foi lido nem versionado.
   de chat e Anthropic no Hermes; só um modelo foi observado nos dois CLIs.
 - Versões: Codex `0.160.1` (rollouts de `0.142.5` a `0.162.0`), Hermes `0.20.5`, opencode `2.0.23`.
 - Decisões a confirmar: Q-T02-1 a Q-T02-4 em `docs/DECISIONS.md`.
+- **Revisão de spec (2026-10-13):** a conferência achou que a mesma fala de `agent_message` pode estar gravada
+  em dois rollouts (124 textos distintos em 184 linhas; 6 na raiz e num subagente): corrigido o texto de
+  CODEX.md §8 e ampliada a Q-T02-2. Também registrados: o modelo dos subagentes não é lido (Q-T02-1), a coluna
+  `reasoning` do Hermes recebe texto de fase `commentary` (HERMES.md §1, dúvida 4) e o rollout `0.162.0` (VS Code).
+- **Não tratado aqui:** o achado do ticket 01 (abertura de sessão e de subagente do Claude e do Hermes usa a hora da
+  leitura, e 117 de 120 subagentes ficam "sem sinal") apontava "ticket 02 ou 03". Não está nos critérios deste
+  ticket e segue aberto; sugestão: ticket 03, cujo índice de sessões já traz as datas (a confirmar com o Lucas).

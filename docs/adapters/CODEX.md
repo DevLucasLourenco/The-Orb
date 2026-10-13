@@ -149,7 +149,7 @@ diálogo de atualização só na sessão, mas **o Orb não o usa por padrão**: 
 | `event_msg/token_count`, `item_completed`, `world_state`, `compacted` | Ignorados (redundantes ou sem trabalho visível). **Revisão (2026-10-09):** `event_msg/item_completed` traz `item.exit_code` dos comandos (Q-TEC-1) |
 | `response_item/agent_message` (`author`, `recipient`, `content[]`, `id`, `internal_chat_message_metadata_passthrough`) | `narration`, com o nome nativo no rótulo (**D-089**, ticket 02). O texto vem das partes `input_text`; o blob cifrado (`encrypted_content`) não é mostrado nem guardado, e uma linha sem texto não vira entrada |
 | `inter_agent_communication_metadata` (linha de topo; `payload.trigger_turn`) | **Ignorado** (ticket 02): só diz se a mensagem recebida dispara um turno; vem sempre antes de um `agent_message`, que já mostra a fala, e o início do turno já vem de `task_started` |
-| `event_msg/thread_settings_applied` (`thread_id`, `thread_settings`: modelo, `cwd`, `approval_policy`, `reasoning_effort`, perfil de permissão, `developer_instructions`…) | **Ignorado** (ticket 02): o modelo já vem de `turn_context` (igual em 125 de 125 turnos conferidos), o resto não tem sinal no [vocabulário](../PROTOCOL.md) e carrega instruções do desenvolvedor, que não devem ir para o Inner World |
+| `event_msg/thread_settings_applied` (`thread_id`, `thread_settings`: modelo, `cwd`, `approval_policy`, `reasoning_effort`, perfil de permissão, `developer_instructions`…) | **Ignorado** (ticket 02): o modelo já vem de `turn_context` (igual em 125 de 125 turnos conferidos); cerca de um terço das linhas (47 de 131) está em threads de subagente, onde o adapter não lê o modelo e o vocabulário não tem modelo do subagente (`subagent.started` só traz `kind` e `parent`), então mapear não mostraria nada novo; o resto não tem sinal no [vocabulário](../PROTOCOL.md) e carrega instruções do desenvolvedor, que não devem ir para o Inner World |
 
 ### O que `agent_message` é (estrutura verificada em 2026-10-13)
 
@@ -160,15 +160,20 @@ Só estrutura e contagens, nos 12 rollouts mais recentes (176 linhas `agent_mess
   raiz e `/root/<nome>` um subagente. Na thread raiz há 147 linhas, todas relatos de subagentes
   (`/root/<nome>` → `/root`); em threads de subagente há 29: 14 instruções do líder (`/root` →
   `/root/<nome>`) e 15 relatos do próprio subagente.
-- O texto é único: nenhuma das 176 repete uma mensagem do assistente nem uma saída de ferramenta, então
-  mapear não duplica linhas no Inner World.
+- Não repete mensagem do assistente nem saída de ferramenta (0 de 176), **mas a mesma fala pode aparecer em
+  dois rollouts**: numa conferência posterior (184 linhas com texto) havia 124 textos distintos; 19 se
+  repetiam, 13 dentro de um mesmo rollout e 6 em rollouts diferentes, na raiz e num subagente (provavelmente o
+  mesmo relato gravado em quem o envia e em quem o recebe; não confirmado). Como o subagente entra na Team do
+  Alter Ego raiz, o Inner World dele pode mostrar a mesma fala duas vezes. Nada é deduplicado hoje (Q-T02-2).
 - 161 das 176 vêm logo depois de `inter_agent_communication_metadata`; as 15 sem ela são os relatos que o
   próprio subagente envia (mensagem enviada, não recebida).
 - O Inner World mostra o texto como narração da thread onde ele foi gravado. Autor e destinatário ficam no
   corpo nativo (Q-T02-2: mostrar quem fala é decisão do Lucas).
 - **Versões:** `agent_message` e `inter_agent_communication_metadata` aparecem a partir de
   `0.146.0-alpha.3.1`, a mais antiga com elas nesta máquina (128 dos 427 rollouts);
-  `thread_settings_applied` já existe na mais antiga (`0.142.5`).
+  `thread_settings_applied` já existe na mais antiga (`0.142.5`). Um rollout traz `0.162.0`, acima do CLI
+  instalado (`0.160.1`): foi aberto pelo VS Code (`originator: codex-tui`, `source: vscode`), que pode embutir
+  outra versão do Codex; não verificado.
 
 - **Desempenho:** há rollouts de 145 MB. Arquivo que já existia começa **do fim**; a primeira linha
   (`session_meta`) é lida à parte; a árvore de sessões é varrida no máximo a cada 2 s.
