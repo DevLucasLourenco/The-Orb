@@ -261,7 +261,9 @@ ticket existir.
   opções que esta versão não conhece são guardadas como estão. Arquivo ilegível: valem os padrões, `error` diz o motivo e o arquivo é copiado
   para `.bad` antes de ser reescrito. No `/world`: `{type: "settings"}` devolve `{channel: "settings", realms, options, preferences, error}`
   e `{type: "preferences", hidden_realms?, recent_days?}` valida, grava (fora do loop), aplica na hora (`Hub.update_preferences`) e
-  republica a cidade para todos os clientes; valor inválido volta como `error` e nada é gravado. Realm escondido (`World.set_hidden`)
+  republica `settings` e a cidade para **todos** os clientes; valor inválido volta como `error` só a quem pediu e nada é gravado.
+  Eventos e linhas de Inner World de um realm escondido não são distribuídos; os caminhos escondidos de projetos que o Orb não detecta
+  agora são mantidos no arquivo; sem pasta do Orb a tela avisa que as mudanças valem só até fechar. Realm escondido (`World.set_hidden`)
   sai do snapshot (cidade e Mankind) e continua detectado e lido.
 - **Contador de linhas** (R19, D-053 a D-056): faz parte dos Probes; conta linhas não vazias dos
   arquivos acompanhados pelo git, sem os ignorados e sem os gerados da lista de exclusões, e

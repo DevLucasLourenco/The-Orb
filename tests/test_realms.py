@@ -508,3 +508,20 @@ def test_the_world_stream_serves_the_settings_and_applies_changes(machine, tmp_p
                 if worlds[-1]["hidden_realms"] == ["alpha"]:
                     break
         assert worlds and worlds[-1]["realms"] == []                            # a cidade mudou para quem está conectado
+
+
+def test_what_happens_in_a_hidden_realm_is_not_sent_to_the_clients_and_a_new_hidden_one_never_shows(machine, tmp_path):
+    alpha, beta = machine.project("alpha"), machine.project("beta")
+    hermes_session(machine, "H1", alpha, days_ago=1)
+    hub = hub_with_prefs(machine, tmp_path / "orb")
+    hub.poll_once()
+    hub.update_preferences({"hidden_realms": ["alpha"]})
+    hermes_session(machine, "H2", alpha, days_ago=0)
+    hub.observatory.refresh_index(force=True)
+    applied, changed = hub.poll_once()
+    assert applied == [] and changed is False                                   # nada de um realm escondido é distribuído
+    assert "hermes:H2" in {e.id for e in hub.world.realms["alpha"].values()}    # mas o mundo continua sabendo
+    hermes_session(machine, "H3", beta, days_ago=0)
+    hub.observatory.refresh_index(force=True)
+    applied, _ = hub.poll_once()
+    assert {e["realm"] for e in applied} == {"beta"}

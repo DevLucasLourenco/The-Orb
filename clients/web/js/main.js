@@ -97,6 +97,8 @@ function syncWorld(raw) {
   }
   for (const [id, a] of avatars) if (!alive.has(id)) { a.dispose(); avatars.delete(id); }
 
+  if (selectedRealm && !world.realms.some((r) => r.id === selectedRealm)) overview();     // o realm foi escondido: fecha o overview e o Inner World
+  else if (inner.current?.kind === "ego" && !egoIndex.has(inner.current.ego.id)) inner.close();                    // a sessão saiu da sala (prazo menor): idem
   renderTopbar(world);
   renderRealmList(world, selectedRealm, selectRealm);
   renderOverview(world.realms.find((r) => r.id === selectedRealm), openEgo);
@@ -174,12 +176,13 @@ stage.renderer.domElement.addEventListener("pointerup", (e) => {
 });
 
 window.addEventListener("keydown", (e) => {
+  if (!settingsBox.classList.contains("hidden")) {      // com a janela aberta, o teclado é dela (Esc fecha, mesmo dentro de um campo)
+    if (e.key === "Escape") toggleSettings(false);
+    return;
+  }
   const tag = e.target?.tagName;
   if (tag === "INPUT" || tag === "SELECT" || e.target?.closest?.(".xterm")) return;
-  if (e.key === "Escape") {
-    if (!settingsBox.classList.contains("hidden")) toggleSettings(false);
-    else overview();
-  }
+  if (e.key === "Escape") overview();
   else if (/^[1-9]$/.test(e.key) && world.realms[Number(e.key) - 1]) selectRealm(world.realms[Number(e.key) - 1].id);
   else if (e.key.toLowerCase() === "f" && selectedRealm) selectRealm(selectedRealm);
 });
@@ -187,11 +190,17 @@ document.getElementById("ov-close").onclick = overview;
 
 // Configurações (R29): o servidor manda os realms detectados e as opções; as mudanças voltam como um pedido só.
 const settingsBox = document.getElementById("settings");
+const settingsButton = document.getElementById("open-settings");
 function toggleSettings(open) {
   settingsBox.classList.toggle("hidden", !open);
-  if (open) net.requestSettings();
+  if (open) {
+    net.requestSettings();
+    document.getElementById("settings-close").focus();
+  } else {
+    settingsButton.focus();                               // o foco volta ao botão que abriu a janela
+  }
 }
-document.getElementById("open-settings").onclick = () => toggleSettings(settingsBox.classList.contains("hidden"));
+settingsButton.onclick = () => toggleSettings(settingsBox.classList.contains("hidden"));
 document.getElementById("settings-close").onclick = () => toggleSettings(false);
 settingsBox.addEventListener("pointerdown", (e) => { if (e.target === settingsBox) toggleSettings(false); });
 

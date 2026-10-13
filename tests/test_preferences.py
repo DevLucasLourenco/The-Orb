@@ -15,7 +15,7 @@ def test_without_a_file_the_defaults_apply_and_nothing_is_written(tmp_path):
 
 def test_saving_and_loading_round_trip_in_the_orb_folder(tmp_path):
     file = PreferencesFile(tmp_path / "orb")
-    file.save(Preferences(hidden_realms=("c:\a", "c:\b"), recent_days=3))
+    file.save(Preferences().updated(hidden_realms=("c:\a", "c:\b"), recent_days=3))
     assert (tmp_path / "orb" / PREFERENCES_FILE).is_file()
     loaded = PreferencesFile(tmp_path / "orb").load()
     assert (loaded.hidden_realms, loaded.recent_days) == (("c:\a", "c:\b"), 3)
@@ -37,7 +37,7 @@ def test_a_broken_file_gives_the_defaults_says_why_and_is_kept_aside_on_the_next
     (folder / PREFERENCES_FILE).write_text("{ isto nao e json", encoding="utf-8")
     file = PreferencesFile(folder)
     assert file.load().recent_days == 10 and file.error
-    file.save(Preferences(recent_days=4))
+    file.save(Preferences().updated(recent_days=4))
     assert (folder / (PREFERENCES_FILE + ".bad")).read_text(encoding="utf-8") == "{ isto nao e json"      # nada se perde
     assert file.error is None and PreferencesFile(folder).load().recent_days == 4
 
@@ -70,3 +70,16 @@ def test_saving_never_touches_anything_outside_the_orb_folder(tmp_path):
     PreferencesFile(tmp_path / "orb").save(Preferences())
     assert sorted(p.name for p in tmp_path.iterdir()) == ["orb"]
     assert sorted(p.name for p in (tmp_path / "orb").iterdir()) == [PREFERENCES_FILE]        # sem arquivo temporário sobrando
+
+
+def test_valid_json_with_invalid_values_gives_the_defaults_and_says_so(tmp_path):
+    folder = tmp_path / "orb"
+    folder.mkdir()
+    (folder / PREFERENCES_FILE).write_text(json.dumps({"recent_days": "x", "hidden_realms": [1]}), encoding="utf-8")
+    file = PreferencesFile(folder)
+    assert file.load().recent_days == 10 and "recent_days" in file.error             # nada de voltar aos padrões em silêncio
+
+
+def test_an_option_named_self_is_just_an_unknown_option():
+    with pytest.raises(ValueError):
+        Preferences().updated(self=1)                                         # nunca um TypeError que derrube a conexão

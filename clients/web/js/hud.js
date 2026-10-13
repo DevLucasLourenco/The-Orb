@@ -138,6 +138,7 @@ export function renderHistory(history) {
 // que acrescentam uma opção só acrescentam uma linha lá, esta tela já sabe desenhá-la.
 export function renderSettings(settings, onChange) {
   const body = document.getElementById("settings-body");
+  const focused = document.activeElement && body.contains(document.activeElement) ? document.activeElement.id : null;
   const realms = el("div");
   realms.append(el("h3", null, "Realms"), el("p", "hint", "Desmarcado = não aparece na cidade. O realm continua detectado."));
   for (const realm of settings.realms) {
@@ -158,6 +159,7 @@ export function renderSettings(settings, onChange) {
   const options = el("div");
   options.append(el("h3", null, "Opções"));
   for (const option of settings.options) {
+    if (option.kind !== "number") continue;                      // tipos novos de opção ganham o desenho deles quando o ticket que os cria chegar
     const row = el("div", "setting-row");
     const input = document.createElement("input");
     input.type = "number";
@@ -170,7 +172,13 @@ export function renderSettings(settings, onChange) {
     options.append(row);
   }
   body.replaceChildren(realms, options);
-  if (settings.error) body.append(el("div", "setting-error", settings.error));
+  if (settings.persistent === false) body.append(el("p", "hint", "Sem pasta do Orb: as mudanças valem só até fechar."));
+  if (settings.error) {
+    const message = el("div", "setting-error", settings.error);
+    message.setAttribute("role", "alert");
+    body.append(message);
+  }
+  if (focused) document.getElementById(focused)?.focus();        // refazer a janela não tira o foco de quem está digitando
 }
 
 export function renderOverview(realm, onOpen) {
