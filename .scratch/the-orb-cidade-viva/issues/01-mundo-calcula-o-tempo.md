@@ -1,6 +1,6 @@
 # 01: O mundo calcula o tempo
 
-Status: implementado
+Status: concluído (2026-10-13)
 Blocked by: None (can start immediately)
 Origem: R47, R31, R7; D-044, D-045, D-050, D-086
 Spec: [../spec.md](../spec.md)
@@ -36,7 +36,7 @@ Ponto de teste: o mundo (eventos sintéticos + horas diferentes → estados).
 
 ## Comments
 
-Implementado em 2026-10-09 na branch `ticket/01-mundo-calcula-o-tempo`; falta a revisão do Lucas e o merge.
+Implementado em 2026-10-09 na branch `ticket/01-mundo-calcula-o-tempo`. **PR #1 mesclado em 2026-10-13** (commit `73cfea5`).
 
 **O que ficou decidido na implementação, sem estar escrito antes** (agora em DECISIONS.md, rodada
 Q-T01-1 a 5; **confirmadas pelo Lucas em D-119 a D-123**): o "sem sinal" não segura o líder em `DELEGATING`; qualquer evento
