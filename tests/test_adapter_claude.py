@@ -211,3 +211,16 @@ def test_session_and_subagent_open_at_the_last_write_of_their_files_not_at_read_
     (ego,) = world.snapshot(datetime.now(UTC))["realms"][0]["alter_egos"]
     assert ego["team"][0]["no_signal"] is True               # 20 min sem atividade: já nasce cinza, sem piscar "ativo"
 
+
+def test_city_reader_sends_each_project_folder_to_the_realm_the_resolver_decides(tmp_path, jsonl, monkeypatch):
+    monkeypatch.setattr("orb.adapters.claude.transcript.DISCOVER_EVERY", 0.0)
+    other = r"C:\proj\outro"
+    for cwd, sid in ((CWD, SID), (other, "22222222-2222-4222-8222-222222222222")):
+        jsonl(project_dir(cwd, home=tmp_path) / f"{sid}.jsonl",
+              [{"type": "user", "uuid": "u1", "cwd": cwd, "timestamp": "2026-10-07T10:00:00Z", "message": {"content": "oi"}}])
+    decided = {CWD: "demo"}                                   # `other` não é de nenhum realm
+    events = TranscriptReader(since=time.time() - 3600, home=tmp_path, realm_of=decided.get).poll()
+    assert {e["realm"] for e in events} == {"demo"} and {e["alter_ego"] for e in events} == {f"claude:{SID}"}
+    opening = next(e for e in events if e["signal"] and e["signal"]["type"] == "session.started")
+    assert opening["signal"]["cwd"] == CWD                    # a pasta gravada, não a de um realm
+

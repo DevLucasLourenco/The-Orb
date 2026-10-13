@@ -64,7 +64,7 @@ classificador de comandos; `todowrite` → `THINKING`; `webfetch`/`websearch` �
 
 O tipo nativo (`user`, `synthetic`, `system`) aparece no rótulo de cada linha do Inner World.
 
-**Índice (ticket 03):** `SessionsIndex` faz uma consulta só à `session_v2` (`id`, `parent_id`, `directory`, `title`,
+**Índice (ticket 03):** `OpencodeDbIndex` faz uma consulta só à `session_v2` (`id`, `parent_id`, `directory`, `title`,
 `model`, `time_created`, `time_updated`). A raiz do projeto **não** vem da tabela `project` (`worktree`, via
 `session_v2.project_id`): o banco guarda credenciais, e o adapter só lê `session_v2` e `session_message`; a pasta
 (`directory`) sobe até o repositório git no Observatório (Q-T03-1).

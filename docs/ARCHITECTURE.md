@@ -52,7 +52,7 @@
 | **Core** | `src/orb/core/` | O mundo: aplica eventos, deriva a atividade de cada personagem, Teams, pendências, Energy; snapshot | Protocol | Adapters, Gateway, disco, rede, relógio |
 | **Adapters** (claude, codex, hermes, opencode) | `src/orb/adapters/<provider>/` | Ler a fonte nativa do provider e produzir eventos (nativo + sinal + inner) pelo Mapa do provider | Protocol | Core, Gateway, outros adapters |
 | **Terminal Host** | `src/orb/terminal_host/` | Abrir o terminal real (ConPTY), chamar o CLI (lista fixa), transportar bytes, limpar o ambiente herdado | nada do domínio | Core, adapters |
-| **Gateway** | `src/orb/gateway/` | Autenticar, ligar terminal + adapter + Core por sessão, validar mensagens do cliente, distribuir por WebSocket | todos, por interfaces | internals de adapters |
+| **Gateway** | `src/orb/gateway/` | Autenticar, ligar terminal + adapter + Core por sessão, validar mensagens do cliente, distribuir por WebSocket; detectar os realms (`realms.py`) e decidir pasta → projeto (`projects.py`, a borda que conhece o disco) | todos, por interfaces | internals de adapters |
 | **Clients** | `clients/` | Renderizar o mundo e o Inner World, enviar teclas | só as mensagens do Gateway | adapters, providers |
 | **Probes** *(futuro)* | `src/orb/probes/` | Fatos do mundo real (git, CI, LOC respeitando `.gitignore`) | Protocol | Core, adapters |
 
@@ -62,7 +62,8 @@
   além do Protocol.
 - **Adapters não importam uns aos outros.** O que eles compartilham é genérico e fica em
   `src/orb/adapters/_shared/` (fábrica de eventos, leitura incremental de JSONL, leitura somente
-  leitura de SQLite, classificador de comandos de shell), sem conhecimento de provider.
+  leitura de SQLite, classificador de comandos de shell, `SessionMeta` do índice de sessões), sem
+  conhecimento de provider.
 - **Adicionar um provider = adicionar um adapter** (`mapping.py` + leitores), sem tocar em Core,
   Gateway ou clientes ([ADR 0002](adr/0002-eventos-nativos-por-provider.md)).
 - Clientes nunca falam com adapters ou providers; só com o Gateway.
@@ -91,6 +92,7 @@ Todo adapter expõe a mesma forma (`orb.adapters._shared.base`):
 | `PROVIDER` | Nome do provider (`"claude"`, `"codex"`, …) |
 | `capabilities()` | O que este provider consegue informar (pensamento `raw`/`summary`, aprovações, subagentes, tempo real, tokens). O resto do sistema se adapta, em vez de assumir |
 | Leitor nível 0 | Objeto com `poll() -> list[OrbEvent]`, incremental e somente leitura |
+| Índice de sessões | Objeto com `scan() -> list[SessionMeta]` (`_shared/index.py`): metadados de **todas** as sessões do provider (pasta, raiz do projeto que ele informa, sessão-mãe, datas, título, modelo), sem abrir o conteúdo e somente leitura (R48, camada 1) |
 | Leitor nível 1 *(opcional)* | Hooks por sessão (Claude) ou observador de app-server (Codex) |
 | `mapping.py` | O Mapa do provider: tabelas declarativas de evento nativo → `signal`/`inner` |
 
@@ -163,8 +165,8 @@ projeto.
    |---|---|---|---|
    | Claude (`TranscriptIndex`) | Campo `cwd` das primeiras linhas de um transcript da pasta; uma pasta por projeto em `~/.claude/projects/` | — | Uma leitura por pasta; datas vêm do arquivo (título e modelo exigem abrir o conteúdo e ficam para as sessões da sala) |
    | Codex (`RolloutIndex`) | `session_meta.cwd` (1ª linha do rollout, lida **uma única vez** por arquivo) | — (`session_meta.git` traz branch, commit e URL, não a pasta) | 428 rollouts: ~5 s na primeira varredura, ~20 ms nas seguintes |
-   | Hermes (`SessionsIndex`) | `sessions.cwd` no `state.db` | `sessions.git_repo_root` (vazio em todas as sessões desta máquina) | Uma consulta à tabela `sessions`, sem tocar em `messages` |
-   | opencode (`SessionsIndex`) | `session_v2.directory` no `opencode.db` | — (o Orb não lê a tabela `project`: o banco guarda credenciais e só `session_v2` e `session_message` são lidas; Q-T03-1) | Uma consulta, só `session_v2` |
+   | Hermes (`StateDbIndex`) | `sessions.cwd` no `state.db` | `sessions.git_repo_root` (vazio em todas as sessões desta máquina) | Uma consulta à tabela `sessions`, sem tocar em `messages` |
+   | opencode (`OpencodeDbIndex`) | `session_v2.directory` no `opencode.db` | ~~`project.worktree`~~ (a spec previa lê-la; o Orb não lê a tabela `project`: o banco guarda credenciais e só `session_v2` e `session_message` são lidas; Q-T03-1) | Uma consulta, só `session_v2` |
 
 2. **Pasta → projeto** (`gateway/projects.py`, `ProjectResolver`; só lê arquivos, nada é executado nem gravado).
    Vence a raiz que o provider informa, se ela contém a pasta. Senão, sobe da pasta até o repositório git
@@ -283,6 +285,7 @@ ticket existir.
 | Classificador de comandos | Tabela de casos | `tests/test_commands.py` |
 | Terminal Host | PTY falsa (sempre) + terminal real (quando `pywinpty` e o CLI existem) | `tests/test_terminal_host.py` |
 | Gateway | Validação de mensagens; app com terminal falso | `tests/test_gateway.py` |
+| Detecção de realms (as leituras do mundo real) | Pastas de CLIs e de projetos falsas → realms; regras de pasta → projeto; índice de sessões | `tests/test_realms.py`, `tests/test_projects.py`, `tests/test_session_index.py` (arquivos falsos em `tests/fakes.py`) |
 
 **Pontos de teste (D-099).** O principal é o mundo: eventos sintéticos + uma hora → estado do mundo
 (inclui tempo, papel, tarefas, Weather, Energy, XP, cidade, fachada e classes). Os outros dois são os
@@ -310,13 +313,13 @@ The Orb/
 │   ├── protocol/        events.py · vocab.py
 │   ├── core/            world.py · rules.py
 │   ├── adapters/
-│   │   ├── _shared/     base.py · commands.py · jsonl.py · sqlite.py
-│   │   ├── claude/      mapping.py · transcript.py · hooks.py
-│   │   ├── codex/       mapping.py · app_server.py · rollout.py
-│   │   ├── hermes/      mapping.py · state_db.py
-│   │   └── opencode/    mapping.py · state_db.py
+│   │   ├── _shared/     base.py · commands.py · index.py · jsonl.py · sqlite.py
+│   │   ├── claude/      mapping.py · transcript.py · index.py · hooks.py
+│   │   ├── codex/       mapping.py · app_server.py · rollout.py · index.py
+│   │   ├── hermes/      mapping.py · state_db.py · index.py
+│   │   └── opencode/    mapping.py · state_db.py · index.py
 │   ├── terminal_host/   launch.py · env.py · terminal.py
-│   └── gateway/         app.py · messages.py · realms.py
+│   └── gateway/         app.py · messages.py · realms.py · projects.py
 ├── clients/
 │   ├── web/             o mundo 3D: index.html, styles.css, js/ (scene, realm3d, avatar, hud, innerworld, net)
 │   └── godot/           terminal remoto (alternativa; godot-xterm só exibe)

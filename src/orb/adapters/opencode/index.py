@@ -8,7 +8,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from .._shared.index import SessionMeta, iso_from_seconds
+from .._shared import iso_from_ms
+from .._shared.index import SessionMeta
 from .._shared.sqlite import connect_readonly, table_columns
 from . import state_db
 
@@ -16,10 +17,10 @@ _COLUMNS = ("id", "parent_id", "directory", "title", "model", "time_created", "t
 
 
 def _iso(ms: object) -> str | None:
-    return iso_from_seconds(ms / 1000) if isinstance(ms, (int, float)) and not isinstance(ms, bool) else None
+    return iso_from_ms(ms) if isinstance(ms, (int, float)) and not isinstance(ms, bool) else None
 
 
-class SessionsIndex:
+class OpencodeDbIndex:
     def __init__(self, data_dir: Path | None = None) -> None:
         self.db_path = (data_dir or state_db.opencode_data_dir()) / "opencode.db"
 
@@ -31,7 +32,7 @@ class SessionsIndex:
             columns = table_columns(conn, "session_v2", _COLUMNS)
             if "id" not in columns or "directory" not in columns:
                 return []                         # esquema diferente do levantado: degrada sem inventar
-            rows = [dict(row) for row in state_db._select(conn, "session_v2", columns, "", ())]
+            rows = [dict(row) for row in state_db.select(conn, "session_v2", columns, "", ())]
         finally:
             conn.close()
         found: list[SessionMeta] = []

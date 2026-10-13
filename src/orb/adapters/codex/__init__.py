@@ -4,8 +4,8 @@ Nível 0: `RolloutReader` (lê ~/.codex/sessions). Nível 1: `AppServerObserver`
 (app-server próprio do Orb, TUI com `codex --remote`; o observador nunca responde ao servidor).
 """
 from .app_server import AppServerObserver, AppServerTranslator, app_server_command
-from .mapping import CAPABILITIES, PROVIDER
 from .index import RolloutIndex
+from .mapping import CAPABILITIES, PROVIDER
 from .rollout import RolloutReader, sessions_root
 
 __all__ = ["AppServerObserver", "AppServerTranslator", "CAPABILITIES", "PROVIDER", "RolloutIndex", "RolloutReader",

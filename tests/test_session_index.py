@@ -7,22 +7,15 @@ import pytest
 
 from orb.adapters.claude import TranscriptIndex, project_dir
 from orb.adapters.codex import RolloutIndex
-from orb.adapters.hermes import SessionsIndex as HermesIndex
-from orb.adapters.opencode import SessionsIndex as OpencodeIndex
+from orb.adapters.hermes import StateDbIndex as HermesIndex
+from orb.adapters.opencode import OpencodeDbIndex as OpencodeIndex
+
+from .fakes import hermes_db, opencode_db, rollout, transcript
 
 CWD = r"C:\proj\demo"
 
 
 # --- Codex ---------------------------------------------------------------------------------
-
-def rollout(tmp_path, jsonl, thread_id, cwd, *, parent=None, day="07"):
-    payload = {"id": thread_id, "cwd": cwd, "cli_version": "0.160.1", "timestamp": f"2026-10-{day}T10:00:00Z"}
-    if parent:
-        payload["parent_thread_id"] = parent
-    path = tmp_path / ".codex" / "sessions" / "2026" / "10" / day / f"rollout-2026-10-{day}T10-00-00-{thread_id}.jsonl"
-    jsonl(path, [{"timestamp": payload["timestamp"], "ordinal": 0, "type": "session_meta", "payload": payload}])
-    return path
-
 
 def test_codex_lists_every_rollout_with_folder_dates_and_title(tmp_path, jsonl):
     rollout(tmp_path, jsonl, "t-demo", CWD)
@@ -62,15 +55,6 @@ def test_codex_without_sessions_folder_is_empty(tmp_path):
 
 # --- Claude --------------------------------------------------------------------------------
 
-def transcript(home, cwd, session_id, entries=None):
-    folder = project_dir(cwd, home=home)
-    folder.mkdir(parents=True, exist_ok=True)
-    path = folder / f"{session_id}.jsonl"
-    lines = entries if entries is not None else [{"type": "user", "uuid": "u1", "cwd": cwd, "message": {"content": "oi"}}]
-    path.write_text("".join(json.dumps(line) + "\n" for line in lines), encoding="utf-8")
-    return path
-
-
 def test_claude_lists_every_session_of_every_project_folder(short_tmp):
     transcript(short_tmp, CWD, "s1")
     transcript(short_tmp, CWD, "s2")
@@ -100,17 +84,6 @@ def test_claude_without_projects_folder_is_empty(tmp_path):
 
 # --- Hermes --------------------------------------------------------------------------------
 
-def hermes_db(home):
-    home.mkdir(parents=True, exist_ok=True)
-    conn = sqlite3.connect(home / "state.db")
-    conn.executescript("""
-        CREATE TABLE sessions (id TEXT PRIMARY KEY, source TEXT, model TEXT, parent_session_id TEXT, cwd TEXT,
-                               title TEXT, started_at REAL, last_activity_at REAL, git_repo_root TEXT, extra_future_column TEXT);
-        CREATE TABLE messages (id INTEGER PRIMARY KEY AUTOINCREMENT, session_id TEXT, content TEXT);
-    """)
-    return conn
-
-
 def test_hermes_lists_every_session_with_the_root_the_provider_informs(tmp_path):
     conn = hermes_db(tmp_path / "hermes")
     conn.execute("INSERT INTO sessions VALUES ('H1', 'cli', 'm', NULL, ?, 'Plano', 1760000000.0, 1760000900.0, ?, NULL)",
@@ -136,18 +109,6 @@ def test_hermes_without_database_or_with_another_schema_is_empty(tmp_path):
 
 # --- opencode ------------------------------------------------------------------------------
 
-def opencode_db(data_dir):
-    data_dir.mkdir(parents=True, exist_ok=True)
-    conn = sqlite3.connect(data_dir / "opencode.db")
-    conn.executescript("""
-        CREATE TABLE session_v2 (id TEXT PRIMARY KEY, parent_id TEXT, directory TEXT, title TEXT, model TEXT,
-                                 time_created INTEGER, time_updated INTEGER);
-        CREATE TABLE credential (id TEXT, value TEXT);
-        INSERT INTO credential VALUES ('c1', 'SEGREDO');
-    """)
-    return conn
-
-
 def test_opencode_lists_every_session_without_touching_credentials(tmp_path, monkeypatch):
     conn = opencode_db(tmp_path / "opencode")
     conn.execute("INSERT INTO session_v2 VALUES ('ses_1', NULL, ?, 'Corrigir bug', 'prov/m', 1760000000000, 1760000900000)", (CWD,))
@@ -155,8 +116,8 @@ def test_opencode_lists_every_session_without_touching_credentials(tmp_path, mon
     conn.commit()
     from orb.adapters.opencode import state_db
     asked = []
-    real = state_db._select
-    monkeypatch.setattr(state_db, "_select", lambda conn, table, *a, **k: asked.append(table) or real(conn, table, *a, **k))
+    real = state_db.select
+    monkeypatch.setattr(state_db, "select", lambda conn, table, *a, **k: asked.append(table) or real(conn, table, *a, **k))
     metas = {m.session_id: m for m in OpencodeIndex(data_dir=tmp_path / "opencode").scan()}
     assert set(metas) == {"ses_1", "ses_2"}
     one = metas["ses_1"]
@@ -173,3 +134,32 @@ def test_opencode_without_database_is_empty(tmp_path):
                                   lambda p: HermesIndex(home=p / "hermes"), lambda p: OpencodeIndex(data_dir=p / "opencode")])
 def test_every_index_is_a_noop_on_an_empty_machine(tmp_path, make):
     assert make(tmp_path).scan() == []
+
+
+def test_claude_reads_each_folder_once_and_does_not_reopen_unchanged_unknown_folders(short_tmp, monkeypatch):
+    from orb.adapters.claude import index as claude_index
+    transcript(short_tmp, CWD, "s1")
+    unknown = transcript(short_tmp, r"D:\sem\cwd", "s2", entries=[{"type": "summary", "summary": "x"}])
+    index = TranscriptIndex(home=short_tmp)
+    calls = []
+    real = claude_index.recorded_cwd
+    monkeypatch.setattr(claude_index, "recorded_cwd", lambda folder: calls.append(folder.name) or real(folder))
+    index.scan()
+    assert len(calls) == 2                                                            # uma leitura por pasta
+    index.scan()
+    assert len(calls) == 2                                                            # nada mudou: nenhuma releitura
+    with open(unknown, "a", encoding="utf-8") as fh:
+        fh.write(json.dumps({"type": "user", "uuid": "u2", "cwd": r"D:\sem\cwd", "message": {"content": "oi"}}) + "\n")
+    index.scan()
+    assert len(calls) == 3                                                            # só a pasta que mudou é lida de novo
+
+
+def test_hermes_index_never_touches_the_messages_table(tmp_path):
+    home = tmp_path / "hermes"
+    home.mkdir()
+    conn = sqlite3.connect(home / "state.db")
+    conn.executescript("CREATE TABLE sessions (id TEXT PRIMARY KEY, cwd TEXT);")      # nem existe `messages`
+    conn.execute("INSERT INTO sessions VALUES ('H1', ?)", (CWD,))
+    conn.commit()
+    assert [m.session_id for m in HermesIndex(home=home).scan()] == ["H1"]
+

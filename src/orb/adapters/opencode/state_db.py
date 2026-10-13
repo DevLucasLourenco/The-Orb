@@ -45,7 +45,7 @@ def _iso(ms: Any) -> str | None:
 
 
 
-def _select(conn: sqlite3.Connection, table: str, columns: list[str], where: str, params: tuple) -> list[sqlite3.Row]:
+def select(conn: sqlite3.Connection, table: str, columns: list[str], where: str, params: tuple) -> list[sqlite3.Row]:
     if table not in ALLOWED_TABLES:
         raise PermissionError(f"tabela fora do permitido: {table}")
     return conn.execute(f'SELECT {", ".join(columns)} FROM "{table}" {where}', params).fetchall()
@@ -81,7 +81,7 @@ class OpencodeDbReader:
                     self.cursor = (int(row[0]), str(row[1])) if row else (-1, "")
                     return []
             last_time, last_id = self.cursor
-            rows = _select(conn, "session_message", columns,
+            rows = select(conn, "session_message", columns,
                            "WHERE time_updated > ? OR (time_updated = ? AND id > ?) "
                            "ORDER BY time_updated, id LIMIT ?", (last_time, last_time, last_id, BATCH))
             events: list[Event] = []
@@ -101,7 +101,7 @@ class OpencodeDbReader:
         columns = table_columns(conn, "session_v2", _SESSION_COLUMNS)
         if "id" not in columns:
             return None
-        rows = _select(conn, "session_v2", columns, "WHERE id = ?", (session_id,))
+        rows = select(conn, "session_v2", columns, "WHERE id = ?", (session_id,))
         if not rows:
             return None              # ainda não gravada: tenta na próxima linha
         session: dict[str, Any] | None = dict(rows[0])
@@ -119,7 +119,7 @@ class OpencodeDbReader:
             seen.add(current["id"])
             parent = self._sessions.get(current["parent_id"])
             if parent is None:
-                rows = _select(conn, "session_v2", ["id", "parent_id"], "WHERE id = ?", (current["parent_id"],))
+                rows = select(conn, "session_v2", ["id", "parent_id"], "WHERE id = ?", (current["parent_id"],))
                 parent = dict(rows[0]) if rows else {"id": current["parent_id"], "parent_id": None}
             current = parent
         root = str(current["id"])

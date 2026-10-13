@@ -14,7 +14,7 @@ from .state_db import hermes_home
 _COLUMNS = ("id", "source", "model", "parent_session_id", "cwd", "title", "started_at", "last_activity_at", "git_repo_root")
 
 
-class SessionsIndex:
+class StateDbIndex:
     def __init__(self, home: Path | None = None) -> None:
         self.db_path = (home or hermes_home()) / "state.db"
 

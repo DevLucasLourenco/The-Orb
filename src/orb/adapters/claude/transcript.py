@@ -15,7 +15,14 @@ from pathlib import Path
 from typing import Any
 
 from ...protocol import Event
-from .._shared import EventFactory, JsonlFollower, RealmOf, iso_from_seconds, realm_id_for, single_realm
+from .._shared import (
+    EventFactory,
+    JsonlFollower,
+    RealmOf,
+    iso_from_seconds,
+    realm_id_for,
+    single_realm,
+)
 from . import mapping
 
 SOURCE = "claude/transcript"
@@ -31,8 +38,13 @@ def encode_cwd(cwd: str) -> str:
     return re.sub(r"[^A-Za-z0-9]", "-", cwd)
 
 
+def projects_root(home: Path | None = None) -> Path:
+    """Onde o Claude guarda os transcripts: uma pasta por projeto."""
+    return (home or Path.home()) / ".claude" / "projects"
+
+
 def project_dir(cwd: str, home: Path | None = None) -> Path:
-    return (home or Path.home()) / ".claude" / "projects" / encode_cwd(cwd)
+    return projects_root(home) / encode_cwd(cwd)
 
 
 @dataclass
@@ -147,24 +159,22 @@ class TranscriptReader:
         return [(folder, self.cwd, self.realm) for folder in self._project_dirs()]
 
     def _city_folders(self) -> list[tuple[Path, str, str]]:
+        """Pastas novas de `~/.claude/projects` (só chamada por `_discover`, que já espaça as varreduras)."""
         now = time.monotonic()
-        if now - self._last_scan >= DISCOVER_EVERY:
-            self._last_scan = now
-            root = (self.home or Path.home()) / ".claude" / "projects"
-            try:
-                folders = [folder for folder in root.iterdir() if folder.is_dir()]
-            except OSError:
-                folders = []
-            for folder in folders:
-                if folder in self._city or self._city_skip.get(folder, 0.0) > now:
-                    continue
-                cwd = recorded_cwd(folder)
-                realm = self.realm_of(cwd) if cwd else None
-                if cwd and realm:
-                    self._city[folder] = (cwd, realm)
-                    self._city_skip.pop(folder, None)
-                else:
-                    self._city_skip[folder] = now + _RETRY_UNKNOWN
+        try:
+            folders = [folder for folder in projects_root(self.home).iterdir() if folder.is_dir()]
+        except OSError:
+            folders = []
+        for folder in folders:
+            if folder in self._city or self._city_skip.get(folder, 0.0) > now:
+                continue
+            cwd = recorded_cwd(folder)
+            realm = self.realm_of(cwd) if cwd else None
+            if cwd and realm:
+                self._city[folder] = (cwd, realm)
+                self._city_skip.pop(folder, None)
+            else:
+                self._city_skip[folder] = now + _RETRY_UNKNOWN
         return [(folder, cwd, realm) for folder, (cwd, realm) in self._city.items()]
 
     def _project_dirs(self) -> list[Path]:
