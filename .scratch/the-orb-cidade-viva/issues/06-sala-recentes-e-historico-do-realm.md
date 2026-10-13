@@ -1,6 +1,6 @@
 # 06: Sala com sessões recentes e Histórico do realm
 
-Status: ready-for-agent
+Status: concluído (2026-10-13)
 Blocked by: 01, 03
 Origem: R28, R28a, R48 (camada 2); D-024, D-027, D-035, D-059, D-087
 Spec: [../spec.md](../spec.md)
@@ -35,7 +35,7 @@ Ponto de teste: o mundo (eventos + hora) e os leitores dos CLIs (seleção do qu
 
 ## Comments
 
-Implementado em 2026-10-13 (branch `ticket/06-sala-com-sessoes-recentes-e-historico-do-realm`). Só estrutura e contagens dos dados reais.
+Implementado em 2026-10-13 (branch `ticket/06-sala-com-sessoes-recentes-e-historico-do-realm`, PR 5 mesclado). Só estrutura e contagens dos dados reais.
 
 - **O que mudou:** `rules.RECENT_SESSION_SECONDS` (10 dias, um só valor), `World(recent_seconds=...)`, `in_room` por Alter Ego, `night` por realm,
   `World.add_realm` e `World.any_active`; o Observatório lê só a sala (`since` = 10 dias; `fresh_after` separa o replay), anuncia a
