@@ -57,8 +57,8 @@ Situação: ✅ como está · ❌ precisa mudar · ❓ precisa de decisão.
 | V-EGO-5 | Três pontos orbitando a cabeça | Dado | `THINKING` | ✅ |
 | V-EGO-6 | Losango âmbar sobre a cabeça | Dado | A sessão espera o Lucas | ⚠️ A cor do "esperando" muda (R20c, V-PEND-7b) |
 | V-EGO-7 | Translúcido, cabeça baixa, sem halo | Heurística | "Dormindo": sessão recente parada há mais de 15 min (R31); o mundo informa `asleep` (R47) | ✅ |
-| V-EGO-8 | Rótulo: **nome histórico em destaque**; embaixo "provider · título da sessão"; depois atividade · última ação | Dado + Identidade | Título e modelo do próprio CLI; última ferramenta usada, com o texto do provider; o nome vem de §9 (D-066) | ⚠️ Hoje sem o nome |
-| V-EGO-11 | **Nome histórico** do personagem (ex.: "Einstein") | Identidade | Sorteado sem reposição quando a sessão aparece, fica com a sessão (R37, §9) | ⏳ |
+| V-EGO-8 | Rótulo: **nome histórico em destaque**; embaixo "provider · título da sessão"; depois atividade · última ação | Dado + Identidade | Título e modelo do próprio CLI; última ferramenta usada, com o texto do provider; o nome vem de §9 (D-066) | ✅ Ticket 04: nome em destaque, "provider · título" embaixo, depois atividade e última ação |
+| V-EGO-11 | **Nome histórico** do personagem (ex.: "Einstein") | Identidade | Sorteado sem reposição quando a sessão aparece, fica com a sessão (R37, §9) | ✅ Ticket 04 |
 | V-EGO-12 | Contador **"+N"** numa área | Dado | Personagens além dos 8 visíveis naquela área (R33) | ⏳ |
 | V-EGO-9 | Personagem menor, mesma cor | Dado | Subagente da sessão (Team) | ✅ |
 | V-EGO-10 | Subagente **cinza ("sem sinal")** | Heurística | **Decidido (R7, D-045, D-050):** depois de **5 min sem atividade** e sem sinal do fim, o subagente fica **cinza translúcido, sem halo, com um ícone de sinal cortado** sobre a cabeça, em vez de sumir. O opencode continua cinza **sólido, com halo**. O mundo informa `no_signal` (R47); o subagente fica no lugar em que estava | ✅ Feito e conferido ao vivo (ticket 01). Com R30 (ticket 05) o opencode fica cinza: o que o separa do "sem sinal" é a translucidez, o halo e o ícone |
@@ -72,7 +72,7 @@ Situação: ✅ como está · ❌ precisa mudar · ❓ precisa de decisão.
 | Id | Elemento | Tipo | Significado / fonte | Situação |
 |---|---|---|---|---|
 | V-HUD-1 | Lista de realms com pontos coloridos | Dado | Um ponto por sessão, na cor do provider; apagado = dormindo | ✅ |
-| V-HUD-2 | Overview do realm (cartões das sessões) | Dado | R18: o que faz agora, espera, subagentes, tokens/custo, há quanto tempo | ✅ |
+| V-HUD-2 | Overview do realm (cartões das sessões, com o nome histórico de cada uma) | Dado | R18: o que faz agora, espera, subagentes, tokens/custo, há quanto tempo | ✅ |
 | V-HUD-3 | Inner World: linha do tempo | Dado | Eventos nativos com o texto do provider; rótulo = `native.kind` | ✅ |
 | V-HUD-4 | Inner World: terminal | Dado | Terminal real do CLI (só para sessões abertas pelo painel; R9) | ⚠️ |
 | V-HUD-5 | **Lista de realms com marcação** | Dado | Todos os realms detectados; desmarcar esconde o prédio da cidade (R3c). A escolha fica guardada pelo Orb | ⏳ |
@@ -290,7 +290,8 @@ não fere a regra R12: é o nome do personagem, e assim é apresentado.
    Quando a sacola esvazia, ela é embaralhada de novo. Assim um nome só volta depois de todos os
    outros terem saído.
 2. **O nome fica com a sessão para sempre**: na sala, no Histórico do realm e ao reabrir a sessão. O
-   Orb guarda a associação sessão → nome no seu registro local (R36).
+   Orb guarda a associação sessão → nome no seu registro local (R36). **Feito (ticket 04):** o nome entra no
+   estado do Alter Ego (`name`); sem registro (falha de disco) ele vale só até o fim da execução.
 3. **Sem gêmeos na sala:** se o nome sorteado já estiver em uso por um personagem visível na mesma
    sala, tira-se o seguinte.
 4. **Subagentes não ganham nome histórico**: ficam com o tipo que o CLI dá a eles (Explore,

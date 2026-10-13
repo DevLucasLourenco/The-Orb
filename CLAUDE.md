@@ -79,7 +79,7 @@ tem entrada em VISUAL.md com tipo e fonte? Algum invariante da §4 é afetado?
    depuração: o servidor sobe sem nenhum argumento.
 3. **Somente leitura (R16).** Arquivos e bancos dos providers e dos projetos são abertos só para
    leitura (SQLite com `mode=ro`). **Nunca grave no `.git`**: git só com `--no-optional-locks` (ou
-   `GIT_OPTIONAL_LOCKS=0`). A única escrita é o Terminal Host levando ao CLI o que o Lucas digitou.
+   `GIT_OPTIONAL_LOCKS=0`). A única escrita nos arquivos de terceiros é o Terminal Host levando ao CLI o que o Lucas digitou; o Orb grava só nos próprios arquivos (registro local, R36; preferências, R29).
 4. **O Orb nunca responde diálogos** dos CLIs (atualização, confiança, hooks, aprovações), nem em
    testes ou automação, e **nunca envia teclas às cegas** ([ADR 0006](docs/adr/0006-o-orb-nunca-responde-dialogos.md)).
    O observador do app-server do Codex **ignora** pedidos de servidor (não aprova nem recusa).
@@ -114,6 +114,7 @@ src/orb/
   adapters/
     _shared/      fábrica de eventos, JSONL incremental, SQLite ro, classificador de comandos
     claude/ codex/ hermes/ opencode/    mapping.py (tabelas) + leitores          (só Protocol e _shared)
+  registry/       registro local do Orb (SQLite próprio: nomes, e depois Chronicle e XP) (só Core)
   terminal_host/  ConPTY, linha de lançamento com valores do Orb, ambiente limpo (nada do domínio)
   gateway/        FastAPI + WebSocket, Observatório, Hub                         (todos, por interfaces)
 clients/web/      mundo 3D (Three.js 0.170 por importmap, xterm.js), sem build   (só mensagens do Gateway)

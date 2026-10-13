@@ -13,12 +13,12 @@ ganha um nome histórico sorteado da sacola de 60 nomes. O rótulo mostra o nome
 
 ## Critérios de aceite
 
-- [ ] O registro local existe na pasta de preferências do Orb e guarda só o que o Orb derivou (nada do conteúdo das sessões).
-- [ ] Sacola global: os 60 nomes de VISUAL.md §9 saem sem repetir até a sacola esvaziar; depois ela é embaralhada de novo.
-- [ ] O nome fica com a sessão para sempre (também depois de reiniciar o Orb).
-- [ ] Nunca dois nomes iguais visíveis na mesma sala.
-- [ ] Subagentes não ganham nome: ficam com o tipo dado pelo CLI.
-- [ ] Rótulo do personagem: nome em destaque; embaixo "provider · título"; depois atividade e última ação.
+- [x] O registro local existe na pasta de preferências do Orb e guarda só o que o Orb derivou (nada do conteúdo das sessões).
+- [x] Sacola global: os 60 nomes de VISUAL.md §9 saem sem repetir até a sacola esvaziar; depois ela é embaralhada de novo.
+- [x] O nome fica com a sessão para sempre (também depois de reiniciar o Orb).
+- [x] Nunca dois nomes iguais visíveis na mesma sala.
+- [x] Subagentes não ganham nome: ficam com o tipo dado pelo CLI.
+- [x] Rótulo do personagem: nome em destaque; embaixo "provider · título"; depois atividade e última ação. (O nome também aparece no cartão da sessão e na dica dos pontos do realm: Q-T04-5.)
 
 ## Testes
 
@@ -34,3 +34,21 @@ Ponto de teste: o mundo (o nome entra no estado do Alter Ego) e o registro local
 - Uma branch e um PR para este ticket (D-114).
 
 ## Comments
+
+Implementado em 2026-10-13 (branch `ticket/04-registro-local-e-nome-historico`). Só estrutura e contagens dos dados reais.
+
+- **O que mudou:** `orb.core.names` (os 60 nomes de VISUAL.md §9, `NameBag`, `NameBook`, `NameSource`); `World(names=...)` dá o
+  `name` ao Alter Ego quando a sessão aparece (subagente fica sem nome); pacote `orb.registry` (`LocalRegistry`,
+  `orb_home()`) com `registry.db` em `%LOCALAPPDATA%\the-orb\`, tabelas `names` e `bag`; o Gateway entrega o registro ao
+  mundo (`GatewayConfig.state_dir`, `/config` com `registry_error`); o cliente mostra o nome no rótulo, no cartão e na dica dos pontos.
+- **Testes:** `tests/test_names.py` (sacola, pulo de nome em uso, a lista confere com VISUAL.md), `tests/test_registry.py`
+  (pasta temporária: reabrir mantém o nome e a sacola; só tabelas derivadas; disco quebrado, arquivo corrompido e registro de
+  Orb mais novo degradam sem tocar o arquivo), acréscimos em `test_core.py` e `test_gateway.py`. Suíte: 310 → 342 passed, 1 skipped.
+- **Conferido com dados reais** (pasta do Orb temporária, nada gravado na pasta real; só contagens): 4 sessões ativas, 4 nomes
+  distintos, nenhum subagente com nome; reiniciar o servidor devolveu os mesmos 4 nomes; o rótulo vem em três linhas
+  (nome, "provider · título", atividade) e o console sem erros; só as cores neutras já existentes.
+- **Decisões a confirmar:** Q-T04-1 a Q-T04-5 em `docs/DECISIONS.md` (a Q-T04-4 reescreve o invariante 3 do CLAUDE.md:
+  a única escrita nos arquivos de terceiros é o Terminal Host; o Orb grava nos próprios).
+- **Fora deste ticket:** a sala só com as sessões recentes e o Histórico do realm (ticket 06: até lá "visível na sala" é o
+  realm inteiro que o mundo conhece); eventos do mundo, índice de sessões, pontos de parada e extrato de XP no registro
+  (tickets 06, 18, 22); o nível ao lado do nome (V-EGO-13, ticket 22).
