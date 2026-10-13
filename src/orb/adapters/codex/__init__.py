@@ -5,7 +5,8 @@ Nível 0: `RolloutReader` (lê ~/.codex/sessions). Nível 1: `AppServerObserver`
 """
 from .app_server import AppServerObserver, AppServerTranslator, app_server_command
 from .mapping import CAPABILITIES, PROVIDER
+from .index import RolloutIndex
 from .rollout import RolloutReader, sessions_root
 
-__all__ = ["AppServerObserver", "AppServerTranslator", "CAPABILITIES", "PROVIDER", "RolloutReader",
+__all__ = ["AppServerObserver", "AppServerTranslator", "CAPABILITIES", "PROVIDER", "RolloutIndex", "RolloutReader",
            "app_server_command", "sessions_root"]

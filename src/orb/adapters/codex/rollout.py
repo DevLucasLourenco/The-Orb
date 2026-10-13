@@ -37,7 +37,7 @@ def session_index(home: Path | None = None) -> Path:
 
 
 
-def _first_line(path: Path) -> dict[str, Any] | None:
+def first_entry(path: Path) -> dict[str, Any] | None:
     try:
         with open(path, "rb") as fh:              # somente leitura
             line = fh.readline(1024 * 1024)
@@ -50,6 +50,23 @@ def _first_line(path: Path) -> dict[str, Any] | None:
 def _parts_text(parts: Any) -> str:
     """Junta o `text` das partes de um conteúdo (`input_text`, `summary_text`…); parte cifrada não tem texto."""
     return "\n".join(str(part["text"]) for part in parts or [] if isinstance(part, dict) and part.get("text"))
+
+
+def load_session_titles(path: Path) -> dict[str, str] | None:
+    """`session_index.jsonl` -> {id da thread: nome da conversa} (a última linha vence); `None` se ilegível."""
+    titles: dict[str, str] = {}
+    try:
+        with open(path, "rb") as fh:
+            for raw in fh:
+                try:
+                    entry = json.loads(raw)
+                except (json.JSONDecodeError, UnicodeDecodeError):
+                    continue
+                if isinstance(entry, dict) and isinstance(entry.get("id"), str) and isinstance(entry.get("thread_name"), str):
+                    titles[entry["id"]] = entry["thread_name"]
+    except OSError:
+        return None
+    return titles
 
 
 @dataclass
@@ -106,7 +123,7 @@ class RolloutReader:
                 continue
             if stat.st_mtime < self.since:
                 continue
-            first = _first_line(path)
+            first = first_entry(path)
             meta = (first or {}).get("payload") if (first or {}).get("type") == "session_meta" else None
             if not isinstance(meta, dict) or not isinstance(meta.get("id"), str):
                 continue             # ainda sem a primeira linha: tenta no próximo poll
@@ -136,19 +153,9 @@ class RolloutReader:
         if mtime == self._titles_mtime:
             return
         self._titles_mtime = mtime
-        titles: dict[str, str] = {}
-        try:
-            with open(path, "rb") as fh:
-                for raw in fh:
-                    try:
-                        entry = json.loads(raw)
-                    except (json.JSONDecodeError, UnicodeDecodeError):
-                        continue
-                    if isinstance(entry, dict) and isinstance(entry.get("id"), str) and isinstance(entry.get("thread_name"), str):
-                        titles[entry["id"]] = entry["thread_name"]       # a última linha vence
-        except OSError:
-            return
-        self._titles = titles
+        titles = load_session_titles(path)
+        if titles is not None:
+            self._titles = titles
 
     def poll(self) -> list[Event]:
         self._discover()
