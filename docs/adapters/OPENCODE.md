@@ -71,7 +71,7 @@ visível (raciocínio + resposta + argumentos das ferramentas) dá 3,38 caracter
 caracteres para 605 tokens; de 2,85 a 4,36 por mensagem), faixa de texto comum e sem folga para
 raciocínio escondido. **Dúvida:** uma amostra pequena, de um único modelo; nos modelos que só entregam
 resumo (como os gpt-5.x, [CODEX.md](CODEX.md) §4) não se conhece marcador estrutural nos blocos, então o
-adapter marcaria `raw` (Q-T02-3).
+adapter marcaria `raw` (D-126).
 
 ## 3. Sessão = Alter Ego
 

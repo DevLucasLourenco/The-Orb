@@ -66,7 +66,7 @@ sabe, por exemplo, se o Lucas já tem hooks ou webhooks configurados.
   das ferramentas dão 4,29 caracteres por token de saída (de 3,46 a 7,2 nas 15 sessões com mais de 1.000
   tokens), faixa de texto comum e sem folga para raciocínio escondido. Logo o texto guardado é a cadeia
   inteira: `raw`.
-- **Dúvidas registradas** (não verificáveis aqui; decisão Q-T02-3 e Q-T02-4):
+- **Dúvidas registradas** (não verificáveis aqui; decididas em D-126 e D-127):
   1. `codex_reasoning_items` nunca apareceu nos dados reais: a regra `summary` vem do código do Hermes
      (`agent/codex_responses_adapter.py`) e do formato dos rollouts do Codex (§4 de [CODEX.md](CODEX.md)).
   2. Modelos OpenAI gpt-5.x pelo caminho de chat (ex.: Nous Portal) entregam o resumo em

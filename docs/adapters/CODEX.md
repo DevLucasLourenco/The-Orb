@@ -164,11 +164,11 @@ Só estrutura e contagens, nos 12 rollouts mais recentes (176 linhas `agent_mess
   dois rollouts**: numa conferência posterior (184 linhas com texto) havia 124 textos distintos; 19 se
   repetiam, 13 dentro de um mesmo rollout e 6 em rollouts diferentes, na raiz e num subagente (provavelmente o
   mesmo relato gravado em quem o envia e em quem o recebe; não confirmado). Como o subagente entra na Team do
-  Alter Ego raiz, o Inner World dele pode mostrar a mesma fala duas vezes. Nada é deduplicado hoje (Q-T02-2).
+  Alter Ego raiz, o Inner World dele pode mostrar a mesma fala duas vezes. Nada é deduplicado (D-125).
 - 161 das 176 vêm logo depois de `inter_agent_communication_metadata`; as 15 sem ela são os relatos que o
   próprio subagente envia (mensagem enviada, não recebida).
 - O Inner World mostra o texto como narração da thread onde ele foi gravado. Autor e destinatário ficam no
-  corpo nativo (Q-T02-2: mostrar quem fala é decisão do Lucas).
+  corpo nativo, sem prefixo de quem fala (D-125).
 - **Versões:** `agent_message` e `inter_agent_communication_metadata` aparecem a partir de
   `0.146.0-alpha.3.1`, a mais antiga com elas nesta máquina (128 dos 427 rollouts);
   `thread_settings_applied` já existe na mais antiga (`0.142.5`). Um rollout traz `0.162.0`, acima do CLI
