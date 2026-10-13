@@ -293,7 +293,8 @@ não fere a regra R12: é o nome do personagem, e assim é apresentado.
    Orb guarda a associação sessão → nome no seu registro local (R36). **Feito (ticket 04):** o nome entra no
    estado do Alter Ego (`name`); sem registro (falha de disco) ele vale só até o fim da execução.
 3. **Sem gêmeos na sala:** se o nome sorteado já estiver em uso por um personagem visível na mesma
-   sala, tira-se o seguinte.
+   sala, tira-se o seguinte. **Feito (ticket 04, Q-T04-2):** o pulado continua na sacola; se todos os que
+   restam estão em uso, sai um nome de fora da sacola, que não é descartada.
 4. **Subagentes não ganham nome histórico**: ficam com o tipo que o CLI dá a eles (Explore,
    qa-reviewer…), porque são temporários (D-065).
 5. **Rótulo:** o nome em destaque; embaixo, "Claude · <título da sessão>" (D-066).

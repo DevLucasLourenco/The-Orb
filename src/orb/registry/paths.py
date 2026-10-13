@@ -9,7 +9,7 @@ FOLDER_NAME = "the-orb"
 
 
 def orb_home(env: Mapping[str, str] | None = None, home: Path | None = None) -> Path:
-    """`%LOCALAPPDATA%\the-orb` no Windows; fora dele, `$XDG_DATA_HOME/the-orb` ou `~/.local/share/the-orb`.
+    """`%LOCALAPPDATA%\\the-orb` no Windows; fora dele, `$XDG_DATA_HOME/the-orb` ou `~/.local/share/the-orb`.
     Ambiente e home entram por parâmetro (testes nunca tocam a pasta real); a pasta só é criada por quem grava nela."""
     env = os.environ if env is None else env
     if env.get("LOCALAPPDATA"):

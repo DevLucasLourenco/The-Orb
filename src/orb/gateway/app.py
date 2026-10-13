@@ -85,7 +85,8 @@ class Hub:
 
     def registry_error(self) -> str | None:
         """Por que o registro local não está gravando (nomes só em memória), ou None."""
-        return getattr(self.world.names, "error", None)
+        names = self.world.names
+        return names.error if names is not None else None
 
     def snapshot(self, now: datetime | None = None) -> dict[str, Any]:
         """O mundo na hora do servidor (`generated_at`): é com ela que o Core deriva dormindo e sem sinal."""

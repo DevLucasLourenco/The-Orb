@@ -1,3 +1,4 @@
+import random
 from datetime import UTC, datetime, timedelta
 
 import pytest
@@ -287,7 +288,7 @@ def test_subagents_get_no_name_and_keep_the_kind_given_by_the_cli():
 
 
 def test_the_bag_is_global_so_two_realms_never_share_a_name():
-    world = World(names=NameBook(rng=__import__("random").Random(4)))
+    world = World(names=NameBook(rng=random.Random(4)))
     for n in range(12):
         event = ev({"type": "session.started"}, ego=f"claude:s{n}")
         event["realm"] = f"realm-{n % 3}"

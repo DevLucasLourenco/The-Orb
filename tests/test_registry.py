@@ -64,6 +64,47 @@ def test_the_folder_is_created_when_it_does_not_exist_yet(tmp_path):
     assert folder.is_dir()
 
 
+def test_two_orbs_open_at_once_never_draw_the_same_name(tmp_path):
+    import threading
+    drawn: list[str] = []
+
+    def draw(prefix: str) -> None:
+        registry = LocalRegistry(tmp_path)                                             # uma instância por Orb aberto
+        drawn.extend(registry.name_for(f"{prefix}:{n}", frozenset()) for n in range(30))
+
+    threads = [threading.Thread(target=draw, args=(prefix,)) for prefix in ("claude", "codex")]
+    for thread in threads:
+        thread.start()
+    for thread in threads:
+        thread.join()
+    assert sorted(drawn) == sorted(NAMES)                                              # 60 sorteios, nenhuma repetição
+
+
+def test_a_failure_that_passes_does_not_turn_the_registry_off_for_good(tmp_path):
+    registry = LocalRegistry(tmp_path)
+    first = registry.name_for("claude:s1", frozenset())
+    path = tmp_path / REGISTRY_FILE
+    held = sqlite3.connect(path, isolation_level=None)
+    held.execute("BEGIN EXCLUSIVE")                                                    # outro processo segura o banco
+    try:
+        registry._busy_seconds = 0.05
+        during = registry.name_for("claude:s2", frozenset())
+        assert during in NAMES and during != first and registry.error                  # a cópia em memória atende
+    finally:
+        held.execute("ROLLBACK")
+        held.close()
+    registry.name_for("claude:s3", frozenset())
+    assert registry.error is None                                                      # o disco voltou sozinho
+
+
+def test_the_memory_copy_follows_the_same_bag_so_names_do_not_repeat_during_a_failure(tmp_path):
+    registry = LocalRegistry(tmp_path, rng=random.Random(9))
+    drawn = [registry.name_for(f"s{n}", frozenset()) for n in range(10)]
+    (tmp_path / REGISTRY_FILE).write_bytes(b"x" * 4096)                                # o arquivo estraga no meio da execução
+    drawn += [registry.name_for(f"s{n}", frozenset()) for n in range(10, 20)]
+    assert len(set(drawn)) == 20 and registry.error
+
+
 def test_a_broken_registry_file_degrades_to_names_in_memory_and_says_so(tmp_path):
     (tmp_path / REGISTRY_FILE).write_bytes(b"isto nao e um banco sqlite " * 40)
     registry = LocalRegistry(tmp_path)

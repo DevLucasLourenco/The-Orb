@@ -9,7 +9,7 @@ VISUAL = Path(__file__).resolve().parents[1] / "docs" / "VISUAL.md"
 
 
 def test_the_sixty_names_are_the_ones_approved_in_visual_md():
-    section = VISUAL.read_text(encoding="utf-8").split("## 9. Os nomes dos Alter Egos", 1)[1].split("\n## ", 1)[0]
+    section = re.search(r"^## 9\. .*?(?=^## )", VISUAL.read_text(encoding="utf-8"), flags=re.MULTILINE | re.DOTALL).group(0)
     rows = re.findall(r"^\| (\d+) \| ([^|]+?) \|", section, flags=re.MULTILINE)
     assert [int(n) for n, _ in rows] == list(range(1, 61))
     assert tuple(name for _, name in rows) == NAMES
@@ -37,11 +37,16 @@ def test_a_name_in_use_is_skipped_and_stays_in_the_bag_for_the_next_draw():
     assert bag.draw() == "Einstein"
 
 
-def test_when_every_name_left_is_in_use_a_new_bag_is_shuffled():
+def test_when_every_name_left_is_in_use_one_from_outside_the_bag_comes_out_and_the_bag_stays():
     bag = NameBag(["Einstein"], rng=random.Random(3))
     name = bag.draw(avoid={"Einstein"})
-    assert name != "Einstein" and name in NAMES
-    assert len(bag.remaining) == 59
+    assert name != "Einstein" and name in NAMES                   # sem gêmeos na sala
+    assert bag.remaining == ("Einstein",)                         # a sacola não foi descartada
+
+
+def test_an_empty_bag_is_shuffled_again_before_a_name_comes_out():
+    bag = NameBag([], rng=random.Random(3))
+    assert bag.draw() in NAMES and len(bag.remaining) == 59
 
 
 def test_when_all_sixty_are_in_use_a_repeat_is_unavoidable_and_still_works():
@@ -50,9 +55,9 @@ def test_when_all_sixty_are_in_use_a_repeat_is_unavoidable_and_still_works():
 
 def test_the_book_keeps_the_name_of_a_session_forever():
     book = NameBook(rng=random.Random(5))
-    einstein_or_other = book.name_for("claude:s1")
-    assert [book.name_for("claude:s1", avoid=frozenset({einstein_or_other})) for _ in range(3)] == [einstein_or_other] * 3
-    assert book.name_for("codex:s1") != einstein_or_other        # sessão nova, nome novo (sacola global)
+    name = book.name_for("claude:s1")
+    assert [book.name_for("claude:s1", avoid=frozenset({name})) for _ in range(3)] == [name] * 3
+    assert book.name_for("codex:s1") != name                      # sessão nova, nome novo (sacola global)
 
 
 def test_sessions_of_different_providers_never_share_a_name_until_the_bag_empties():

@@ -241,9 +241,10 @@ ticket existir.
   transação `BEGIN IMMEDIATE` (dois Orbs abertos não repetem o nome). O Core não conhece o disco: o
   `World(names=...)` recebe um `NameSource` (`name_for(id, avoid)`), e o Gateway entrega o
   `LocalRegistry` (ou, sem pasta do Orb, o `NameBook` em memória). **Falha de disco** (pasta sem
-  permissão, arquivo corrompido, registro de um Orb mais novo): os nomes passam a viver em memória até o
-  fim da execução, o arquivo nunca é apagado nem alterado, e `/config` informa o motivo em
-  `registry_error`.
+  permissão, arquivo corrompido, banco travado, registro de um Orb mais novo): os nomes vêm de uma cópia em
+  memória que segue a mesma sacola; o disco é tentado de novo a cada pedido (uma falha passageira não desliga
+  o registro); o arquivo nunca é apagado nem alterado, e `/config` informa o motivo em `registry_error`
+  (nenhuma tela mostra isso hoje). Quem sorteia espera o banco por até 5 s, na thread de leitura (`to_thread`).
 - **Contador de linhas** (R19, D-053 a D-056): faz parte dos Probes; conta linhas não vazias dos
   arquivos acompanhados pelo git, sem os ignorados e sem os gerados da lista de exclusões, e
   recalcula ao abrir e quando as alterações locais mudam (até 1×/min por realm). Somente leitura.

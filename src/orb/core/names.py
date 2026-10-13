@@ -47,25 +47,33 @@ class NameBag:
 
     def draw(self, avoid: Collection[str] = ()) -> str:
         """O próximo nome que não está em `avoid` (os já em uso na sala, D-064). O nome pulado continua
-        na sacola. Sem nome disponível, embaralha uma sacola nova; com os 60 em uso, repetir é inevitável."""
-        for fresh in (False, True):
-            if fresh:
-                self._remaining = self._shuffled()
-            for index, name in enumerate(self._remaining):
-                if name not in avoid:
-                    return self._remaining.pop(index)
-        return self._remaining.pop(0)
+        na sacola. Sacola vazia: embaralha uma nova. Se o que resta só tem nomes em uso, sai um nome de fora da
+        sacola, que fica como está (não ter gêmeos na sala vale mais que esgotar a sacola, Q-T04-2). Com os 60
+        em uso, repetir é inevitável."""
+        if not self._remaining:
+            self._remaining = self._shuffled()
+        for index, name in enumerate(self._remaining):
+            if name not in avoid:
+                return self._remaining.pop(index)
+        free = [name for name in NAMES if name not in avoid]
+        return self._rng.choice(free) if free else self._remaining.pop(0)
 
 
 class NameSource(Protocol):
     """O que o mundo pede: o nome da sessão `key` (o id do Alter Ego), sorteando um se ela ainda não tem.
-    `avoid` são os nomes dos outros personagens da mesma sala."""
+    `avoid` são os nomes dos outros personagens da mesma sala. `error` diz por que o nome não está sendo
+    guardado (disco com falha), ou é None."""
+
+    error: str | None
 
     def name_for(self, key: str, avoid: frozenset[str] = frozenset()) -> str: ...
 
 
 class NameBook:
-    """O livro de nomes em memória: sessão -> nome, sempre o mesmo, mais a sacola global (D-064)."""
+    """O livro de nomes em memória: sessão -> nome, sempre o mesmo, mais a sacola global (D-064).
+    `rng` só vale quando a sacola é criada aqui (sem `bag`)."""
+
+    error: str | None = None
 
     def __init__(self, assigned: Mapping[str, str] | None = None, bag: NameBag | None = None, *,
                  rng: random.Random | None = None) -> None:

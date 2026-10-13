@@ -112,6 +112,7 @@ export class Avatar {
     this.waiting = ego.state === "WAITING" || (ego.waiting && ego.waiting.length > 0);
     if (!this.labelEl) return;
     this.labelEl.classList.toggle("waiting", this.waiting);
+    this.labelEl.classList.toggle("named", Boolean(ego.name));       // sem nome, o título continua sendo a linha forte
     const status = this.waiting
       ? `esperando você · ${ego.waiting?.[0]?.action || ""}`
       : `${STATE_LABEL[ego.state] || ego.state}${ego.last_action ? " · " + ego.last_action : ""}`;
