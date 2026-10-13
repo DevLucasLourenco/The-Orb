@@ -15,13 +15,22 @@ from pathlib import Path
 from typing import Any
 
 from ...protocol import Event
-from .._shared import EventFactory, JsonlFollower, realm_id_for, single_realm
+from .._shared import (
+    EventFactory,
+    JsonlFollower,
+    RealmOf,
+    iso_from_seconds,
+    realm_id_for,
+    single_realm,
+)
 from . import mapping
 
 SOURCE = "claude/transcript"
 _SEEN_MESSAGES = 2048     # ids de mensagem lembrados para não contar `usage` repetido
 _PEEK_BYTES = 256 * 1024  # fim do arquivo lido na descoberta, para achar título e modelo
 _RESCAN_DIRS = 5.0        # segundos entre varreduras das pastas de projeto (subpastas/worktrees)
+DISCOVER_EVERY = 2.0      # modo cidade: segundos entre varreduras de pastas e sessões novas (D-087)
+_RETRY_UNKNOWN = 60.0     # modo cidade: segundos até reavaliar uma pasta que não é de nenhum realm
 
 
 def encode_cwd(cwd: str) -> str:
@@ -29,8 +38,13 @@ def encode_cwd(cwd: str) -> str:
     return re.sub(r"[^A-Za-z0-9]", "-", cwd)
 
 
+def projects_root(home: Path | None = None) -> Path:
+    """Onde o Claude guarda os transcripts: uma pasta por projeto."""
+    return (home or Path.home()) / ".claude" / "projects"
+
+
 def project_dir(cwd: str, home: Path | None = None) -> Path:
-    return (home or Path.home()) / ".claude" / "projects" / encode_cwd(cwd)
+    return projects_root(home) / encode_cwd(cwd)
 
 
 @dataclass
@@ -52,9 +66,11 @@ class _Session:
     announced: bool = False
     title: str | None = None
     model: str | None = None
+    cwd: str = ""
+    last_write: float | None = None     # `st_mtime` quando a sessão foi achada: é a hora em que ela se abre (D-128)
 
 
-def _recorded_cwd(folder: Path) -> str | None:
+def recorded_cwd(folder: Path) -> str | None:
     """O `cwd` que o Claude gravou num transcript desta pasta (só as primeiras linhas)."""
     for path in folder.glob("*.jsonl"):
         try:
@@ -110,17 +126,25 @@ class TranscriptReader:
     - Com `session_id` (modo Hospedar), só aquela sessão e os subagentes dela.
     - Sem `session_id` (modo Observar), toda sessão da pasta ativa depois de `since`.
     - Arquivo criado antes de `since` começa do fim, a menos que `replay=True`.
+    - Com `realm_of` (modo cidade), um único leitor cobre todas as pastas de `~/.claude/projects`: cada
+      pasta vale pelo `cwd` que o Claude gravou nela e vai para o realm que `realm_of` decidir (ou é
+      ignorada). Os outros providers já funcionam assim (uma loja, um leitor).
     """
 
-    def __init__(self, cwd: str, *, realm: str | None = None, session_id: str | None = None,
+    def __init__(self, cwd: str | None = None, *, realm: str | None = None, session_id: str | None = None,
                  since: float | None = None, home: Path | None = None, replay: bool = False,
-                 subfolders: bool = True) -> None:
-        self.cwd = cwd
+                 subfolders: bool = True, realm_of: RealmOf | None = None) -> None:
+        self.cwd = cwd or ""
+        self.city = realm_of is not None
+        self.realm_of = realm_of
         self.subfolders = subfolders and session_id is None
         self._inside = single_realm(cwd, "realm")
         self._dirs: dict[Path, bool] = {}          # pasta de projeto do Claude -> é deste realm?
+        self._city: dict[Path, tuple[str, str]] = {}      # modo cidade: pasta -> (cwd gravado, realm)
+        self._city_skip: dict[Path, float] = {}           # modo cidade: pasta -> quando reavaliar
+        self._last_discovery = float("-inf")
         self._last_scan = float("-inf")
-        self.realm = realm or realm_id_for(cwd)
+        self.realm = realm or (realm_id_for(cwd) if cwd else "")
         self.session_id = session_id
         self.since = time.time() if since is None else since
         self.home = home
@@ -128,6 +152,31 @@ class TranscriptReader:
         self._sessions: dict[Path, _Session] = {}
 
     # --- descoberta -------------------------------------------------------------------------
+    def _folders(self) -> list[tuple[Path, str, str]]:
+        """As pastas de transcripts a ler, cada uma com o `cwd` e o realm que ela vale."""
+        if self.city:
+            return self._city_folders()
+        return [(folder, self.cwd, self.realm) for folder in self._project_dirs()]
+
+    def _city_folders(self) -> list[tuple[Path, str, str]]:
+        """Pastas novas de `~/.claude/projects` (só chamada por `_discover`, que já espaça as varreduras)."""
+        now = time.monotonic()
+        try:
+            folders = [folder for folder in projects_root(self.home).iterdir() if folder.is_dir()]
+        except OSError:
+            folders = []
+        for folder in folders:
+            if folder in self._city or self._city_skip.get(folder, 0.0) > now:
+                continue
+            cwd = recorded_cwd(folder)
+            realm = self.realm_of(cwd) if cwd else None
+            if cwd and realm:
+                self._city[folder] = (cwd, realm)
+                self._city_skip.pop(folder, None)
+            else:
+                self._city_skip[folder] = now + _RETRY_UNKNOWN
+        return [(folder, cwd, realm) for folder, (cwd, realm) in self._city.items()]
+
     def _project_dirs(self) -> list[Path]:
         """A pasta do realm e, se pedido, as de subpastas dele (ex.: worktrees em
         `<projeto>/.claude/worktrees/...`). O nome codificado é ambíguo ("trisafe" é prefixo de
@@ -143,18 +192,22 @@ class TranscriptReader:
             if parent.is_dir():
                 for folder in parent.iterdir():
                     if folder not in self._dirs and folder.name.startswith(prefix) and folder.is_dir():
-                        verdict = _recorded_cwd(folder)
+                        verdict = recorded_cwd(folder)
                         if verdict is not None:
                             self._dirs[folder] = self._inside(verdict) is not None
         return [exact] + [folder for folder, mine in self._dirs.items() if mine]
 
     def _discover(self) -> None:
-        pattern = f"{self.session_id}.jsonl" if self.session_id else "*.jsonl"
-        for root in self._project_dirs():
-            if root.is_dir():
-                self._discover_in(root, pattern)
+        now = time.monotonic()
+        if not self.city or now - self._last_discovery >= DISCOVER_EVERY:
+            self._last_discovery = now
+            pattern = f"{self.session_id}.jsonl" if self.session_id else "*.jsonl"
+            for root, cwd, realm in self._folders():
+                if root.is_dir():
+                    self._discover_in(root, pattern, cwd, realm)
+        self._discover_subagents()
 
-    def _discover_in(self, root: Path, pattern: str) -> None:
+    def _discover_in(self, root: Path, pattern: str, cwd: str, realm: str) -> None:
         for path in root.glob(pattern):
             if path in self._sessions:
                 continue
@@ -168,8 +221,11 @@ class TranscriptReader:
             self._sessions[path] = _Session(
                 session_id=path.stem,
                 follower=JsonlFollower(path, start_at_end=not self.replay and born < self.since),
-                factory=EventFactory(provider=mapping.PROVIDER, source=SOURCE, realm=self.realm,
-                                     session=path.stem))
+                factory=EventFactory(provider=mapping.PROVIDER, source=SOURCE, realm=realm,
+                                     session=path.stem),
+                cwd=cwd, last_write=stat.st_mtime)
+
+    def _discover_subagents(self) -> None:
         for session_path, session in self._sessions.items():
             folder = session_path.parent / session.session_id / "subagents"
             if not folder.is_dir():
@@ -203,8 +259,8 @@ class TranscriptReader:
         session.announced = True
         session.title, session.model = _identity(session.follower.path)
         body = {"sessionId": session.session_id, "customTitle": session.title, "model": session.model}
-        return session.factory.make("session", None, "transcript/session", body,
-                                    signal={"type": "session.started", "cwd": self.cwd,
+        return session.factory.make("session", iso_from_seconds(session.last_write), "transcript/session", body,
+                                    signal={"type": "session.started", "cwd": session.cwd,
                                             "title": session.title, "model": session.model})
 
     def _announce(self, session: _Session, sub: _Subagent) -> Event:
@@ -218,8 +274,12 @@ class TranscriptReader:
         if isinstance(tool_use, str) and sub.meta.get("requestShape") == "foreground":
             session.foreground_tools[tool_use] = sub.agent_id
         body = {"agentId": sub.agent_id, **{k: v for k, v in sub.meta.items() if k != "prompt"}}
+        try:
+            last_write = iso_from_seconds(sub.follower.path.stat().st_mtime)
+        except OSError:
+            last_write = None
         return session.factory.make(
-            f"{sub.agent_id}#meta", None, "subagent/meta", body, agent=sub.agent_id,
+            f"{sub.agent_id}#meta", last_write, "subagent/meta", body, agent=sub.agent_id,
             inner={"role": "system",
                    "text": f"{sub.meta.get('agentType', 'subagente')}: {sub.meta.get('description', '')}".strip()},
             signal={"type": "subagent.started", "kind": sub.meta.get("agentType")})

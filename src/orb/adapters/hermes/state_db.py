@@ -123,8 +123,10 @@ class StateDbReader:
                                                            realm=realm, session=root)
         return factory
 
-    def _announce(self, session: dict[str, Any], root: str, agent: str | None, factory: EventFactory) -> Event | None:
-        """A sessão entra no mundo com o título e o modelo que o Hermes gravou."""
+    def _announce(self, session: dict[str, Any], root: str, agent: str | None, factory: EventFactory,
+                  ts: str | None) -> Event | None:
+        """A sessão entra no mundo com o título e o modelo que o Hermes gravou, na hora da mensagem que a
+        revelou (nunca na hora da leitura: D-128)."""
         sid = str(session["id"])
         if sid in self._announced:
             return None
@@ -134,13 +136,13 @@ class StateDbReader:
         signal = ({"type": "subagent.started", "kind": session.get("source")} if agent else
                   {"type": "session.started", "cwd": session.get("cwd"), "title": session.get("title"),
                    "model": session.get("model")})
-        return factory.make(f"{sid}:start", None, "sessions", body, agent=agent, signal=signal)
+        return factory.make(f"{sid}:start", ts, "sessions", body, agent=agent, signal=signal)
 
     def _translate(self, conn: sqlite3.Connection, session: dict[str, Any], msg: dict[str, Any]) -> list[Event]:
         root, agent = self._root_and_agent(conn, session)
         factory = self._factory(session["_realm"], root)
-        announce = self._announce(session, root, agent, factory)
         ts = _iso(msg.get("timestamp"))
+        announce = self._announce(session, root, agent, factory, ts)
         key = f"m{msg['id']}"
         role = msg.get("role")
         content = msg.get("content") if isinstance(msg.get("content"), str) else ""

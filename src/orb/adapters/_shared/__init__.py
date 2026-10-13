@@ -2,9 +2,10 @@
 from .base import (Capabilities, EventFactory, RealmOf, alter_ego_id, iso_from_ms, norm_path, now_iso,
                    realm_id_for, realm_resolver, single_realm, stable_key)
 from .commands import classify_command
+from .index import SessionIndex, SessionMeta, iso_from_seconds
 from .jsonl import JsonlFollower
 from .sqlite import connect_readonly, table_columns
 
-__all__ = ["Capabilities", "EventFactory", "JsonlFollower", "alter_ego_id", "classify_command",
-           "connect_readonly", "iso_from_ms", "norm_path", "now_iso", "RealmOf", "realm_id_for",
+__all__ = ["Capabilities", "EventFactory", "JsonlFollower", "SessionIndex", "SessionMeta", "alter_ego_id", "classify_command",
+           "connect_readonly", "iso_from_ms", "iso_from_seconds", "norm_path", "now_iso", "RealmOf", "realm_id_for",
            "realm_resolver", "single_realm", "stable_key", "table_columns"]

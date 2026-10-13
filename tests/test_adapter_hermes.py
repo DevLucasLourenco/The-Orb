@@ -120,3 +120,29 @@ def test_thought_is_raw_when_the_schema_has_no_reasoning_items_column(tmp_path):
     r.poll()                                      # o primeiro poll só fixa o cursor
     assert thoughts(r.poll()) == ["raw"]
 
+
+def test_session_opening_carries_the_time_of_the_message_that_revealed_it(tmp_path):
+    """D-128: a abertura não usa a hora da leitura; leva a da primeira mensagem vista da sessão."""
+    home = tmp_path / "hermes"
+    conn = make_db(home)
+    conn.execute("INSERT INTO sessions VALUES ('S1', 'cli', 'm', NULL, ?, 't', 0, NULL)", (CWD,))
+    conn.commit()
+    r = StateDbReader(CWD, realm="demo", home=home, replay=True)
+    r.poll()
+    add(conn, "S1", "user", "oi")                              # timestamp 1_760_000_000.0
+    opening = r.poll()[0]
+    assert opening["signal"]["type"] == "session.started" and opening["ts"].startswith("2025-10-09T08:53:20")
+
+
+def test_subagent_opening_carries_the_time_of_its_first_message(tmp_path):
+    home = tmp_path / "hermes"
+    conn = make_db(home)
+    conn.execute("INSERT INTO sessions VALUES ('P', 'cli', 'm', NULL, ?, 't', 0, NULL)", (CWD,))
+    conn.execute("INSERT INTO sessions VALUES ('C', 'subagent', 'm', 'P', ?, 't', 0, NULL)", (CWD,))
+    conn.commit()
+    r = StateDbReader(CWD, realm="demo", home=home, replay=True)
+    r.poll()
+    add(conn, "C", "assistant", "procurando")
+    opening = next(e for e in r.poll() if e["signal"] and e["signal"]["type"] == "subagent.started")
+    assert opening["ts"].startswith("2025-10-09T08:53:20")                           # não a hora da leitura (D-128)
+

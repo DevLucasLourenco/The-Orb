@@ -4,7 +4,7 @@
 > [PROTOCOL.md](../PROTOCOL.md): o evento nativo intacto + sinal de mundo + entrada de Inner World.
 > Código: `src/orb/adapters/claude/` · Vocabulário: [CONTEXT.md](../../CONTEXT.md).
 
-Última atualização: 2026-10-07
+Última atualização: 2026-10-13
 
 ## Como isto foi verificado
 
@@ -31,10 +31,15 @@ ignora campos desconhecidos e preserva o nativo intacto.
   (`agentType`, `description`, `toolUseId`, `spawnDepth`, `requestShape`, `requestNonInteractive`).
 - Append-only, uma linha JSON por entrada: dá para acompanhar em tempo real.
 - **Subpastas e worktrees:** uma sessão aberta numa subpasta do projeto (ex.:
-  `<projeto>/.claude/worktrees/<nome>`) tem a sua própria pasta codificada. O leitor do realm
-  também acompanha as pastas cujo nome começa com o do projeto, mas só depois de confirmar pelo
-  `cwd` gravado no transcript, porque o nome codificado é ambíguo ("trisafe" é prefixo de
-  "trisafe-enhanced").
+  `<projeto>/.claude/worktrees/<nome>`) tem a sua própria pasta codificada. O nome codificado é ambíguo
+  ("trisafe" é prefixo de "trisafe-enhanced"), então cada pasta de `~/.claude/projects/` vale pelo `cwd`
+  gravado nas primeiras linhas de um transcript dela, e o Observatório decide a que projeto esse `cwd` pertence.
+  Um único leitor cobre todas as pastas (ticket 03); o modo de uma pasta só serve ao terminal hospedado.
+- **Índice (ticket 03):** `TranscriptIndex` lista toda sessão (`<id>.jsonl`) de toda pasta, com o `cwd` gravado e as
+  datas do arquivo (criação e última escrita); não abre o conteúdo (título e modelo ficam para a sala). Uma pasta
+  sem `cwd` gravado nas primeiras linhas fica de fora até ter um.
+- **Hora de abertura (D-128):** os eventos `session.started` e `subagent.started` levam a hora da última escrita
+  do arquivo, não a da leitura.
 - **Identidade:** o título vem de `custom-title` (`customTitle`) ou `agent-name` (`agentName`), e o
   modelo de `message.model`; na descoberta o leitor lê só o fim do arquivo para achá-los.
 

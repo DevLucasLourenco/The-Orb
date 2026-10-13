@@ -142,7 +142,7 @@ def test_never_touches_credential_tables(tmp_path, db, monkeypatch):
     r.poll()
     assert queries and not any("credential" in q.lower() or "account" in q.lower() for q in queries)
     with pytest.raises(PermissionError):
-        state_db._select(sqlite3.connect(":memory:"), "credential", ["value"], "", ())
+        state_db.select(sqlite3.connect(":memory:"), "credential", ["value"], "", ())
 
 
 def test_missing_db_and_data_dir():

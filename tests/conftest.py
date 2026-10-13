@@ -18,3 +18,14 @@ def write_jsonl(path: Path, entries: list[dict], *, append: bool = False) -> Non
 @pytest.fixture
 def jsonl():
     return write_jsonl
+
+
+@pytest.fixture
+def short_tmp():
+    """Pasta temporária de caminho curto: nomes codificados do Claude estouram os 260 do Windows."""
+    import shutil
+    import tempfile
+    path = Path(tempfile.mkdtemp(prefix="orb")).resolve()
+    yield path
+    shutil.rmtree(path, ignore_errors=True)
+

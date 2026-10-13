@@ -61,16 +61,15 @@ Requisitos: Python 3.12+ e os CLIs que for usar, instalados e logados.
 ```powershell
 pip install -e ".[dev]"          # na pasta do The Orb: fastapi, uvicorn, websockets, pywinpty, pytest
 python -m pytest -q
-python -m orb.gateway.app --root "C:\Users\llourenco\Documents\Sistemas e Projetos"
+python -m orb.gateway.app
 ```
 
-Com `--root`, **cada subpasta é um projeto** (um prédio da cidade). Isso é **provisório**: pela
-regra R3 os realms serão detectados pelos próprios providers, sem informar caminhos
-([docs/RULES.md](docs/RULES.md)). O servidor imprime a URL com o token; abra no navegador.
-Qualquer sessão de `claude`, `codex`, `hermes` ou `opencode` aberta na pasta de um realm (pelo Orb
-ou fora dele, inclusive em subpastas como os worktrees do Claude) aparece sozinha como um
-personagem com a cor do seu provider. `--lookback 30` (minutos)
-decide quão recente uma sessão precisa ser para já aparecer ao abrir.
+Nenhum caminho é informado (regra R3, [docs/RULES.md](docs/RULES.md)): **cada projeto que algum CLI já
+registrou é um prédio da cidade**, detectado pelas sessões que `claude`, `codex`, `hermes` e `opencode`
+gravaram (worktrees e subpastas contam para o projeto principal; pasta do usuário, de sistema e temporárias
+ficam de fora). O servidor imprime a URL com o token; abra no navegador. Qualquer sessão aberta num projeto
+(pelo Orb ou fora dele) aparece sozinha como um personagem com a cor do seu provider. Para depurar existem
+`--root`, `--realm` e `--lookback` (minutos; quão recente uma sessão precisa ser para ter o conteúdo lido).
 
 **Atenção:** o terminal hospedado roda o **CLI de verdade** e **consome cota** da conta logada. O
 Gateway abre um shell: escuta só em `127.0.0.1`, exige token e `Origin` local. Nunca envie teclas a

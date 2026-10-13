@@ -4,7 +4,7 @@
 > âmbito. Vocabulário: [CONTEXT.md](../CONTEXT.md) · Contrato de eventos: [PROTOCOL.md](PROTOCOL.md)
 > · Decisões: [adr/](adr/).
 
-Última atualização: 2026-10-09
+Última atualização: 2026-10-13
 
 ---
 
@@ -52,7 +52,7 @@
 | **Core** | `src/orb/core/` | O mundo: aplica eventos, deriva a atividade de cada personagem, Teams, pendências, Energy; snapshot | Protocol | Adapters, Gateway, disco, rede, relógio |
 | **Adapters** (claude, codex, hermes, opencode) | `src/orb/adapters/<provider>/` | Ler a fonte nativa do provider e produzir eventos (nativo + sinal + inner) pelo Mapa do provider | Protocol | Core, Gateway, outros adapters |
 | **Terminal Host** | `src/orb/terminal_host/` | Abrir o terminal real (ConPTY), chamar o CLI (lista fixa), transportar bytes, limpar o ambiente herdado | nada do domínio | Core, adapters |
-| **Gateway** | `src/orb/gateway/` | Autenticar, ligar terminal + adapter + Core por sessão, validar mensagens do cliente, distribuir por WebSocket | todos, por interfaces | internals de adapters |
+| **Gateway** | `src/orb/gateway/` | Autenticar, ligar terminal + adapter + Core por sessão, validar mensagens do cliente, distribuir por WebSocket; detectar os realms (`realms.py`) e decidir pasta → projeto (`projects.py`, a borda que conhece o disco) | todos, por interfaces | internals de adapters |
 | **Clients** | `clients/` | Renderizar o mundo e o Inner World, enviar teclas | só as mensagens do Gateway | adapters, providers |
 | **Probes** *(futuro)* | `src/orb/probes/` | Fatos do mundo real (git, CI, LOC respeitando `.gitignore`) | Protocol | Core, adapters |
 
@@ -62,7 +62,8 @@
   além do Protocol.
 - **Adapters não importam uns aos outros.** O que eles compartilham é genérico e fica em
   `src/orb/adapters/_shared/` (fábrica de eventos, leitura incremental de JSONL, leitura somente
-  leitura de SQLite, classificador de comandos de shell), sem conhecimento de provider.
+  leitura de SQLite, classificador de comandos de shell, `SessionMeta` do índice de sessões), sem
+  conhecimento de provider.
 - **Adicionar um provider = adicionar um adapter** (`mapping.py` + leitores), sem tocar em Core,
   Gateway ou clientes ([ADR 0002](adr/0002-eventos-nativos-por-provider.md)).
 - Clientes nunca falam com adapters ou providers; só com o Gateway.
@@ -91,6 +92,7 @@ Todo adapter expõe a mesma forma (`orb.adapters._shared.base`):
 | `PROVIDER` | Nome do provider (`"claude"`, `"codex"`, …) |
 | `capabilities()` | O que este provider consegue informar (pensamento `raw`/`summary`, aprovações, subagentes, tempo real, tokens). O resto do sistema se adapta, em vez de assumir |
 | Leitor nível 0 | Objeto com `poll() -> list[OrbEvent]`, incremental e somente leitura |
+| Índice de sessões | Objeto com `scan() -> list[SessionMeta]` (`_shared/index.py`): metadados de **todas** as sessões do provider (pasta, raiz do projeto que ele informa, sessão-mãe, datas, título, modelo), sem abrir o conteúdo e somente leitura (R48, camada 1) |
 | Leitor nível 1 *(opcional)* | Hooks por sessão (Claude) ou observador de app-server (Codex) |
 | `mapping.py` | O Mapa do provider: tabelas declarativas de evento nativo → `signal`/`inner` |
 
@@ -127,15 +129,13 @@ Todo adapter expõe a mesma forma (`orb.adapters._shared.base`):
 
 - **Observatório** (`orb.gateway.realms.Observatory`): observa os **4 providers ao mesmo tempo**.
   Qualquer sessão numa pasta de realm **ou subpasta dela** (worktrees), aberta pelo Orb ou fora
-  dele, vira um Alter Ego que carrega o seu provider. **Hoje** os realms vêm de `--root`/`--realm`;
-  isso **viola a regra R3** e será substituído pela detecção descrita em
-  [Detecção de realms](#detecção-de-realms-pelos-providers-alvo).
-  - Codex, Hermes e opencode guardam tudo numa loja única: **um leitor por provider para a cidade
-    inteira**, que distribui as sessões pelos realms com `realm_resolver` (prefixo de pasta mais
-    longo vence; "trisafe" não captura "trisafe-enhanced").
-  - O Claude guarda uma pasta por projeto: um leitor (barato) por realm, que também acha as pastas
-    de subpastas e confirma cada uma pelo `cwd` gravado no transcript.
-  - A falha de um leitor não afeta os outros (fica em `errors`).
+  dele, vira um Alter Ego que carrega o seu provider. Os realms são **detectados** pelo índice de sessões
+  dos quatro CLIs ([Detecção de realms](#detecção-de-realms-pelos-providers-ticket-03)); `--root` e `--realm`
+  só existem para depurar.
+  - **Um leitor por provider para a cidade inteira**, que distribui as sessões pelos realms perguntando ao
+    Observatório (`realm_of`: projeto da pasta, sem confundir "trisafe" com "trisafe-enhanced"). O Claude
+    guarda uma pasta por projeto, e o leitor identifica cada uma pelo `cwd` gravado no transcript.
+  - A falha de um leitor ou de um índice não afeta os outros (fica em `errors`).
 - **`Hub`**: um laço único lê todos os realms (fora do loop, `to_thread`), aplica no Core, guarda as
   últimas linhas de Inner World por sessão (`Feed`) e distribui aos clientes. É a borda que conhece a
   hora (relógio injetável): pede o mundo ao Core com a hora do servidor e, a cada 15 s, reavalia o que
@@ -148,33 +148,55 @@ Todo adapter expõe a mesma forma (`orb.adapters._shared.base`):
   de executáveis.
 - `handle_client_message(term, raw)` valida cada mensagem e **nunca levanta**.
 
-### Detecção de realms pelos providers (alvo)
+### Detecção de realms pelos providers (ticket 03)
 
 Regra R3 ([RULES.md](RULES.md)): **o Lucas não informa caminhos.** A cidade se monta sozinha a
 partir do que os providers já gravam. Um realm existe porque algum provider tem uma sessão naquele
 projeto.
 
-**Como (proposta, a validar antes dos tickets):**
+**Como (implementado no ticket 03):**
 
-1. Cada adapter já lê, de cada sessão, a pasta onde ela roda. Essa pasta é a fonte do realm:
+1. **Índice de sessões (R48, camada 1).** Cada adapter tem uma classe de índice com `scan()` que lista
+   **todas** as sessões do provider, sem filtro por pasta e **sem abrir o conteúdo** (`SessionMeta`:
+   provider, id, pasta, raiz que o provider informa, sessão-mãe, datas, título, modelo). O Observatório
+   varre os quatro a cada 30 s; a falha de um índice fica em `errors` e não derruba os outros.
 
-   | Provider | Onde está a pasta da sessão | Raiz do projeto dada pelo próprio provider |
-   |---|---|---|
-   | Claude | Campo `cwd` das linhas do transcript; uma pasta por projeto em `~/.claude/projects/` | — |
-   | Codex | `session_meta.cwd` (1ª linha do rollout) | — (`session_meta.git` traz branch, commit e URL, não a pasta) |
-   | Hermes | `sessions.cwd` no `state.db` | `sessions.git_repo_root` |
-   | opencode | `session_v2.directory` no `opencode.db` | `project.worktree` (via `session_v2.project_id`) |
+   | Provider | Onde está a pasta da sessão | Raiz do projeto dada pelo provider | Custo (medido em 2026-10-13) |
+   |---|---|---|---|
+   | Claude (`TranscriptIndex`) | Campo `cwd` das primeiras linhas de um transcript da pasta; uma pasta por projeto em `~/.claude/projects/` | — | Uma leitura por pasta; datas vêm do arquivo (título e modelo exigem abrir o conteúdo e ficam para as sessões da sala) |
+   | Codex (`RolloutIndex`) | `session_meta.cwd` (1ª linha do rollout, lida **uma única vez** por arquivo) | — (`session_meta.git` traz branch, commit e URL, não a pasta) | 428 rollouts: ~5 s na primeira varredura, ~20 ms nas seguintes |
+   | Hermes (`StateDbIndex`) | `sessions.cwd` no `state.db` | `sessions.git_repo_root` (vazio em todas as sessões desta máquina) | Uma consulta à tabela `sessions`, sem tocar em `messages` |
+   | opencode (`OpencodeDbIndex`) | `session_v2.directory` no `opencode.db` | ~~`project.worktree`~~ (a spec previa lê-la; o Orb não lê a tabela `project`: o banco guarda credenciais e só `session_v2` e `session_message` são lidas; D-129) | Uma consulta, só `session_v2` |
 
-2. **Pasta → projeto.** Vence a raiz que o próprio provider informa. Sem ela, o Orb sobe da pasta da
-   sessão até achar o repositório git, lendo arquivos (`.git` como pasta ou arquivo; num worktree,
-   o arquivo `.git` aponta para o repositório principal), **sem executar nada**. Fora de um
-   repositório, a própria pasta da sessão é o projeto.
-3. **Projeto → realm.** O id é o nome da pasta do projeto (ex.: `trisafe-enhanced`); dois projetos
-   com o mesmo nome em lugares diferentes ganham sufixo. Worktrees contam para o projeto principal.
-4. **Descoberta contínua.** Os leitores dos 4 providers passam a ler **todas** as sessões (sem
-   filtro por pasta). Sessão de um projeto novo cria o prédio na hora.
-5. `--root`, `--realm` e `--lookback` saem (viram, no máximo, opções de depuração); o que for
-   preferência do Lucas vai para a tela de configurações do Orb (R29).
+2. **Pasta → projeto** (`gateway/projects.py`, `ProjectResolver`; só lê arquivos, nada é executado nem gravado).
+   Vence a raiz que o provider informa, se ela contém a pasta. Senão, sobe da pasta até o repositório git
+   (`.git` como pasta é o repositório; como arquivo, `commondir` leva ao repositório **principal**, que é o
+   projeto de um worktree; sem `commondir` é um submódulo e a pasta é o projeto). Fora de um repositório, a
+   própria pasta da sessão é o projeto, mas uma subpasta de um realm já conhecido entra nele (D-133).
+   **Ficam de fora (R3b, R3d):** a pasta do usuário em si (não as subpastas), `AppData` e `Downloads` do
+   usuário, as pastas temporárias (`TEMP`, `TMP`, `TMPDIR`, a do Python e `/tmp`), as de sistema (`SystemRoot`,
+   `ProgramFiles`, `ProgramFiles(x86)`, `ProgramData`), a raiz do disco e qualquer pasta que não exista mais
+   (D-130). A subida para antes de qualquer pasta excluída: um repositório de dotfiles na pasta do usuário
+   não engole os projetos abaixo dele. Um worktree cujo repositório principal sumiu também não entra.
+3. **Projeto → realm.** O id é o nome da pasta do projeto (`trisafe-enhanced`); a comparação de caminhos
+   é por segmento, então "trisafe" nunca captura "trisafe-enhanced". Dois projetos com o mesmo nome em lugares
+   diferentes ganham sufixo (`app`, `app-2`): num mesmo lote vale a ordem dos caminhos, e **quem já está na cidade
+   nunca muda de id** (D-131). Uma pasta de sessão que já não existe (ex.: worktree apagado) entra no realm
+   conhecido que a contém; sem ele, não entra.
+4. **Descoberta contínua.** Sessão de um projeto novo cria o prédio na hora (o leitor pergunta ao
+   Observatório) ou, no mais tardar, na próxima varredura do índice. O **conteúdo** continua lido de forma
+   incremental só das sessões ativas dentro de `--lookback` (30 min por padrão), até o ticket da sala de 10 dias
+   (R28a): hoje a cidade mostra todos os projetos, e a sala só as sessões recentes. Cada provider tem **um** leitor
+   para a cidade inteira; o do Claude identifica cada pasta de `~/.claude/projects/` pelo `cwd` gravado nela.
+5. **Hora de abertura (D-128).** Os eventos que abrem uma sessão ou um subagente do Claude levam a hora da
+   **última escrita do arquivo** (e os do Hermes, a da mensagem que revelou a sessão), nunca a hora da leitura:
+   um subagente antigo nasce já sem sinal, em vez de parecer "recém-ativo" por 5 min (D-132).
+6. `--root`, `--realm` e `--lookback` ficam só como **opções de depuração** (o servidor sobe sem nenhum
+   argumento); o que for preferência do Lucas vai para a tela de configurações do Orb (R29).
+
+**Limites conhecidos:** um realm cuja pasta é apagada com o Orb aberto só sai da cidade na próxima vez que o servidor
+subir; o id de um realm com nome repetido depende da ordem em que os projetos entraram (o registro local, R36, vai
+fixá-lo).
 
 **Alterações locais dos arquivos (janelas, R20b).** O estado do repositório (arquivo modificado,
 novo, apagado…) é lido **sem gravar nada**: nem no projeto, nem no `.git` (R16). Um `git status`
@@ -263,6 +285,7 @@ ticket existir.
 | Classificador de comandos | Tabela de casos | `tests/test_commands.py` |
 | Terminal Host | PTY falsa (sempre) + terminal real (quando `pywinpty` e o CLI existem) | `tests/test_terminal_host.py` |
 | Gateway | Validação de mensagens; app com terminal falso | `tests/test_gateway.py` |
+| Detecção de realms (as leituras do mundo real) | Pastas de CLIs e de projetos falsas → realms; regras de pasta → projeto; índice de sessões | `tests/test_realms.py`, `tests/test_projects.py`, `tests/test_session_index.py` (arquivos falsos em `tests/fakes.py`) |
 
 **Pontos de teste (D-099).** O principal é o mundo: eventos sintéticos + uma hora → estado do mundo
 (inclui tempo, papel, tarefas, Weather, Energy, XP, cidade, fachada e classes). Os outros dois são os
@@ -290,13 +313,13 @@ The Orb/
 │   ├── protocol/        events.py · vocab.py
 │   ├── core/            world.py · rules.py
 │   ├── adapters/
-│   │   ├── _shared/     base.py · commands.py · jsonl.py · sqlite.py
-│   │   ├── claude/      mapping.py · transcript.py · hooks.py
-│   │   ├── codex/       mapping.py · app_server.py · rollout.py
-│   │   ├── hermes/      mapping.py · state_db.py
-│   │   └── opencode/    mapping.py · state_db.py
+│   │   ├── _shared/     base.py · commands.py · index.py · jsonl.py · sqlite.py
+│   │   ├── claude/      mapping.py · transcript.py · index.py · hooks.py
+│   │   ├── codex/       mapping.py · app_server.py · rollout.py · index.py
+│   │   ├── hermes/      mapping.py · state_db.py · index.py
+│   │   └── opencode/    mapping.py · state_db.py · index.py
 │   ├── terminal_host/   launch.py · env.py · terminal.py
-│   └── gateway/         app.py · messages.py · realms.py
+│   └── gateway/         app.py · messages.py · realms.py · projects.py
 ├── clients/
 │   ├── web/             o mundo 3D: index.html, styles.css, js/ (scene, realm3d, avatar, hud, innerworld, net)
 │   └── godot/           terminal remoto (alternativa; godot-xterm só exibe)

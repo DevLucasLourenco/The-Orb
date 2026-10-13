@@ -14,13 +14,13 @@ usuário, as de sistema e temporárias e as pastas que não existem mais ficam d
 
 ## Critérios de aceite
 
-- [ ] Os leitores dos quatro providers listam todas as sessões, sem filtro por pasta, num índice de metadados barato (sem ler o conteúdo das sessões antigas).
-- [ ] Pasta da sessão → projeto: vence a raiz informada pelo provider; senão sobe até o repositório git só lendo arquivos (sem executar nada); worktrees contam para o principal.
-- [ ] Projetos com nomes parecidos nunca se misturam (ex.: `trisafe` × `trisafe-enhanced`); nomes iguais em lugares diferentes ganham sufixo.
-- [ ] Pasta do usuário, `AppData`, `Temp`, `Downloads` e pastas inexistentes não viram realm.
-- [ ] `--root`, `--realm` e `--lookback` deixam de ser necessários (no máximo, opções de depuração).
-- [ ] O servidor abre e a cidade mostra todos os realms detectados nesta máquina.
-- [ ] Os eventos de abertura de sessão e de subagente do Claude e do Hermes usam a data de início real (a do índice), não a hora da leitura (D-128): um subagente antigo não nasce "recém-ativo".
+- [x] Os leitores dos quatro providers listam todas as sessões, sem filtro por pasta, num índice de metadados barato (sem ler o conteúdo das sessões antigas).
+- [x] Pasta da sessão → projeto: vence a raiz informada pelo provider; senão sobe até o repositório git só lendo arquivos (sem executar nada); worktrees contam para o principal.
+- [x] Projetos com nomes parecidos nunca se misturam (ex.: `trisafe` × `trisafe-enhanced`); nomes iguais em lugares diferentes ganham sufixo.
+- [x] Pasta do usuário, `AppData`, `Temp`, `Downloads` e pastas inexistentes não viram realm.
+- [x] `--root`, `--realm` e `--lookback` deixam de ser necessários (no máximo, opções de depuração).
+- [x] O servidor abre e a cidade mostra todos os realms detectados nesta máquina.
+- [x] Os eventos de abertura de sessão e de subagente do Claude e do Hermes usam a data de início real (a do índice), não a hora da leitura (D-128): um subagente antigo não nasce "recém-ativo". **Ajustado (D-132, sobre o D-128):** usam a hora da **última escrita** do arquivo (Claude) ou a da mensagem que revelou a sessão (Hermes), não a data de início, para que um subagente ainda ativo não pisque "sem sinal".
 
 ## Testes
 
@@ -47,3 +47,17 @@ mesmo que tenha começado horas atrás, e só vira "sem sinal" 5 min depois: na 
 subagentes ativos ficaram "sem sinal" 5 min depois do primeiro poll. O índice de sessões deste ticket traz as
 datas de início; a abertura passa a usá-las (último critério de aceite). Se o ticket for dividido (ver
 Observação), este item vai com "um leitor por provider".
+
+Implementado em 2026-10-13 (branch `ticket/03-realms-detectados-pelos-providers`), numa só branch, na ordem sugerida
+pela Observação: índice e regras de pasta, depois um leitor por provider. Só estrutura e contagens dos dados reais.
+
+- **Ao vivo, sem nenhum argumento:** o servidor detectou 23 projetos nesta máquina (23 ids únicos, 2 com sufixo), todos
+  existentes no disco, nenhum na pasta do usuário, `AppData`, `Downloads` ou `Temp`, sem erro de leitor; o cliente 3D
+  abriu com "23 realms" e o console sem erros. Os subagentes antigos já nasceram sem sinal (40 de 40 no primeiro
+  snapshot), sem o "recém-ativo" de 5 min do ticket 01 (D-128).
+- **Medido:** índice dos 4 providers com 486 sessões: ~5 s na primeira varredura (Codex, 428 rollouts) e ~30 ms nas
+  seguintes; resolução de 41 pastas distintas em 190 ms.
+- **Decisões:** o Lucas confirmou Q-T03-1 a Q-T03-6 em 2026-10-13 (D-129 a D-134 em `docs/DECISIONS.md`; o invariante 11 do CLAUDE.md fica como está) e aprovou o envio da branch com PR.
+- **Revisões (2026-10-13):** padrões e spec feitas; corrigidos: valor malformado de `cwd` derrubava o leitor, o leitor ao vivo ignorava a raiz do provider, relógio injetável no Observatório, erros de índice no HUD, índice do Claude relia pasta sem `cwd`, nomes (`StateDbIndex`, `OpencodeDbIndex`), testes e docs. Não corrigidos, com motivo: título e modelo ausentes no índice do Claude e do Codex (exigem abrir o conteúdo); `isdir` em caminho de rede pode bloquear a thread de leitura; `session_meta` do Codex lida uma vez no índice e outra no leitor das sessões ativas (custo único).
+- **Fora deste ticket:** esconder realms pela lista (R3c); a sala de 10 dias e o conteúdo só das sessões da sala (R48,
+  camada 2, ticket 06); o realm de uma pasta apagada com o Orb aberto só sai na próxima subida do servidor.

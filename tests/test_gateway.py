@@ -1,7 +1,6 @@
 import base64
 import json
 import time
-from pathlib import Path
 
 import pytest
 
@@ -97,7 +96,7 @@ def _claude_session(home, cwd, sid, title):
     folder.mkdir(parents=True, exist_ok=True)
     (folder / f"{sid}.jsonl").write_text(
         json.dumps({"type": "custom-title", "customTitle": title, "sessionId": sid}) + "\n" +
-        json.dumps({"type": "assistant", "uuid": "a1", "timestamp": "2026-10-07T10:00:00Z",
+        json.dumps({"type": "assistant", "uuid": "a1", "timestamp": "2026-10-07T10:00:00Z", "cwd": cwd,
                     "message": {"id": "m1", "model": "claude-opus-5-5", "content": [
                         {"type": "tool_use", "id": "t1", "name": "Edit", "input": {"file_path": "app.py"}}]}}) + "\n",
         encoding="utf-8")
@@ -122,8 +121,8 @@ def test_one_realm_shows_claude_and_codex_sessions_at_the_same_time(tmp_path):
     hub.poll_once()
     realms = {r["id"]: r for r in hub.snapshot()["realms"]}
     assert set(realms) == {"totem-integrador", "outro"}
-    # Um leitor só por loja global (Codex, Hermes, opencode) para a cidade inteira; Claude por realm.
-    assert sorted(hub.observatory.readers) == ["claude:outro", "claude:totem-integrador", "codex", "hermes", "opencode"]
+    # Um leitor só por provider para a cidade inteira (o Claude também, pelo `cwd` gravado em cada pasta).
+    assert sorted(hub.observatory.readers) == ["claude", "codex", "hermes", "opencode"]
     egos = {e["provider"]: e for e in realms["totem-integrador"]["alter_egos"]}
     assert set(egos) == {"claude", "codex"}
     assert egos["claude"]["title"] == "Integração do totem" and egos["claude"]["model"] == "claude-opus-5-5"
@@ -157,16 +156,6 @@ def test_world_stream_sends_snapshot_and_inner_world(tmp_path):
                 if msg["channel"] == "feed":
                     assert [e["native"]["kind"] for e in msg["events"]] == ["assistant/tool_use"]
                     break
-
-
-@pytest.fixture
-def short_tmp():
-    """Pasta temporária de caminho curto: nomes codificados do Claude estouram os 260 do Windows."""
-    import shutil
-    import tempfile
-    path = Path(tempfile.mkdtemp(prefix="orb")).resolve()
-    yield path
-    shutil.rmtree(path, ignore_errors=True)
 
 
 def test_root_makes_every_project_folder_a_realm_and_worktrees_count_for_it(short_tmp):
@@ -272,3 +261,12 @@ def test_hub_loop_republishes_when_only_time_changed_the_world(tmp_path, monkeyp
 
     message = asyncio.run(scenario())
     assert message["world"]["generated_at"].startswith("2026-10-07T10:16:00")
+
+
+def test_the_server_needs_no_arguments_and_no_project_paths():
+    from orb.gateway.app import config_from_args, parse_args
+    config = config_from_args(parse_args([]))
+    assert config.realms == [] and config.roots == []                 # R3: o Lucas nunca informa caminhos
+    debug = config_from_args(parse_args(["--realm", ".", "--lookback", "5"]))
+    assert len(debug.realms) == 1 and debug.lookback_minutes == 5     # opções de depuração continuam valendo
+
