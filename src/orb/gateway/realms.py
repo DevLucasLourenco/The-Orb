@@ -40,7 +40,6 @@ ROOT_RESCAN_SECONDS = 30.0     # [depuração] pastas novas dentro de um --root 
 INDEX_RESCAN_SECONDS = 30.0    # de quanto em quanto tempo o índice de sessões é varrido de novo
 NOT_A_PROJECT_RETRY = 60.0     # segundos até reavaliar uma pasta que ainda não era projeto (ex.: ainda não existia)
 REPLAY_SECONDS = 30 * 60       # sessão criada nesta janela antes do Orb abrir é lida desde o começo; as mais velhas, do fim
-HISTORY_LIMIT = 500            # sessões antigas devolvidas por realm (as mais recentes primeiro)
 
 
 class Reader(Protocol):
@@ -70,7 +69,9 @@ class Observatory:
         estreita a leitura do conteúdo."""
         start = time.time() if now is None else now
         self.recent_seconds = recent_seconds
-        self.since = start - (recent_seconds if lookback_minutes is None else lookback_minutes * 60)
+        self._window = recent_seconds if lookback_minutes is None else lookback_minutes * 60
+        self._rolling = now is None                 # com `now` fixo (testes) a janela não anda
+        self.since = start - self._window
         self.fresh_after = start - REPLAY_SECONDS
         self.home = home
         self.roots = [Path(r) for r in roots]
@@ -163,6 +164,10 @@ class Observatory:
         if not force and now - self._last_index < self.index_every:
             return
         self._last_index = now
+        if self._rolling:
+            self.since = self._wall() - self._window       # a janela anda com a sala; os leitores olham este valor a cada varredura
+            for reader in self.readers.values():
+                reader.since = self.since
         found: set[tuple[str, str | None]] = set()
         listed: list[SessionMeta] = []
         for name, index in self.indexes.items():
@@ -192,29 +197,34 @@ class Observatory:
         self._sort_sessions(listed)
 
     def _sort_sessions(self, listed: list[SessionMeta]) -> None:
-        """Distribui as sessões do índice pelos realms. As da sala (últimos `recent_seconds`) ganham um evento de
+        """(Thread de leitura, a única que escreve aqui; `history` só lê a referência de `_sessions`, trocada de uma vez.)
+        Distribui as sessões do índice pelos realms. As da sala (últimos `recent_seconds`) ganham um evento de
         presença, uma vez: o Alter Ego existe no mundo mesmo que o provider não escreva nada agora (Hermes e
         opencode só falam quando há mensagem nova). As antigas ficam só aqui, no Histórico do realm."""
         by_realm: dict[str, list[SessionMeta]] = {}
-        recent_from = self._wall() - self.recent_seconds
         for meta in listed:
             realm = self.realm_of(meta.cwd)
             if realm is None:
                 continue
             by_realm.setdefault(realm, []).append(meta)
             key = (meta.provider, meta.session_id)
-            if key not in self._rostered and _seconds(meta.updated_at) >= recent_from:
+            if key not in self._rostered and self._in_room(meta):
                 self._rostered.add(key)
                 self._roster.append(_presence(meta, realm))
         self._sessions = by_realm
 
-    def history(self, realm_id: str, limit: int = HISTORY_LIMIT) -> list[SessionMeta]:
+    def _in_room(self, meta: SessionMeta, now: float | None = None) -> bool:
+        """A mesma regra do Core (`rules.in_room`) sobre a última atividade que o índice informa. Sem data legível a
+        sessão conta como antiga (vai para o Histórico); `now` é a hora do mundo (o Hub), senão a do relógio."""
+        return rules.in_room(idle_seconds=(self._wall() if now is None else now) - _seconds(meta.updated_at),
+                             recent_seconds=self.recent_seconds)
+
+    def history(self, realm_id: str, now: float | None = None) -> list[SessionMeta]:
         """O Histórico do realm: as sessões mais antigas que o prazo da sala, as mais recentes primeiro. Nenhuma
         some (R28): só deixam a sala."""
-        recent_from = self._wall() - self.recent_seconds
-        old = [m for m in self._sessions.get(realm_id, ()) if _seconds(m.updated_at) < recent_from]
+        old = [m for m in self._sessions.get(realm_id, ()) if not self._in_room(m, now)]
         old.sort(key=lambda m: (_seconds(m.updated_at), m.session_id), reverse=True)
-        return old[:limit]
+        return old
 
     def sync_roots(self, force: bool = False) -> None:
         now = self._clock()

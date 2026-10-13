@@ -197,7 +197,7 @@ projeto.
    cria o realm mesmo sem sessão). Cada sessão da sala que o índice lista ganha **um evento de presença** (`session.updated`,
    só identidade: título, modelo, pasta; hora = última atividade): o Hermes e o opencode só falam quando há mensagem nova.
    As sessões mais antigas ficam só no índice: o **Histórico do realm** é pedido pelo cliente no `/world`
-   (`{type: "history", realm}` → `{channel: "history", sessions}`, até 500 por realm, mais recentes primeiro; o nome histórico
+   (`{type: "history", realm}` → `{channel: "history", sessions, total}`, até 1000 por pedido com o `total` junto (nada é escondido sem aviso), mais recentes primeiro; o nome histórico
    só aparece se a sessão já ganhou um, `NameSource.name_of`). Nada some.
 6. **Hora de abertura (D-128).** Os eventos que abrem uma sessão ou um subagente do Claude levam a hora da
    **última escrita do arquivo** (e os do Hermes, a da mensagem que revelou a sessão), nunca a hora da leitura:

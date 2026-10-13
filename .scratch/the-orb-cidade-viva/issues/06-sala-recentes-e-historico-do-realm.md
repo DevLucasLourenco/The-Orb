@@ -42,9 +42,10 @@ Implementado em 2026-10-13 (branch `ticket/06-sala-com-sessoes-recentes-e-histor
   presença das sessões da sala pelo índice e entrega o Histórico do realm; o Hub fala `history` no `/world` e escolhe o ritmo
   (250 ms com sessão ativa, 2 s sem); o cliente mostra só a sala, apaga a sala do teto de noite e lista o Histórico no overview.
 - **Testes:** `test_core.py` (janela, noite, `add_realm`, `time_key`), `test_adapter_claude.py` e `test_adapter_codex.py` (seleção do que é
-  lido), `test_realms.py` (presença pelo índice, histórico, noite, ritmo, mensagem `history`). Suíte: 346 → 364 passed, 1 skipped.
+  lido), `test_realms.py` (presença pelo índice, histórico, noite, ritmo, mensagem `history`). Suíte: 346 → 365 passed, 1 skipped.
 - **Conferido com dados reais** (pasta do Orb temporária; só contagens): 23 realms, 15 de noite e 8 acesos; 34 sessões na sala (27 dormindo), 34
   nomes distintos; 79 sessões no Histórico dos 4 providers, nenhuma com nome; sem erro de leitor; console sem erros; o servidor usou ~130 MB.
+- **Revisões (2026-10-13):** padrões e spec feitas; corrigidos: nomes do Histórico em uma consulta e fora do loop, o Observatório reusa `rules.in_room` e a hora do Hub, a janela de leitura anda com a sala (antes era fixa na subida), o Histórico mostra "N de TOTAL" em vez de cortar em silêncio, Mankind conta só a sala, o Histórico do cliente se atualiza quando uma sessão entra ou sai da sala, testes sem atributo privado. Não corrigidos, com motivo: ritmo global em vez de por realm (Q-T06-3); presença pelo índice cria Alter Ego sem evento lido (Q-T06-1, é dado real do índice); sem teste de `--lookback` estreito (opção de depuração); `fresh_after` repetido nos dois leitores (adapters não se importam); data ISO sem fuso no índice não ocorre (as datas vêm em UTC).
 - **Decisões a confirmar:** Q-T06-1 a Q-T06-6 em `docs/DECISIONS.md`.
 - **Fora deste ticket:** a tela de configurações para mudar o prazo (ticket 07); a leitura única do passado em segundo plano (ticket 25);
   nome para as sessões do Histórico; ritmo de leitura por realm.

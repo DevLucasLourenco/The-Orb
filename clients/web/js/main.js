@@ -15,7 +15,8 @@ const avatars = new Map();       // alter ego / subagente -> Avatar
 const egoIndex = new Map();      // alter ego -> { ego, realm }
 let world = { realms: [] };
 let selectedRealm = null;
-const history = new Map();       // realm -> sessões que já saíram da sala (Histórico do realm)
+const realmHistory = new Map();  // realm -> sessões que já saíram da sala (Histórico do realm)
+let roomCount = -1;              // quantas sessões o realm selecionado tem na sala: se mudar, o Histórico muda
 let layoutKey = "";
 const NEAR = 120;                 // distância da câmera em que os detalhes aparecem
 
@@ -99,12 +100,18 @@ function syncWorld(raw) {
   renderTopbar(world);
   renderRealmList(world, selectedRealm, selectRealm);
   renderOverview(world.realms.find((r) => r.id === selectedRealm), openEgo);
+  const here = world.realms.find((r) => r.id === selectedRealm);
+  if (here && here.alter_egos.length !== roomCount) {      // uma sessão entrou ou saiu da sala: o Histórico pode ter mudado
+    if (roomCount !== -1) net.requestHistory(selectedRealm);
+    roomCount = here.alter_egos.length;
+  }
 }
 
 // ---------------------------------------------------------------------------------------------
 function selectRealm(id, fly = true) {
   selectedRealm = id;
-  renderHistory(history.get(id));
+  roomCount = -1;
+  renderHistory(realmHistory.get(id));
   net.requestHistory(id);
   renderRealmList(world, selectedRealm, selectRealm);
   renderOverview(world.realms.find((r) => r.id === id), openEgo);
@@ -140,9 +147,9 @@ const net = connectWorld({
   },
   onEvent: (event) => inner.push(event),
   onFeed: (egoId, events) => inner.setFeed(egoId, events),
-  onHistory: (realm, sessions) => {
-    history.set(realm, sessions);
-    if (realm === selectedRealm) renderHistory(sessions);
+  onHistory: (realm, sessions, total) => {
+    realmHistory.set(realm, { sessions, total });
+    if (realm === selectedRealm) renderHistory({ sessions, total });
   },
   onStatus: (ok) => {
     const c = document.getElementById("conn");

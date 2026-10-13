@@ -20,6 +20,7 @@ from ..core import NAMES, NameBag, NameBook
 
 REGISTRY_FILE = "registry.db"
 SCHEMA_VERSION = 1
+_QUERY_CHUNK = 500        # chaves por consulta (o SQLite limita as variáveis de uma consulta)
 _BUSY_SECONDS = 5.0       # o sorteio roda na thread de leitura (to_thread): esperar mais que isso travaria a observação
 _SCHEMA = (
     "CREATE TABLE IF NOT EXISTS names (key TEXT PRIMARY KEY, name TEXT NOT NULL)",       # id do Alter Ego -> nome
@@ -67,6 +68,19 @@ class LocalRegistry:
         except _DISK_ERRORS:
             return self._memory.name_of(key)
         return row[0] if row is not None else self._memory.name_of(key)
+
+    def names_of(self, keys: list[str]) -> dict[str, str]:
+        """O nome já sorteado de várias sessões, numa conexão só (o Histórico do realm pede centenas de uma vez)."""
+        found: dict[str, str] = {}
+        try:
+            with closing(sqlite3.connect(self.path, timeout=self._busy_seconds)) as conn:
+                for start in range(0, len(keys), _QUERY_CHUNK):
+                    chunk = keys[start:start + _QUERY_CHUNK]
+                    marks = ", ".join("?" for _ in chunk)
+                    found.update(conn.execute(f"SELECT key, name FROM names WHERE key IN ({marks})", chunk).fetchall())
+        except _DISK_ERRORS:
+            pass
+        return {**self._memory.names_of(keys), **found}
 
     def _fail(self, exc: Exception) -> None:
         self.error = f"registro local indisponível, nomes só em memória por enquanto: {type(exc).__name__}: {exc}"

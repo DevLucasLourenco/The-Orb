@@ -330,8 +330,11 @@ def test_the_content_is_read_only_for_the_room_window_and_it_comes_from_one_valu
     assert observatory.recent_seconds == rules.RECENT_SESSION_SECONDS == 10 * DAY
     assert abs((observatory.fresh_after - observatory.since) - (10 * DAY - 30 * 60)) < 5           # replay só dos criados há pouco
     assert all(r.since == observatory.since for r in observatory.readers.values())
-    narrow = machine.observatory(recent_seconds=3600)
-    assert Hub(narrow).world._recent_seconds == 3600                            # a sala e a leitura seguem o mesmo valor
+    hermes_session(machine, "H-hours", machine.project("beta"), days_ago=0.2)             # ~5 h atrás
+    narrow = Hub(machine.observatory(recent_seconds=3600))
+    narrow.poll_once()
+    assert [h["session"] for h in narrow.history("beta")] == ["H-hours"]       # fora da sala de 1 h: a sala e o Histórico seguem o mesmo valor
+    assert not egos_of(narrow, "beta")
 
 
 def test_the_reading_rhythm_is_250_ms_with_an_active_session_and_2_s_without_one(machine):
@@ -371,3 +374,24 @@ def test_the_world_stream_answers_a_history_request_with_the_sessions_that_left_
         ws.send_text(json.dumps({"type": "history", "realm": 7}))                 # pedido malformado: ignorado, sem derrubar
         ws.send_text(json.dumps({"type": "history", "realm": "alpha"}))
         assert next(m for m in iter(ws.receive_json, None) if m["channel"] == "history")["realm"] == "alpha"
+
+
+def test_the_reading_window_follows_the_room_instead_of_the_hour_the_server_started(machine):
+    import time
+    observatory = Observatory(home=machine.home, exclusions=machine.exclusions, index_every=0)      # sem `now` fixo: a janela anda
+    start = observatory.since
+    observatory._wall = lambda: time.time() + 3 * DAY                                               # três dias de servidor aberto
+    observatory.refresh_index(force=True)
+    assert observatory.since - start > 2.9 * DAY
+    assert all(reader.since == observatory.since for reader in observatory.readers.values())
+
+
+def test_the_history_message_tells_the_total_so_nothing_is_hidden_without_notice(machine, monkeypatch):
+    alpha = machine.project("alpha")
+    for n in range(5):
+        hermes_session(machine, f"H{n}", alpha, days_ago=20 + n)
+    monkeypatch.setattr("orb.gateway.app.HISTORY_LIMIT", 3)
+    hub = Hub(machine.observatory())
+    hub.poll_once()
+    assert len(hub.history("alpha")) == 3 and hub.history_total("alpha") == 5
+    assert hub.world.snapshot(hub.clock())["mankind"]["alter_egos"] == 0                 # Mankind conta só a sala

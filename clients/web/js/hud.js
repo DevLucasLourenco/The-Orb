@@ -112,16 +112,19 @@ function shortDate(iso) {
 }
 
 // Histórico do realm (R28a, V-HUD-6): as sessões que já saíram da sala. Nenhuma some; só mudam de lugar.
-export function renderHistory(sessions) {
+export function renderHistory(history) {
   const box = document.getElementById("ov-history");
+  const sessions = history ? history.sessions : null;
   if (!sessions || !sessions.length) {
     box.classList.add("hidden");
     changed("history", null);
     return;
   }
-  if (!changed("history", sessions)) return;
+  if (!changed("history", history)) return;
   box.classList.remove("hidden");
-  box.replaceChildren(el("h3", null, `Histórico do realm · ${sessions.length}`), ...sessions.map((s) => {
+  const total = history.total || sessions.length;
+  const count = total > sessions.length ? `${sessions.length} de ${total}` : String(total);      // nada é escondido sem avisar
+  box.replaceChildren(el("h3", null, `Histórico do realm · ${count}`), ...sessions.map((s) => {
     const row = el("div", "hist-row");
     row.style.setProperty("--pc", provider(s.provider).color);
     if (s.name) row.append(el("span", "ego-name", s.name));

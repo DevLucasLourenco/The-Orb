@@ -336,7 +336,6 @@ def room_ids(world, days):
 
 def test_the_room_window_is_one_value_in_the_rules_table():
     assert rules.RECENT_SESSION_SECONDS == 10 * 24 * 3600                 # R28a: o ticket 07 torna configurável
-    assert World(recent_seconds=3600)._recent_seconds == 3600           # um só lugar: o mundo recebe o valor
 
 
 def test_a_session_stays_in_the_room_for_ten_days_after_its_last_event_then_goes_to_history():

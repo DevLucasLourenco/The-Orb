@@ -43,6 +43,7 @@ REPO_ROOT = Path(__file__).resolve().parents[3]
 WEB_CLIENT = REPO_ROOT / "clients" / "web"
 ALLOWED_HOSTS = frozenset({"127.0.0.1", "localhost"})
 POLL_SECONDS = 0.25            # leitura dos realms com sessão ativa (D-087)
+HISTORY_LIMIT = 1000           # sessões do Histórico enviadas por pedido; o total sempre vai junto, nada é escondido
 IDLE_POLL_SECONDS = 2.0        # sem sessão ativa: só a varredura de sessões novas, a cada 2 s (D-087)
 CLIENT_QUEUE = 2000            # mensagens pendentes por cliente do mundo; além disso, só o snapshot
 FEED_ON_CONNECT = 80           # linhas de Inner World por sessão enviadas a quem acabou de conectar
@@ -119,14 +120,21 @@ class Hub:
 
     def history(self, realm_id: str) -> list[dict[str, Any]]:
         """O Histórico do realm: as sessões mais antigas que a sala, com o nome histórico quando já foi sorteado."""
-        names = self.world.names
-        out = []
-        for meta in self.observatory.history(realm_id) if realm_id in self.observatory.realms else []:
-            ego = alter_ego_id(meta.provider, meta.session_id)
-            out.append({"alter_ego": ego, "provider": meta.provider, "session": meta.session_id,
-                        "name": names.name_of(ego) if names is not None else None, "title": meta.title,
-                        "model": meta.model, "started_at": meta.started_at, "updated_at": meta.updated_at})
-        return out
+        metas = self._history_metas(realm_id)[:HISTORY_LIMIT]
+        egos = [alter_ego_id(meta.provider, meta.session_id) for meta in metas]
+        names = self.world.names.names_of(egos) if self.world.names is not None else {}
+        return [{"alter_ego": ego, "provider": meta.provider, "session": meta.session_id, "name": names.get(ego),
+                 "title": meta.title, "model": meta.model, "started_at": meta.started_at, "updated_at": meta.updated_at}
+                for ego, meta in zip(egos, metas, strict=True)]
+
+    def _history_metas(self, realm_id: str) -> list:
+        if realm_id not in self.observatory.realms:
+            return []
+        return self.observatory.history(realm_id, now=self.clock().timestamp())      # a hora do mundo, a mesma do Core (R47)
+
+    def history_total(self, realm_id: str) -> int:
+        """Quantas sessões o Histórico do realm tem (a lista enviada pode vir cortada em `HISTORY_LIMIT`)."""
+        return len(self._history_metas(realm_id))
 
     def poll_interval(self, fast: float, idle: float) -> float:
         """Quanto esperar até a próxima leitura: `fast` com alguma sessão ativa, `idle` sem nenhuma (D-087). A
@@ -230,7 +238,9 @@ def create_app(config: GatewayConfig, *, pty_factory: Callable = winpty_factory,
                 except json.JSONDecodeError:
                     continue
                 if isinstance(msg, dict) and msg.get("type") == "history" and isinstance(msg.get("realm"), str):
-                    await queue.put({"channel": "history", "realm": msg["realm"], "sessions": hub.history(msg["realm"])})
+                    sessions = await asyncio.to_thread(hub.history, msg["realm"])    # nomes vêm do disco: fora do loop
+                    await queue.put({"channel": "history", "realm": msg["realm"], "sessions": sessions,
+                                     "total": max(len(sessions), hub.history_total(msg["realm"]))})
                 elif isinstance(msg, dict) and msg.get("type") == "feed" and isinstance(msg.get("alter_ego"), str):
                     await queue.put({"channel": "feed", "alter_ego": msg["alter_ego"],
                                      "events": hub.feed.history(msg["alter_ego"])})

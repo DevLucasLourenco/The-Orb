@@ -21,7 +21,7 @@ export function connectWorld({ onWorld, onEvent, onFeed, onHistory, onStatus }) 
       if (msg.channel === "world") onWorld(msg.world);
       else if (msg.channel === "event") onEvent(msg.event);
       else if (msg.channel === "feed") onFeed(msg.alter_ego, msg.events);
-      else if (msg.channel === "history") onHistory(msg.realm, msg.sessions);
+      else if (msg.channel === "history") onHistory(msg.realm, msg.sessions, msg.total);
     };
   }
   open();

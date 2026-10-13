@@ -293,8 +293,8 @@ class World:
             egos = [ego.snapshot(now, self._recent_seconds) for ego in self.realms[realm_id].values()]
             # "Noite" (D-059, R47): nenhuma sessão na sala. O cliente só desenha a sala do teto apagada.
             realms.append({"id": realm_id, "alter_egos": egos, "night": not any(ego["in_room"] for ego in egos)})
-            total_egos += len(egos)
-            for ego in egos:
+            for ego in (e for e in egos if e["in_room"]):          # Mankind conta a sala; o Histórico não entra
+                total_egos += 1
                 active_subs += ego["active_subagents"]
                 waiting += len(ego["waiting"])
         return {"realms": realms,

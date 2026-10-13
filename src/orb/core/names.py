@@ -72,6 +72,10 @@ class NameSource(Protocol):
         """O nome já sorteado da sessão, sem sortear (o Histórico do realm mostra só nomes que existem)."""
         ...
 
+    def names_of(self, keys: list[str]) -> dict[str, str]:
+        """O mesmo para várias sessões de uma vez; as que ainda não têm nome ficam de fora."""
+        ...
+
 
 class NameBook:
     """O livro de nomes em memória: sessão -> nome, sempre o mesmo, mais a sacola global (D-064).
@@ -92,3 +96,6 @@ class NameBook:
 
     def name_of(self, key: str) -> str | None:
         return self.assigned.get(key)
+
+    def names_of(self, keys: list[str]) -> dict[str, str]:
+        return {key: self.assigned[key] for key in keys if key in self.assigned}
