@@ -18,7 +18,7 @@ ganha um nome histórico sorteado da sacola de 60 nomes. O rótulo mostra o nome
 - [x] O nome fica com a sessão para sempre (também depois de reiniciar o Orb).
 - [x] Nunca dois nomes iguais visíveis na mesma sala.
 - [x] Subagentes não ganham nome: ficam com o tipo dado pelo CLI.
-- [x] Rótulo do personagem: nome em destaque; embaixo "provider · título"; depois atividade e última ação. (O nome também aparece no cartão da sessão e na dica dos pontos do realm: Q-T04-5.)
+- [x] Rótulo do personagem: nome em destaque; embaixo "provider · título"; depois atividade e última ação. (O nome também aparece no cartão da sessão e na dica dos pontos do realm: D-139.)
 
 ## Testes
 
@@ -48,7 +48,7 @@ Implementado em 2026-10-13 (branch `ticket/04-registro-local-e-nome-historico`).
   distintos, nenhum subagente com nome; reiniciar o servidor devolveu os mesmos 4 nomes; o rótulo vem em três linhas
   (nome, "provider · título", atividade) e o console sem erros; só as cores neutras já existentes.
 - **Revisões (2026-10-13):** padrões e spec feitas; corrigidos: a docstring de `orb_home` virava TAB (`\t`), o sorteio descartava a sacola quando só restavam nomes em uso (agora sai um nome de fora e a sacola fica), uma falha passageira do banco desligava o registro até o fim da execução (agora tenta de novo a cada pedido e a cópia em memória segue a mesma sacola), erro próprio para registro de Orb mais novo, `error` no contrato `NameSource`, título do rótulo só encolhe quando há nome, teste de dois Orbs abertos ao mesmo tempo. R37 ficou ⚠️ ("sem gêmeos" vale pelo realm até a sala do ticket 06). Não corrigidos, com motivo: `BEGIN IMMEDIATE` também na leitura de nome existente (só roda quando uma sessão aparece); `registry_error` sem tela (entra na configuração do ticket 07); mensagem de `OSError` pode trazer caminho local (o `/config` já lista as pastas dos realms; servidor só local); imports dentro das funções de `test_gateway` seguem o estilo do arquivo.
-- **Decisões a confirmar:** Q-T04-1 a Q-T04-5 em `docs/DECISIONS.md` (a Q-T04-4 reescreve o invariante 3 do CLAUDE.md:
+- **Decisões:** o Lucas confirmou Q-T04-1 a Q-T04-5 em 2026-10-13 (D-135 a D-139 em `docs/DECISIONS.md`; a D-138 reescreve o invariante 3 do CLAUDE.md: a única escrita nos arquivos de terceiros é o Terminal Host; o Orb grava nos próprios) e aprovou o envio da branch com PR.
   a única escrita nos arquivos de terceiros é o Terminal Host; o Orb grava nos próprios).
 - **Fora deste ticket:** a sala só com as sessões recentes e o Histórico do realm (ticket 06: até lá "visível na sala" é o
   realm inteiro que o mundo conhece); eventos do mundo, índice de sessões, pontos de parada e extrato de XP no registro

@@ -48,7 +48,7 @@ class NameBag:
     def draw(self, avoid: Collection[str] = ()) -> str:
         """O próximo nome que não está em `avoid` (os já em uso na sala, D-064). O nome pulado continua
         na sacola. Sacola vazia: embaralha uma nova. Se o que resta só tem nomes em uso, sai um nome de fora da
-        sacola, que fica como está (não ter gêmeos na sala vale mais que esgotar a sacola, Q-T04-2). Com os 60
+        sacola, que fica como está (não ter gêmeos na sala vale mais que esgotar a sacola, D-136). Com os 60
         em uso, repetir é inevitável."""
         if not self._remaining:
             self._remaining = self._shuffled()
