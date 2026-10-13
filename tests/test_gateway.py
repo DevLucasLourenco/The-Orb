@@ -196,3 +196,79 @@ def test_root_makes_every_project_folder_a_realm_and_worktrees_count_for_it(shor
     (root / "novo-projeto").mkdir()
     hub.observatory.sync_roots(force=True)
     assert "novo-projeto" in {r["id"] for r in hub.snapshot()["realms"]}        # pasta nova entra sozinha
+
+
+def test_hub_derives_time_states_at_its_clock_and_notices_time_passing(tmp_path):
+    """O servidor pede o mundo com a hora dele e avisa os clientes quando só o tempo mudou algo."""
+    import asyncio
+    from datetime import UTC, datetime, timedelta
+
+    from orb.gateway import Hub, Observatory
+    from orb.protocol import make_event
+
+    clock = [datetime(2026, 10, 7, 10, 0, tzinfo=UTC)]
+    hub = Hub(Observatory(home=tmp_path), clock=lambda: clock[0])
+
+    def event(key, signal, *, agent=None):
+        return make_event(id=f"claude:s1:{key}", ts="2026-10-07T10:00:00Z", provider="claude",
+                          source="claude/transcript", realm="the-orb", alter_ego="claude:s1", agent=agent,
+                          seq=1, kind="x", body={}, signal=signal)
+
+    hub.world.apply(event("a", {"type": "subagent.started"}, agent="a1"))
+    hub.world.apply(event("b", {"type": "idle"}))
+    client: asyncio.Queue = asyncio.Queue()
+    hub.clients.add(client)
+
+    def ego():
+        return hub.snapshot()["realms"][0]["alter_egos"][0]
+
+    hub.publish_world()
+    assert client.get_nowait()["world"]["realms"][0]["alter_egos"][0]["asleep"] is False
+    assert hub.time_changed() is False                           # nada mudou: ninguém é avisado à toa
+
+    clock[0] += timedelta(minutes=6)                             # o subagente fica sem sinal; a sessão ainda não dorme
+    assert ego()["team"][0]["no_signal"] is True and ego()["asleep"] is False
+    assert hub.time_changed() is True
+    hub.publish_world()
+    assert client.get_nowait()["world"]["realms"][0]["alter_egos"][0]["team"][0]["no_signal"] is True
+    assert hub.time_changed() is False
+
+    clock[0] += timedelta(minutes=10)                            # 16 min parada: dorme
+    assert hub.time_changed() is True
+    hub.publish_world()
+    assert client.get_nowait()["world"]["realms"][0]["alter_egos"][0]["asleep"] is True
+
+
+def test_hub_loop_republishes_when_only_time_changed_the_world(tmp_path, monkeypatch):
+    """O laço do servidor avisa os clientes que alguém dormiu, sem nenhum evento novo (ticket 01)."""
+    import asyncio
+    from datetime import UTC, datetime, timedelta
+
+    from orb.gateway import Hub, Observatory, app as gateway_app
+    from orb.protocol import make_event
+
+    monkeypatch.setattr(gateway_app, "TIME_TICK_SECONDS", 0.0)
+    clock = [datetime(2026, 10, 7, 10, 0, tzinfo=UTC)]
+    hub = Hub(Observatory(home=tmp_path), clock=lambda: clock[0])
+    hub.world.apply(make_event(id="claude:s1:a", ts="2026-10-07T10:00:00Z", provider="claude",
+                               source="claude/transcript", realm="the-orb", alter_ego="claude:s1", agent=None,
+                               seq=1, kind="x", body={}, signal={"type": "idle"}))
+
+    async def scenario():
+        client: asyncio.Queue = asyncio.Queue()
+        hub.clients.add(client)
+        task = asyncio.create_task(hub.run(0.01))
+        try:
+            first = await asyncio.wait_for(client.get(), 2)
+            assert first["world"]["realms"][0]["alter_egos"][0]["asleep"] is False
+            assert first["world"]["generated_at"].startswith("2026-10-07T10:00:00")      # a hora do servidor
+            clock[0] += timedelta(minutes=16)
+            while True:
+                message = await asyncio.wait_for(client.get(), 2)
+                if message["world"]["realms"][0]["alter_egos"][0]["asleep"]:
+                    return message
+        finally:
+            task.cancel()
+
+    message = asyncio.run(scenario())
+    assert message["world"]["generated_at"].startswith("2026-10-07T10:16:00")

@@ -147,7 +147,10 @@ Não exercitados (não é o mesmo que "não existem"): `UserPromptExpansion`, `S
 2. **`UserPromptSubmit` também dispara para prompts do sistema** (`<task-notification>`); como o Orb
    não rastreia autoria, isso não muda nada no mundo.
 3. **A ferramenta `Agent` é assíncrona:** o `Stop` do líder chegou aos 5 s e o `SubagentStop` aos
-   12 s. `Stop` do líder ≠ Team parada (o Core mostra o líder `DELEGATING`).
+   12 s. `Stop` do líder ≠ Team parada (o Core mostra o líder `DELEGATING`). **Exceção (ticket 01,
+   R7):** um subagente sem atividade há mais de 5 min e sem aviso de fim vira "sem sinal" e deixa de
+   segurar o líder em `DELEGATING`; sem isso, um subagente em segundo plano nunca fecharia e a sessão
+   nunca dormiria.
 4. O `session_id` dos hooks é o mesmo do `--session-id` dado pelo Orb, também na TUI hospedada.
 5. Aparece `SubagentStop` sem subagente pedido (provável subagente interno): `agent_type`
    desconhecido não pode quebrar nada.

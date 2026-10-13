@@ -24,6 +24,7 @@ import secrets
 import time
 import uuid
 from dataclasses import dataclass, field
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Callable
 from urllib.parse import urlparse
@@ -46,6 +47,7 @@ ALLOWED_HOSTS = frozenset({"127.0.0.1", "localhost"})
 POLL_SECONDS = 0.5
 CLIENT_QUEUE = 2000            # mensagens pendentes por cliente do mundo; além disso, só o snapshot
 FEED_ON_CONNECT = 80           # linhas de Inner World por sessão enviadas a quem acabou de conectar
+TIME_TICK_SECONDS = 15.0       # de quanto em quanto tempo se reavalia o que só o tempo muda (dormindo, sem sinal)
 
 
 @dataclass
@@ -66,19 +68,26 @@ def authorized(token: str, query_token: str | None, origin: str | None) -> bool:
 
 
 class Hub:
-    """O mundo vivo: observa os realms, aplica no Core e distribui aos clientes do mundo."""
+    """O mundo vivo: observa os realms, aplica no Core e distribui aos clientes do mundo.
 
-    def __init__(self, observatory: Observatory) -> None:
+    O Hub é a borda que conhece a hora: o Core é puro e só recebe a hora que o Hub informa (R47)."""
+
+    def __init__(self, observatory: Observatory, *, clock: Callable[[], datetime] | None = None) -> None:
         self.observatory = observatory
+        self.clock = clock or (lambda: datetime.now(UTC))
         self.world = World()
         self.feed = Feed()
         self.clients: set[asyncio.Queue[dict[str, Any]]] = set()
+        self._published_time_key: tuple | None = None      # o que os clientes viram da última vez
 
     def realms(self) -> list[dict[str, Any]]:
         return [self.observatory.describe(rid) for rid in sorted(self.observatory.realms)]
 
-    def snapshot(self) -> dict[str, Any]:
-        world = self.world.snapshot()
+    def snapshot(self, now: datetime | None = None) -> dict[str, Any]:
+        """O mundo na hora do servidor (`generated_at`): é com ela que o Core deriva dormindo e sem sinal."""
+        now = now or self.clock()
+        world = self.world.snapshot(now)
+        world["generated_at"] = now.isoformat()
         known = {realm["id"] for realm in world["realms"]}
         # Todo realm observado existe na cidade, mesmo sem nenhuma sessão ainda.
         world["realms"] += [{"id": rid, "alter_egos": []} for rid in self.observatory.realms if rid not in known]
@@ -104,7 +113,19 @@ class Hub:
                 continue           # cliente lento: recebe o próximo snapshot, não trava os outros
             queue.put_nowait(message)
 
+    def publish_world(self) -> None:
+        """Envia o mundo (na hora do servidor) a todos os clientes e guarda o que eles viram do tempo."""
+        now = self.clock()
+        self._published_time_key = self.world.time_key(now)
+        self.publish({"channel": "world", "world": self.snapshot(now)})
+
+    def time_changed(self) -> bool:
+        """Só o passar do tempo mudou algo (alguém dormiu, um subagente ficou sem sinal) desde o
+        último mundo enviado? Assim os clientes são avisados sem esperar um evento novo."""
+        return self.world.time_key(self.clock()) != self._published_time_key
+
     async def run(self, poll_seconds: float) -> None:
+        last_tick = time.monotonic()
         while True:
             try:
                 applied, changed = await asyncio.to_thread(self.poll_once)
@@ -113,8 +134,14 @@ class Hub:
             for event in applied:
                 if event.get("inner"):
                     self.publish({"channel": "event", "event": event})
+            now = time.monotonic()
             if changed:
-                self.publish({"channel": "world", "world": self.snapshot()})
+                self.publish_world()
+                last_tick = now
+            elif now - last_tick >= TIME_TICK_SECONDS:
+                last_tick = now
+                if self.time_changed():
+                    self.publish_world()
             await asyncio.sleep(poll_seconds)
 
 

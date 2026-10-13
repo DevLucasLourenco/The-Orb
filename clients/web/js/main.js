@@ -6,7 +6,7 @@ import { Avatar } from "./avatar.js";
 import { renderOverview, renderRealmList, renderTopbar, summarize } from "./hud.js";
 import { InnerWorld } from "./innerworld.js";
 import { connectWorld } from "./net.js";
-import { PROVIDERS, isAsleep, subVisible } from "./providers.js";
+import { PROVIDERS, isAsleep } from "./providers.js";
 
 const stage = new Stage(document.getElementById("scene"));
 const inner = new InnerWorld();
@@ -70,8 +70,9 @@ function syncWorld(next) {
       a.realm = realm.id;
       alive.add(ego.id);
       inner.updateEgo(ego);
-      if (asleep) continue;
-      for (const sub of ego.team.filter(subVisible)) {
+      if (ego.ended) continue;       // sessão encerrada: a Team também terminou
+      // Líder dormindo não esconde a Team: o subagente "sem sinal" fica cinza no lugar (R7), não some.
+      for (const sub of ego.team.filter((s) => s.active)) {
         const key = `${ego.id}/${sub.id}`;
         place(key, sub.area || "__lobby");
         let s = avatars.get(key);
@@ -183,5 +184,5 @@ stage.onFrame = (dt, t) => {
   for (const a of avatars.values()) a.update(dt, t, near && (!selectedRealm || a.realm === selectedRealm));
 };
 stage.start();
-// Sessões "dormem" com o tempo: reavalia sem esperar o próximo evento.
-setInterval(() => world.realms.length && syncWorld(world), 30000);
+// Só o "há Xs" do overview depende do tempo que passa; dormindo e sem sinal vêm do mundo.
+setInterval(() => selectedRealm && renderOverview(world.realms.find((r) => r.id === selectedRealm), openEgo), 15000);

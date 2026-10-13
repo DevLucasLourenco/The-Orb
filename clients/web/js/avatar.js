@@ -4,6 +4,29 @@ import { CSS2DObject } from "three/addons/renderers/CSS2DRenderer.js";
 import { STATE_LABEL, el, isAsleep, provider, sessionTitle } from "./providers.js";
 
 const WORKING = new Set(["READING", "RESEARCHING", "CODING", "EXECUTING", "TESTING", "REVIEWING"]);
+// Subagente sem sinal (R7, D-050): cinza neutro, translúcido, sem halo e com o ícone de sinal cortado.
+const NO_SIGNAL_COLOR = new THREE.Color(0x8a909c);
+const NO_SIGNAL_OPACITY = 0.4;
+// A cabeça é o tom do corpo clareado.
+const headTone = (color) => color.clone().lerp(new THREE.Color(0xffffff), 0.35);
+
+// Ícone de sinal cortado (barras de sinal e um traço). É um sprite: sempre de frente para a câmera.
+function lostSignalSprite() {
+  const canvas = document.createElement("canvas");
+  canvas.width = canvas.height = 64;
+  const g = canvas.getContext("2d");
+  g.fillStyle = "#c9d0dc";
+  [14, 26, 38].forEach((h, i) => g.fillRect(10 + 16 * i, 54 - h, 10, h));
+  g.lineCap = "round";
+  g.beginPath(); g.moveTo(8, 56); g.lineTo(56, 8);
+  g.strokeStyle = "#0b1020"; g.lineWidth = 11; g.stroke();
+  g.strokeStyle = "#ffffff"; g.lineWidth = 5; g.stroke();
+  const map = new THREE.CanvasTexture(canvas);
+  map.colorSpace = THREE.SRGBColorSpace;
+  const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map, transparent: true, depthWrite: false, toneMapped: false }));
+  sprite.scale.setScalar(1.1);
+  return sprite;
+}
 
 export class Avatar {
   constructor(scene, { id, providerName, sub = false }) {
@@ -13,6 +36,7 @@ export class Avatar {
     this.state = "IDLE";
     this.asleep = false;
     this.waiting = false;
+    this.noSignal = false;
     this.target = null;
     this.phase = Math.random() * Math.PI * 2;
 
@@ -22,8 +46,9 @@ export class Avatar {
     const body = (this.body = new THREE.Mesh(new THREE.CapsuleGeometry(0.46, 0.95, 6, 14),
       new THREE.MeshStandardMaterial({ color, roughness: 0.42, metalness: 0.1, emissive: color, emissiveIntensity: 0.12 })));
     body.position.y = 0.95;
+    this.headColor = headTone(color);
     const head = (this.head = new THREE.Mesh(new THREE.SphereGeometry(0.4, 24, 16),
-      new THREE.MeshStandardMaterial({ color: color.clone().lerp(new THREE.Color(0xffffff), 0.35), roughness: 0.35 })));
+      new THREE.MeshStandardMaterial({ color: this.headColor, roughness: 0.35 })));
     head.position.y = 2.0;
     const visor = new THREE.Mesh(new THREE.BoxGeometry(0.46, 0.14, 0.12),
       new THREE.MeshBasicMaterial({ color: 0xe8f4ff, toneMapped: false }));
@@ -37,6 +62,10 @@ export class Avatar {
       new THREE.MeshBasicMaterial({ color: 0xffb547, toneMapped: false }));
     this.alert.position.y = 3.35;
     this.alert.visible = false;
+    // Sem sinal (só subagentes): ícone de sinal cortado sobre a cabeça.
+    this.lostSignal = lostSignalSprite();
+    this.lostSignal.position.y = 3.3;
+    this.lostSignal.visible = false;
     // Pensando: três pontos orbitando.
     this.thoughts = new THREE.Group();
     for (let i = 0; i < 3; i++) {
@@ -50,7 +79,7 @@ export class Avatar {
       new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.35, depthWrite: false }));
     shadow.rotation.x = -Math.PI / 2;
     shadow.position.y = 0.04;
-    group.add(body, head, visor, this.halo, this.alert, this.thoughts, shadow);
+    group.add(body, head, visor, this.halo, this.alert, this.lostSignal, this.thoughts, shadow);
     body.castShadow = head.castShadow = true;
     if (sub) group.scale.setScalar(0.62);
 
@@ -89,9 +118,22 @@ export class Avatar {
     this.labelEl.replaceChildren(el("div", "t", `${provider(ego.provider).label} · ${sessionTitle(ego)}`), el("div", "s", status));
   }
 
+  // O mundo decide quem está sem sinal (`no_signal`); aqui só se desenha.
   setSub(sub) {
     this.state = sub.state;
     this.asleep = !sub.active;
+    this._setNoSignal(Boolean(sub.no_signal));
+  }
+
+  _setNoSignal(on) {
+    if (on === this.noSignal) return;
+    this.noSignal = on;
+    const body = on ? NO_SIGNAL_COLOR : this.color;
+    this.body.material.color.copy(body);
+    this.body.material.emissive.copy(body);
+    this.head.material.color.copy(on ? headTone(NO_SIGNAL_COLOR) : this.headColor);
+    this.head.material.transparent = on;
+    this.head.material.opacity = on ? NO_SIGNAL_OPACITY : 1;
   }
 
   update(dt, t, showLabel) {
@@ -113,12 +155,15 @@ export class Avatar {
     this.body.position.y = 0.95 + bob;
     this.head.position.y = 2.0 + bob;
     this.head.rotation.x = this.asleep ? 0.5 : working ? Math.sin(t * 2.2 + this.phase) * 0.08 : 0;
-    this.halo.visible = !this.asleep;
+    this.halo.visible = !this.asleep && !this.noSignal;
     this.halo.rotation.z += dt * (working ? 2.4 : 0.6);
     this.halo.position.y = 2.72 + bob;
-    this.body.material.emissiveIntensity = this.asleep ? 0.02 : working ? 0.32 : 0.12;
-    this.body.material.transparent = this.asleep;
-    this.body.material.opacity = this.asleep ? 0.45 : 1;
+    const faded = this.asleep || this.noSignal;
+    this.body.material.emissiveIntensity = faded ? 0.02 : working ? 0.32 : 0.12;
+    this.body.material.transparent = faded;
+    this.body.material.opacity = this.noSignal ? NO_SIGNAL_OPACITY : this.asleep ? 0.45 : 1;
+    this.lostSignal.visible = this.noSignal;
+    if (this.noSignal) this.lostSignal.position.y = 3.3 + Math.sin(t * 2) * 0.06;
     this.alert.visible = this.waiting;
     if (this.waiting) {
       this.alert.rotation.y += dt * 2.5;
@@ -138,6 +183,7 @@ export class Avatar {
     this.scene.remove(this.group);
     this.group.traverse((o) => {
       o.geometry?.dispose?.();
+      o.material?.map?.dispose?.();
       o.material?.dispose?.();
       if (o.isCSS2DObject) o.element.remove();
     });

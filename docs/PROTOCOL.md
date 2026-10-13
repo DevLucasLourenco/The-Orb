@@ -231,7 +231,7 @@ No canal do mundo (`/world`), o cliente pode pedir o histórico de uma sessão:
 |---|---|
 | `term` | Bytes do terminal (texto) |
 | `event` | Um evento do protocolo (§2) |
-| `world` | Snapshot do mundo (Core) depois de aplicar eventos, com todos os realms observados |
+| `world` | Snapshot do mundo (Core), na hora do servidor, depois de aplicar eventos ou de o tempo mudar algo (dormindo, sem sinal), com todos os realms observados |
 | `feed` | Histórico de linhas de Inner World de uma sessão (`alter_ego`, `events`) |
 | `exit` | O processo do terminal terminou |
 | `system` | Informação ou erro do Gateway |

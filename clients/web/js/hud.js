@@ -1,5 +1,5 @@
 // A camada 2D sobre o mundo: números de Mankind, lista de realms e o overview do realm.
-import { STATE_LABEL, ago, el, isAsleep, provider, sessionTitle, subVisible, tokens } from "./providers.js";
+import { STATE_LABEL, ago, el, isAsleep, provider, sessionTitle, tokens } from "./providers.js";
 
 export function summarize(realm) {
   const egos = realm.alter_egos || [];
@@ -8,7 +8,7 @@ export function summarize(realm) {
     sessions: egos.length,
     active: awake.filter((e) => !["IDLE", "COMPLETED"].includes(e.state)).length,
     waiting: egos.filter((e) => e.waiting.length || e.state === "WAITING").length,
-    subagents: egos.reduce((n, e) => n + e.team.filter(subVisible).length, 0),
+    subagents: egos.reduce((n, e) => n + e.active_subagents, 0),
     tokens: egos.reduce((n, e) => n + (e.usage.input_tokens || 0) + (e.usage.output_tokens || 0), 0),
     cost: egos.reduce((n, e) => n + (e.usage.cost_usd || 0), 0),
   };
@@ -86,7 +86,7 @@ function sessionCard(ego, onOpen) {
   now.append(ego.last_action || (asleep ? "sem atividade recente" : "—"));
   now.title = ego.last_action || "";
   card.append(now);
-  const team = ego.team.filter(subVisible);
+  const team = ego.team.filter((sub) => sub.active);     // inclui os "sem sinal": ficam listados, em cinza
   if (team.length) {
     const t = el("div", "team");
     for (const sub of team) {
