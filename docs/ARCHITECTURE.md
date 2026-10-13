@@ -49,10 +49,11 @@
 | Módulo | Pasta | Responsabilidade | Conhece | **Não** conhece |
 |---|---|---|---|---|
 | **Protocol** | `src/orb/protocol/` | Envelope, vocabulário fechado (atividades, sinais), limites de tamanho, validação | nada | todos os outros |
-| **Core** | `src/orb/core/` | O mundo: aplica eventos, deriva a atividade de cada personagem, Teams, pendências, Energy; snapshot | Protocol | Adapters, Gateway, disco, rede, relógio |
+| **Core** | `src/orb/core/` | O mundo: aplica eventos, deriva a atividade de cada personagem, Teams, pendências, Energy; snapshot; a sacola e o livro de nomes históricos (`names.py`) | Protocol | Adapters, Gateway, disco, rede, relógio |
 | **Adapters** (claude, codex, hermes, opencode) | `src/orb/adapters/<provider>/` | Ler a fonte nativa do provider e produzir eventos (nativo + sinal + inner) pelo Mapa do provider | Protocol | Core, Gateway, outros adapters |
 | **Terminal Host** | `src/orb/terminal_host/` | Abrir o terminal real (ConPTY), chamar o CLI (lista fixa), transportar bytes, limpar o ambiente herdado | nada do domínio | Core, adapters |
 | **Gateway** | `src/orb/gateway/` | Autenticar, ligar terminal + adapter + Core por sessão, validar mensagens do cliente, distribuir por WebSocket; detectar os realms (`realms.py`) e decidir pasta → projeto (`projects.py`, a borda que conhece o disco) | todos, por interfaces | internals de adapters |
+| **Registro local** | `src/orb/registry/` | O arquivo SQLite do próprio Orb (R36): hoje a associação sessão → nome e a sacola de nomes; implementa a interface `NameSource` do Core; a pasta do Orb (`paths.py`) | Core (só a sacola e a interface) | Adapters, Gateway, providers |
 | **Clients** | `clients/` | Renderizar o mundo e o Inner World, enviar teclas | só as mensagens do Gateway | adapters, providers |
 | **Probes** *(futuro)* | `src/orb/probes/` | Fatos do mundo real (git, CI, LOC respeitando `.gitignore`) | Protocol | Core, adapters |
 
@@ -68,8 +69,9 @@
   Gateway ou clientes ([ADR 0002](adr/0002-eventos-nativos-por-provider.md)).
 - Clientes nunca falam com adapters ou providers; só com o Gateway.
 - **Somente leitura por desenho.** Adapters e Probes só abrem arquivos do provider e do projeto
-  em modo leitura. A única escrita é o Terminal Host transportando o que o Lucas digita
-  ([VISION.md](VISION.md) §3, princípio 5).
+  em modo leitura. A única escrita nos arquivos de terceiros é o Terminal Host transportando o que o
+  Lucas digita ([VISION.md](VISION.md) §3, princípio 5); o Orb só grava nos **próprios** arquivos: o
+  registro local (R36) e, depois, as preferências (R29).
 - **Nenhum módulo chama modelo de IA** (R38): o Orb não consome tokens. Papel, nomes,
   classificações e resumos saem de regras e tabelas sobre a telemetria.
 - **Diálogos são do Lucas.** Nenhum módulo responde diálogos dos CLIs nem pedidos de servidor
@@ -232,7 +234,17 @@ ticket existir.
   ([ADR 0006](adr/0006-o-orb-nunca-responde-dialogos.md)).
 - **Registro local do Orb** (R36, D-062): SQLite na pasta de preferências do Orb, com o que o Orb
   derivou (eventos do mundo para o Chronicle, associação sessão → nome histórico, preferências).
-  Nada do conteúdo das sessões é copiado; ele continua nos providers.
+  Nada do conteúdo das sessões é copiado; ele continua nos providers. **Feito (ticket 04):** pacote
+  `orb.registry`; arquivo `registry.db` em `%LOCALAPPDATA%\the-orb\` (`orb_home()`; fora do Windows,
+  `$XDG_DATA_HOME` ou `~/.local/share`), com `PRAGMA user_version` para as migrações. Tabelas de hoje:
+  `names` (id do Alter Ego → nome) e `bag` (os nomes que restam, na ordem em que saem). Cada sorteio é uma
+  transação `BEGIN IMMEDIATE` (dois Orbs abertos não repetem o nome). O Core não conhece o disco: o
+  `World(names=...)` recebe um `NameSource` (`name_for(id, avoid)`), e o Gateway entrega o
+  `LocalRegistry` (ou, sem pasta do Orb, o `NameBook` em memória). **Falha de disco** (pasta sem
+  permissão, arquivo corrompido, banco travado, registro de um Orb mais novo): os nomes vêm de uma cópia em
+  memória que segue a mesma sacola; o disco é tentado de novo a cada pedido (uma falha passageira não desliga
+  o registro); o arquivo nunca é apagado nem alterado, e `/config` informa o motivo em `registry_error`
+  (nenhuma tela mostra isso hoje). Quem sorteia espera o banco por até 5 s, na thread de leitura (`to_thread`).
 - **Contador de linhas** (R19, D-053 a D-056): faz parte dos Probes; conta linhas não vazias dos
   arquivos acompanhados pelo git, sem os ignorados e sem os gerados da lista de exclusões, e
   recalcula ao abrir e quando as alterações locais mudam (até 1×/min por realm). Somente leitura.
@@ -280,11 +292,12 @@ ticket existir.
 | Camada | Como | Onde |
 |---|---|---|
 | Protocol | Contrato: todo evento produzido valida; limites e cortes | `tests/test_protocol.py` |
-| Core | Unitários puros: atividade, Team, `WAITING`, dedupe, snapshot | `tests/test_core.py` |
+| Core | Unitários puros: atividade, Team, `WAITING`, dedupe, snapshot, nome do Alter Ego | `tests/test_core.py` |
 | Adapters | Linhas/notificações/bancos com a forma verificada (spikes, esquema oficial do Codex, estrutura dos bancos reais) | `tests/test_adapter_{claude,codex,hermes,opencode}.py` |
 | Classificador de comandos | Tabela de casos | `tests/test_commands.py` |
 | Terminal Host | PTY falsa (sempre) + terminal real (quando `pywinpty` e o CLI existem) | `tests/test_terminal_host.py` |
 | Gateway | Validação de mensagens; app com terminal falso | `tests/test_gateway.py` |
+| Nomes e registro local | Sacola e livro de nomes sem disco; registro numa pasta temporária (reabrir, falhas de disco) | `tests/test_names.py`, `tests/test_registry.py` |
 | Detecção de realms (as leituras do mundo real) | Pastas de CLIs e de projetos falsas → realms; regras de pasta → projeto; índice de sessões | `tests/test_realms.py`, `tests/test_projects.py`, `tests/test_session_index.py` (arquivos falsos em `tests/fakes.py`) |
 
 **Pontos de teste (D-099).** O principal é o mundo: eventos sintéticos + uma hora → estado do mundo
@@ -311,7 +324,8 @@ The Orb/
 │   └── adr/        decisões numeradas
 ├── src/orb/
 │   ├── protocol/        events.py · vocab.py
-│   ├── core/            world.py · rules.py
+│   ├── core/            world.py · rules.py · names.py
+│   ├── registry/        store.py · paths.py
 │   ├── adapters/
 │   │   ├── _shared/     base.py · commands.py · index.py · jsonl.py · sqlite.py
 │   │   ├── claude/      mapping.py · transcript.py · index.py · hooks.py

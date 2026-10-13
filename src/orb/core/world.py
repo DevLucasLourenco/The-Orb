@@ -13,6 +13,7 @@ from typing import Any
 
 from ..protocol import Event, validate
 from . import rules
+from .names import NameSource
 
 _TOKEN_FIELDS = ("input_tokens", "output_tokens", "cache_read_tokens", "reasoning_tokens")
 _ACTION_CHARS = 240     # tamanho do "fazendo agora" no overview
@@ -78,6 +79,7 @@ class AlterEgo:
     title: str | None = None
     model: str | None = None
     cwd: str | None = None
+    name: str | None = None      # nome histórico: identidade, não dado (R37); None sem livro de nomes
     ended: bool = False
     no_signal: bool = False
     error: str | None = None
@@ -122,8 +124,8 @@ class AlterEgo:
     def snapshot(self, now: datetime | None = None) -> dict[str, Any]:
         state = self.state(now)
         return {
-            "id": self.id, "provider": self.provider, "session": self.session, "title": self.title,
-            "model": self.model, "cwd": self.cwd, "state": state, "area": rules.area_for(state),
+            "id": self.id, "provider": self.provider, "session": self.session, "name": self.name,
+            "title": self.title, "model": self.model, "cwd": self.cwd, "state": state, "area": rules.area_for(state),
             "target": self.target, "last_action": self.last_action,
             "ended": self.ended, "asleep": self.asleep(now), "error": self.error,
             "active_subagents": self.active_subagents(now),
@@ -135,11 +137,14 @@ class AlterEgo:
 
 
 class World:
-    """Estado de todo o Orb. `apply` é idempotente por `id` de evento."""
+    """Estado de todo o Orb. `apply` é idempotente por `id` de evento.
 
-    def __init__(self) -> None:
+    `names` dá o nome histórico de cada sessão que aparece (R37); sem ele os Alter Egos ficam sem nome."""
+
+    def __init__(self, names: NameSource | None = None) -> None:
         self.realms: dict[str, dict[str, AlterEgo]] = {}
         self.rejected = 0
+        self.names = names
 
     def alter_ego(self, ego_id: str) -> AlterEgo | None:
         for egos in self.realms.values():
@@ -158,7 +163,8 @@ class World:
         egos = self.realms.setdefault(event["realm"], {})
         ego = egos.get(ego_id)
         if ego is None:
-            ego = egos[ego_id] = AlterEgo(id=ego_id, realm=event["realm"], provider=event["provider"])
+            ego = egos[ego_id] = AlterEgo(id=ego_id, realm=event["realm"], provider=event["provider"],
+                                          name=self._name_for(ego_id, egos))
         if not ego.remember(event["id"]):
             return False
         ego.events += 1
@@ -182,6 +188,13 @@ class World:
         if sub is not None:
             sub.touch(event["ts"])
         return True
+
+    def _name_for(self, ego_id: str, room: dict[str, AlterEgo]) -> str | None:
+        """O nome da sessão que acabou de aparecer; os outros personagens da sala não se repetem (D-064).
+        Só o líder tem nome: subagentes vivem dentro do Alter Ego e ficam com o tipo do CLI (D-065)."""
+        if self.names is None:
+            return None
+        return self.names.name_for(ego_id, frozenset(ego.name for ego in room.values() if ego.name))
 
     @staticmethod
     def _track_seq(ego: AlterEgo, event: Event) -> None:

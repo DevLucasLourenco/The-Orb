@@ -31,8 +31,9 @@ from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from ..adapters._shared import alter_ego_id
-from ..core import World
+from ..core import NameBook, NameSource, World
 from ..protocol import validate
+from ..registry import LocalRegistry, orb_home
 from ..terminal_host import (HostedTerminal, InvalidLaunchValue, Launch, ProviderNotInstalled,
                              UnknownProvider, available_providers, resolve_provider, winpty_factory)
 from .messages import handle_client_message
@@ -55,6 +56,7 @@ class GatewayConfig:
     home: Path | None = None               # raiz das pastas dos providers (testes)
     poll_seconds: float = POLL_SECONDS
     lookback_minutes: float = 30.0
+    state_dir: Path | None = None          # pasta do Orb (registro local, R36); sem ela os nomes vivem só em memória
 
 
 def authorized(token: str, query_token: str | None, origin: str | None) -> bool:
@@ -69,16 +71,22 @@ class Hub:
 
     O Hub é a borda que conhece a hora: o Core é puro e só recebe a hora que o Hub informa (R47)."""
 
-    def __init__(self, observatory: Observatory, *, clock: Callable[[], datetime] | None = None) -> None:
+    def __init__(self, observatory: Observatory, *, clock: Callable[[], datetime] | None = None,
+                 names: NameSource | None = None) -> None:
         self.observatory = observatory
         self.clock = clock or (lambda: datetime.now(UTC))
-        self.world = World()
+        self.world = World(names=names)
         self.feed = Feed()
         self.clients: set[asyncio.Queue[dict[str, Any]]] = set()
         self._published_time_key: tuple | None = None      # o que os clientes viram da última vez
 
     def realms(self) -> list[dict[str, Any]]:
         return [self.observatory.describe(rid) for rid in sorted(self.observatory.realms)]
+
+    def registry_error(self) -> str | None:
+        """Por que o registro local não está gravando (nomes só em memória), ou None."""
+        names = self.world.names
+        return names.error if names is not None else None
 
     def snapshot(self, now: datetime | None = None) -> dict[str, Any]:
         """O mundo na hora do servidor (`generated_at`): é com ela que o Core deriva dormindo e sem sinal."""
@@ -144,8 +152,10 @@ class Hub:
 
 def create_app(config: GatewayConfig, *, pty_factory: Callable = winpty_factory,
                check_installed: bool = True, observatory: Observatory | None = None) -> FastAPI:
+    names = LocalRegistry(config.state_dir) if config.state_dir is not None else NameBook()
     hub = Hub(observatory if observatory is not None else
-              Observatory(config.realms, roots=config.roots, lookback_minutes=config.lookback_minutes, home=config.home))
+              Observatory(config.realms, roots=config.roots, lookback_minutes=config.lookback_minutes, home=config.home),
+              names=names)
 
     @contextlib.asynccontextmanager
     async def lifespan(_app: FastAPI):
@@ -167,7 +177,8 @@ def create_app(config: GatewayConfig, *, pty_factory: Callable = winpty_factory,
 
     @app.get("/config")
     async def get_config():
-        return JSONResponse({"realms": hub.realms(), "providers": available_providers()})
+        return JSONResponse({"realms": hub.realms(), "providers": available_providers(),
+                             "registry_error": hub.registry_error()})
 
     @app.websocket("/world")
     async def world_stream(ws: WebSocket):
@@ -297,7 +308,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 def config_from_args(args: argparse.Namespace) -> GatewayConfig:
     """Sem argumentos nenhum realm é informado: a cidade se monta sozinha (R3)."""
     return GatewayConfig(realms=[str(Path(p).resolve()) for p in (args.realm + args.cwd)],
-                         roots=[str(Path(p).resolve()) for p in args.root], lookback_minutes=args.lookback)
+                         roots=[str(Path(p).resolve()) for p in args.root], lookback_minutes=args.lookback,
+                         state_dir=orb_home())
 
 
 def main() -> None:
@@ -307,6 +319,7 @@ def main() -> None:
     config = config_from_args(args)
     print("\nThe Orb")
     print("  · os projetos são detectados pelas sessões dos CLIs")
+    print(f"  · registro local do Orb: {config.state_dir}")
     for root in config.roots:
         print(f"  · [depuração] cada projeto em {root}")
     for folder in config.realms:

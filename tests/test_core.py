@@ -1,8 +1,9 @@
+import random
 from datetime import UTC, datetime, timedelta
 
 import pytest
 
-from orb.core import World, rules
+from orb.core import NameBag, NameBook, World, rules
 from orb.protocol import make_event
 
 _seq = iter(range(1, 10_000))
@@ -259,3 +260,68 @@ def test_the_snapshot_counts_subagents_with_signal_per_alter_ego():
     assert ego_at(world, 4.5)["active_subagents"] == 2
     assert ego_at(world, 6)["active_subagents"] == 1                 # a1 ficou sem sinal; a2 não
     assert world.snapshot(T0 + timedelta(minutes=6))["mankind"]["active_subagents"] == 1
+
+
+# ---------- nome histórico (R37, D-063 a D-067) ----------
+
+def test_a_session_gets_a_historical_name_when_it_appears_and_keeps_it():
+    world = World(names=NameBook())
+    world.apply(ev({"type": "session.started"}))
+    name = ego_snapshot(world)["name"]
+    assert name
+    world.apply(ev({"type": "activity", "activity": "CODING"}))
+    world.apply(ev({"type": "session.updated", "title": "outra coisa"}))
+    assert ego_snapshot(world)["name"] == name                     # fica com a sessão para sempre
+
+
+def test_without_a_name_book_the_alter_ego_has_no_name_and_nothing_is_invented():
+    world = World()
+    world.apply(ev({"type": "session.started"}))
+    assert ego_snapshot(world)["name"] is None
+
+
+def test_subagents_get_no_name_and_keep_the_kind_given_by_the_cli():
+    world = World(names=NameBook())
+    world.apply(ev({"type": "subagent.started", "kind": "Explore"}, agent="a1"))
+    team = ego_snapshot(world)["team"]
+    assert team[0]["kind"] == "Explore" and "name" not in team[0]
+
+
+def test_the_bag_is_global_so_two_realms_never_share_a_name():
+    world = World(names=NameBook(rng=random.Random(4)))
+    for n in range(12):
+        event = ev({"type": "session.started"}, ego=f"claude:s{n}")
+        event["realm"] = f"realm-{n % 3}"
+        world.apply(event)
+    names = [e["name"] for r in world.snapshot()["realms"] for e in r["alter_egos"]]
+    assert len(names) == 12 and len(set(names)) == 12
+
+
+def test_two_characters_in_the_same_room_never_show_the_same_name():
+    # A sacola deu a volta: "Einstein" voltou a ser sorteável enquanto a sessão s1 ainda o usa na sala.
+    book = NameBook(assigned={"claude:s1": "Einstein"}, bag=NameBag(["Einstein", "Newton"]))
+    world = World(names=book)
+    world.apply(ev({"type": "session.started"}, ego="claude:s1"))
+    world.apply(ev({"type": "session.started"}, ego="claude:s2"))
+    names = sorted(e["name"] for e in world.snapshot()["realms"][0]["alter_egos"])
+    assert names == ["Einstein", "Newton"]                                         # tira-se o seguinte
+
+
+def test_the_same_name_may_appear_in_two_different_rooms():
+    book = NameBook(assigned={"claude:s1": "Einstein", "claude:s2": "Einstein"})  # um nome sorteado em outra época
+    world = World(names=book)
+    world.apply(ev({"type": "session.started"}, ego="claude:s1"))
+    other = ev({"type": "session.started"}, ego="claude:s2")
+    other["realm"] = "outro"
+    world.apply(other)
+    assert [e["name"] for r in world.snapshot()["realms"] for e in r["alter_egos"]] == ["Einstein", "Einstein"]
+
+
+def test_a_rejected_event_does_not_use_up_a_name():
+    book = NameBook()
+    world = World(names=book)
+    bad = ev({"type": "session.started"})
+    bad["seq"] = -1                                                                 # inválido para o Protocol
+    assert world.apply(bad) is False
+    assert len(book.bag.remaining) == 60 and book.assigned == {}
+
