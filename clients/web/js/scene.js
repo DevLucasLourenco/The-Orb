@@ -9,6 +9,7 @@ import { OutputPass } from "three/addons/postprocessing/OutputPass.js";
 
 const SKY = 0x070b16;
 const EDGE = 40;                 // o chão passa dos bairros por esta folga, em cada lado
+const MIN_GROUND = { width: 260, depth: 150 };   // chão mínimo, para a cidade vazia (ou de um bairro só) não ficar flutuando
 const ease = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
 
 export class Stage {
@@ -85,25 +86,27 @@ export class Stage {
     this.ground = new THREE.Group();
     this.scene.add(this.ground);
     this.cityKey = "";
-    this.setCity({ width: 0, depth: 0, pad: 14, districts: [] });
+    this.setCity({ width: 0, depth: 0, pad: 0, districts: [] });
   }
 
   // Desenha o chão a partir do traçado do mundo; só refaz quando o traçado muda.
   setCity(city) {
-    const key = JSON.stringify([city.width, city.depth, city.districts.map((d) => [d.letter, d.x, d.z, d.w, d.d])]);
+    const key = JSON.stringify([city.width, city.depth, city.pad, city.districts.map((d) => [d.letter, d.x, d.z, d.w, d.d])]);
     if (key === this.cityKey) return;
     this.cityKey = key;
     for (const child of [...this.ground.children]) {
       this.ground.remove(child);
       child.traverse((o) => { o.geometry?.dispose?.(); o.material?.map?.dispose?.(); o.material?.dispose?.(); });
     }
-    const width = Math.max(city.width + 2 * EDGE, 260), depth = Math.max(city.depth + 2 * EDGE, 150);
+    const width = Math.max(city.width + 2 * EDGE, MIN_GROUND.width), depth = Math.max(city.depth + 2 * EDGE, MIN_GROUND.depth);
     const street = new THREE.Mesh(new THREE.BoxGeometry(width, 6, depth),
       new THREE.MeshStandardMaterial({ color: 0x15213a, roughness: 0.85, metalness: 0.2, emissive: 0x0a1630, emissiveIntensity: 0.6 }));
     street.position.y = -3;
     street.receiveShadow = true;
-    const rim = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(width, 0.02, depth)),
+    const outline = new THREE.BoxGeometry(width, 0.02, depth);
+    const rim = new THREE.LineSegments(new THREE.EdgesGeometry(outline),
       new THREE.LineBasicMaterial({ color: 0x5fb6ff, toneMapped: false }));
+    outline.dispose();                                    // só serviu de molde para as arestas
     this.ground.add(street, rim);
     const padMaterial = new THREE.MeshStandardMaterial({ color: 0x1d2c4a, roughness: 0.9, metalness: 0.1, emissive: 0x0a1630, emissiveIntensity: 0.5 });
     for (const d of city.districts) {

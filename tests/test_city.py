@@ -54,7 +54,7 @@ def test_the_city_is_wider_than_tall_close_to_16_by_9():
 
 
 def test_the_rows_are_chosen_to_get_as_close_to_16_by_9_as_the_districts_allow():
-    # Dez bairros de uma a quatro casas (a forma de uma máquina real): a cidade fica larga, não quase quadrada.
+    # Dez bairros de uma a quatro casas: com a divisão em três fileiras a cidade ficava quase quadrada (1,13).
     sizes = {"a": 2, "b": 4, "c": 4, "d": 1, "h": 1, "m": 1, "n": 2, "r": 1, "s": 4, "t": 4}
     plan = city.plan([f"{letter}{n}" for letter, count in sizes.items() for n in range(count)])
     assert 1.4 < plan["width"] / plan["depth"] < 2.4          # a opção de 3 fileiras dava 1,13; a de 2 dá 2,25, mais perto de 1,78

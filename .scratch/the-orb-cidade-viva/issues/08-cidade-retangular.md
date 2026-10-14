@@ -46,3 +46,10 @@ Implementado em 2026-10-14 (branch `ticket/08-cidade-retangular`). Só estrutura
 - **O que não foi visto:** o painel do navegador estava oculto (a janela do Claude em segundo plano) e não desenhou mais quadros; assim, o voo da câmera
   (atalhos 1–9, F, Esc e a visão geral) **não foi conferido na tela**. Ficou só o que o primeiro quadro mostrou. A proporção desta máquina era 1,13 antes de eu escolher a quebra mais próxima de 16:9; o traçado só depende
   da quantidade de realms por letra, e o mesmo desenho com nomes sintéticos dá 2,25 (a tela real não foi reaberta com essa correção).
+
+**Revisões (`/code-review`, padrões e spec):** nenhuma violação dura. Tratado: a geometria-molde da borda do chão não era descartada; a chave de cache do chão ignorava a calçada;
+números soltos do chão mínimo (260 × 150) agora têm nome e estão na VISUAL §7; tuplas posicionais e um alias inútil em `core/city.py`; a VISUAL dizia "nenhuma cor nova" e a
+calçada e a letra da placa são dois tons novos da mesma família azul (corrigido o texto); V-CITY-4 passa a ⚠️ até as decisões; Q-T08-5 diz como lê "só existem bairros de letras com realm".
+**Não corrigido, com motivo:** o Hub chamar `world.add_realm` ao montar o snapshot (idempotente; o `poll_once` já faz o mesmo e é o jeito de dar lote ao realm detectado
+entre duas leituras); a estabilidade só de lote e giro, que é a Q-T08-1 aguardando o Lucas; a abertura na visão geral e a sombra da lua redimensionada, que são consequência de a cidade
+ter outro tamanho (Q-T08-7). O critério dos atalhos 1–9 e do voo segue aberto até alguém ver o voo na tela.

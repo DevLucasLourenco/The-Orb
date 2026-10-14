@@ -8,11 +8,20 @@ from __future__ import annotations
 import math
 from collections.abc import Iterable
 from hashlib import blake2b
-from typing import Any
+from typing import Any, NamedTuple
 
 from . import rules
 
 HASH_DISTRICT = "#"      # números e símbolos: o bairro que vem antes de todas as letras
+_SHIFT_X, _SHIFT_Z, _SHIFT_TURN = 0, 16, 32     # que 16 bits da semente dão o deslocamento em x, em z e o giro
+
+
+class _Size(NamedTuple):
+    """O tamanho de um bairro: a grade de lotes e o retângulo (com a calçada)."""
+    cols: int
+    rows: int
+    w: int
+    d: int
 
 
 def district_letter(realm_id: str) -> str:
@@ -63,11 +72,11 @@ def _limits(letters: list[str], steps: dict[str, int]) -> list[float]:
     return sorted(limit for limit in limits if limit <= total)
 
 
-def _ratio_gap(rows: list[list[str]], sizes: dict[str, tuple[int, int, int, int]], steps: dict[str, int], street: int) -> tuple[float, int]:
+def _ratio_gap(rows: list[list[str]], sizes: dict[str, _Size], steps: dict[str, int], street: int) -> tuple[float, int]:
     """Quão longe a cidade desta divisão fica de 16:9 (em escala logarítmica, para largo e alto pesarem igual); no
     empate, a de menor área. Desempate fixo: o resultado é sempre o mesmo para os mesmos bairros."""
     width = max(sum(steps[lt] for lt in row) - street for row in rows)
-    depth = sum(max(sizes[lt][3] for lt in row) + street for row in rows) - street
+    depth = sum(max(sizes[lt].d for lt in row) + street for row in rows) - street
     return abs(math.log(width / depth) - math.log(rules.CITY_ASPECT)), width * depth
 
 
@@ -84,30 +93,29 @@ def plan(realm_ids: Iterable[str]) -> dict[str, Any]:
     if not letters:
         return {"width": 0, "depth": 0, "pad": rules.CITY_PAD, "districts": [], "places": {}}
 
-    sizes = {}
+    sizes: dict[str, _Size] = {}
     for letter in letters:
-        cols, rows = _grid(len(by_letter[letter]))
-        sizes[letter] = (cols, rows, cols * rules.CITY_LOT + 2 * rules.CITY_PAD, rows * rules.CITY_LOT + 2 * rules.CITY_PAD)
+        cols, lot_rows = _grid(len(by_letter[letter]))
+        sizes[letter] = _Size(cols, lot_rows, cols * rules.CITY_LOT + 2 * rules.CITY_PAD, lot_rows * rules.CITY_LOT + 2 * rules.CITY_PAD)
 
     # Os bairros se leem como um texto: da esquerda para a direita, quebrando em fileiras. Cada bairro ocupa o seu
     # retângulo mais a rua. Entre as larguras em que se pode quebrar, vale a que deixa a cidade mais perto de 16:9.
     street = rules.CITY_STREET
-    steps = {lt: sizes[lt][2] + street for lt in letters}
-    best = min((_rows_for(letters, steps, limit) for limit in _limits(letters, steps)),
-               key=lambda rows: _ratio_gap(rows, sizes, steps, street))
-    rows_of_districts = best
+    steps = {lt: sizes[lt].w + street for lt in letters}
+    bands = min((_rows_for(letters, steps, limit) for limit in _limits(letters, steps)),
+                key=lambda band: _ratio_gap(band, sizes, steps, street))      # fileiras de bairros
 
     districts: list[dict[str, Any]] = []
     top = 0.0
     width = 0.0
-    for row in rows_of_districts:
+    for band in bands:
         left = 0.0
-        for letter in row:
-            cols, rows, w, d = sizes[letter]
-            districts.append({"letter": letter, "x": left, "z": top, "w": w, "d": d, "cols": cols, "rows": rows})
-            left += w + street
+        for letter in band:
+            size = sizes[letter]
+            districts.append({"letter": letter, "x": left, "z": top, "w": size.w, "d": size.d, "cols": size.cols, "rows": size.rows})
+            left += size.w + street
         width = max(width, left - street)
-        top += max(sizes[lt][3] for lt in row) + street
+        top += max(sizes[lt].d for lt in band) + street
     depth = top - street
 
     # O centro da cidade fica em (0, 0): a câmera, os atalhos e o voo continuam olhando para a origem.
@@ -122,8 +130,8 @@ def plan(realm_ids: Iterable[str]) -> dict[str, Any]:
             col, row = index % d["cols"], index // d["cols"]
             places[realm_id] = {
                 "district": d["letter"], "lot": index + 1,
-                "x": round(d["x"] + rules.CITY_PAD + (col + 0.5) * rules.CITY_LOT + _unit(s, 0) * rules.CITY_JITTER, 2),
-                "z": round(d["z"] + rules.CITY_PAD + (row + 0.5) * rules.CITY_LOT + _unit(s, 16) * rules.CITY_JITTER, 2),
-                "turn": round(_unit(s, 32) * rules.CITY_TURN, 4),
+                "x": round(d["x"] + rules.CITY_PAD + (col + 0.5) * rules.CITY_LOT + _unit(s, _SHIFT_X) * rules.CITY_JITTER, 2),
+                "z": round(d["z"] + rules.CITY_PAD + (row + 0.5) * rules.CITY_LOT + _unit(s, _SHIFT_Z) * rules.CITY_JITTER, 2),
+                "turn": round(_unit(s, _SHIFT_TURN) * rules.CITY_TURN, 4),
             }
     return {"width": round(width, 2), "depth": round(depth, 2), "pad": rules.CITY_PAD, "districts": districts, "places": places}
