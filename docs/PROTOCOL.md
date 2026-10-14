@@ -4,7 +4,7 @@
 > (Core, Gateway, clientes). Vocabulário: [CONTEXT.md](../CONTEXT.md) · Módulos:
 > [ARCHITECTURE.md](ARCHITECTURE.md) · Por que é assim: [ADR 0002](adr/0002-eventos-nativos-por-provider.md).
 
-Versão do protocolo: `0.3` (rascunho; a 0.3 está sendo entregue em partes: eventos de realm e `realm.metrics` no ticket 09) · Última atualização: 2026-10-09 · Implementação:
+Versão do protocolo: `0.3` (rascunho; a 0.3 está sendo entregue em partes: eventos de realm e `realm.metrics` no ticket 09) · Última atualização: 2026-10-14 · Implementação:
 `src/orb/protocol/`
 
 > **Mudança desde a 0.1:** o protocolo deixou de traduzir eventos para um vocabulário universal.

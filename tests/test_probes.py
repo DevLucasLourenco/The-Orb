@@ -111,3 +111,15 @@ def test_with_a_real_repository_only_tracked_and_not_ignored_files_count(tmp_pat
 def test_a_folder_that_is_not_a_repository_gives_no_file_list(tmp_path):
     (tmp_path / "pasta").mkdir()
     assert git_tracked_files(tmp_path / "pasta") is None                           # sem dado: nada, nunca zero
+
+
+def test_utf16_files_with_a_byte_order_mark_are_text_and_count(tmp_path):
+    root = tmp_path / "proj"
+    root.mkdir()
+    (root / "a.py").write_text("um\n\ndois\n", encoding="utf-16")                   # com BOM: o Windows grava assim
+    assert lines(root, ["a.py"]) == 2
+
+
+def test_the_comparison_of_patterns_does_not_depend_on_the_operating_system(tmp_path):
+    root = project(tmp_path, {"A.LOCK": "x\n", "b.py": "y\n"})
+    assert lines(root, ["A.LOCK", "b.py"], LineFilter(exclude=("*.lock",))) == 2         # maiúsculas contam como diferentes em qualquer sistema

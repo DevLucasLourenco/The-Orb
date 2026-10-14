@@ -14,6 +14,7 @@ from __future__ import annotations
 import fnmatch
 import hashlib
 import os
+import stat as _stat
 import subprocess
 from collections.abc import Callable
 from dataclasses import dataclass
@@ -23,6 +24,7 @@ from typing import Protocol
 MAX_FILE_BYTES = 2 * 1024 * 1024     # arquivo maior que isto não é código de verdade (dump, dado): fica de fora
 GIT_TIMEOUT_SECONDS = 30.0
 _PEEK_BYTES = 8192                   # um byte nulo no começo marca arquivo binário
+_GIT_REDIRECTS = frozenset({"GIT_DIR", "GIT_WORK_TREE", "GIT_INDEX_FILE", "GIT_COMMON_DIR", "GIT_NAMESPACE", "GIT_CEILING_DIRECTORIES"})
 
 
 class Filter(Protocol):
@@ -44,12 +46,20 @@ class Count:
     files: int          # arquivos de texto que entraram na conta
 
 
+def _git_env() -> dict[str, str]:
+    """O ambiente do processo sem as variáveis que redirecionariam o git para outro repositório ou índice."""
+    env = {k: v for k, v in os.environ.items() if k not in _GIT_REDIRECTS}
+    env["GIT_OPTIONAL_LOCKS"] = "0"
+    return env
+
+
 def _git(root: Path, *args: str) -> list[str] | None:
     flags = getattr(subprocess, "CREATE_NO_WINDOW", 0)          # no Windows, sem abrir uma janela de console
     try:
-        done = subprocess.run(["git", "--no-optional-locks", "-C", str(root), *args], capture_output=True,
-                              timeout=GIT_TIMEOUT_SECONDS, env={**os.environ, "GIT_OPTIONAL_LOCKS": "0"},
-                              creationflags=flags, check=False)
+        # `core.fsmonitor=false`: um repositório não pode mandar este processo executar um programa dele.
+        done = subprocess.run(["git", "--no-optional-locks", "-c", "core.fsmonitor=false", "-C", str(root), *args],
+                              capture_output=True, stdin=subprocess.DEVNULL, timeout=GIT_TIMEOUT_SECONDS,
+                              env=_git_env(), creationflags=flags, check=False)
     except (OSError, subprocess.SubprocessError):
         return None
     if done.returncode != 0:
@@ -71,7 +81,7 @@ def _excluded(rel: str, flt: Filter) -> bool:
     if not flt.include_markdown and rel.lower().endswith(".md"):
         return True
     name = rel.rsplit("/", 1)[-1]
-    return any(fnmatch.fnmatch(rel if "/" in pattern else name, pattern) for pattern in flt.exclude)
+    return any(fnmatch.fnmatchcase(rel if "/" in pattern else name, pattern) for pattern in flt.exclude)
 
 
 def list_countable(root: Path, flt: Filter, tracked: Callable[[Path], list[str] | None] = git_tracked_files,
@@ -91,8 +101,8 @@ def list_countable(root: Path, flt: Filter, tracked: Callable[[Path], list[str] 
             stat = os.lstat(path)
         except OSError:
             continue
-        if not os.path.isfile(path) or os.path.islink(path) or stat.st_size > max_file_bytes:
-            continue
+        if not _stat.S_ISREG(stat.st_mode) or stat.st_size > max_file_bytes:
+            continue                                      # `lstat`: link e pasta (submódulo) não são arquivo comum
         entries.append(Entry(rel, stat.st_size, stat.st_mtime_ns))
     return entries
 
@@ -110,12 +120,21 @@ def _count_file(path: Path) -> int | None:
     """Linhas não vazias, ou `None` se o arquivo é binário ou não abre."""
     try:
         with open(path, "rb") as handle:
-            if b"\0" in handle.read(_PEEK_BYTES):
+            head = handle.read(_PEEK_BYTES)
+            if head[:2] in (b"\xff\xfe", b"\xfe\xff"):          # UTF-16 com BOM é texto (tem bytes nulos de verdade)
+                return sum(1 for line in handle_text(path) if line.strip())
+            if b"\0" in head:
                 return None
             handle.seek(0)
             return sum(1 for line in handle if line.strip())
-    except OSError:
+    except (OSError, UnicodeError):
         return None
+
+
+def handle_text(path: Path):
+    """As linhas de um arquivo UTF-16 (o BOM diz a ordem dos bytes); erro de decodificação vira linha de substituição."""
+    with open(path, encoding="utf-16", errors="replace") as text:
+        yield from text
 
 
 def count_lines(root: Path, entries: list[Entry]) -> Count:

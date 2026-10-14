@@ -34,6 +34,7 @@ from fastapi.staticfiles import StaticFiles
 from ..adapters._shared import alter_ego_id, norm_path
 from ..core import NameBook, NameSource, World, rules
 from ..core.rules import GENERATED_FILE_PATTERNS, LineFilter
+from ..probes import git_tracked_files
 from ..protocol import validate
 from ..registry import SETTINGS, LocalRegistry, Preferences, PreferencesFile, orb_home
 from ..terminal_host import (
@@ -99,7 +100,7 @@ class Hub:
         self._sync_hidden()
         # O Probe de linhas (R19) roda numa thread própria, um realm por vez; aqui só se liga e se recebem os eventos.
         self.lines = LineScheduler(lambda: self.observatory.realms, self._line_filter, lambda: self.world.hidden,
-                                   **({"tracked": tracked} if tracked is not None else {}))
+                                   wall=self.clock, tracked=tracked or git_tracked_files)
         self.feed = Feed()
         self.clients: set[asyncio.Queue[dict[str, Any]]] = set()
         self._published_time_key: tuple | None = None      # o que os clientes viram da última vez
@@ -190,7 +191,8 @@ class Hub:
         """O que a tela de configurações mostra: todos os realms detectados (inclusive os escondidos), os valores
         de hoje e a tabela de opções numéricas (os tickets 09 e 11 só acrescentam linhas a ela)."""
         realms = [{"id": rid, "name": realm.name, "cwd": realm.cwd, "hidden": rid in self.world.hidden,
-                   "lines": self._own_line_options(realm)}
+                   "lines": self._own_line_options(realm),
+                   "lines_note": self.lines.notes.get(rid) or self.lines.errors.get(rid)}
                   for rid, realm in sorted(self.observatory.realms.items())]
         options = [{"key": s.key, "kind": s.kind, "label": s.label, "unit": s.unit, "minimum": s.minimum, "maximum": s.maximum,
                     "value": self.preferences.options.get(s.key, s.default)} for s in SETTINGS]

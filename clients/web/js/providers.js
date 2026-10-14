@@ -51,8 +51,9 @@ export function el(tag, cls, text) {
 // "48 mil linhas": o número real de linhas do projeto, só formatado (a classe vem pronta do mundo).
 export function formatLines(n) {
   if (n < 1000) return `${n} linhas`;
-  if (n < 10000) return `${(n / 1000).toFixed(1).replace(".", ",")} mil linhas`;
-  return `${Math.round(n / 1000)} mil linhas`;
+  // Sempre para baixo: 499.999 nunca vira "500 mil" ao lado da classe Torre.
+  if (n < 10000) return `${(Math.floor(n / 100) / 10).toFixed(1).replace(".", ",")} mil linhas`;
+  return `${Math.floor(n / 1000)} mil linhas`;
 }
 
 export function metricsText(realm) {

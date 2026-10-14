@@ -8,7 +8,14 @@ from __future__ import annotations
 import json
 from typing import Any
 
-from .vocab import ACTIVITIES, FIDELITIES, INNER_ROLES, PROTOCOL_VERSION, SIGNAL_FIELDS
+from .vocab import (
+    ACTIVITIES,
+    FIDELITIES,
+    INNER_ROLES,
+    PROTOCOL_VERSION,
+    REALM_SIGNALS,
+    SIGNAL_FIELDS,
+)
 
 MAX_BODY_BYTES = 16 * 1024    # native.body serializado
 MAX_STRING = 4 * 1024         # cada string dentro de native.body
@@ -104,7 +111,7 @@ def validate(event: Any) -> str | None:
             return problem
     signal = event.get("signal")
     if signal is not None:
-        problem = _validate_signal(signal)
+        problem = _validate_signal(signal, event)
         if problem:
             return problem
     return None
@@ -122,7 +129,7 @@ def _validate_inner(inner: Any) -> str | None:
     return None
 
 
-def _validate_signal(signal: Any) -> str | None:
+def _validate_signal(signal: Any, event: dict[str, Any]) -> str | None:
     if not isinstance(signal, dict):
         return "signal deve ser um objeto"
     kind = signal.get("type")
@@ -134,8 +141,13 @@ def _validate_signal(signal: Any) -> str | None:
         return f"signal {kind} sem campos: {', '.join(sorted(missing))}"
     if kind == "activity" and signal["activity"] not in ACTIVITIES:
         return f"atividade inválida: {signal['activity']!r}"
+    if kind in REALM_SIGNALS and (event.get("alter_ego") is not None or event.get("agent") is not None):
+        return f"{kind} é sinal de realm: alter_ego e agent devem ser nulos"
     if kind == "realm.metrics":
         loc = signal["loc"]
         if isinstance(loc, bool) or not isinstance(loc, int) or loc < 0:
             return "realm.metrics: loc deve ser um inteiro >= 0"
+        files = signal.get("files")
+        if files is not None and (isinstance(files, bool) or not isinstance(files, int) or files < 0):
+            return "realm.metrics: files deve ser um inteiro >= 0"
     return None

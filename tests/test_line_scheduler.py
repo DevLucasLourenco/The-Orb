@@ -28,7 +28,8 @@ def make(tmp_path, names=("a.py",), **kw):
     realms = {"proj": Realm("proj", str(root))}
     clock = Clock()
     hidden = kw.pop("hidden", frozenset())
-    scheduler = LineScheduler(lambda: realms, lambda realm: kw.pop("flt", LineFilter()), lambda: hidden,
+    flt = kw.pop("flt", LineFilter())
+    scheduler = LineScheduler(lambda: realms, lambda realm: flt, lambda: hidden,
                               tracked=lambda r: list(names), clock=clock)
     return scheduler, clock, root, realms
 
@@ -125,6 +126,29 @@ def test_the_background_thread_delivers_the_counts_and_stops(tmp_path):
 
 # --- no Hub: a contagem vira estado do realm no mundo ------------------------------------------------------------
 
+def test_the_settings_tell_why_a_realm_has_no_number(machine, tmp_path):  # noqa: F811
+    alpha = machine.project("alpha", git=False)
+    hermes_session(machine, "H1", alpha, days_ago=1)
+    hub = Hub(machine.observatory(), tracked=lambda root: None)
+    hub.poll_once()
+    hub.lines.run_once()
+    realm = next(r for r in hub.settings()["realms"] if r["id"] == "alpha")
+    assert "git" in realm["lines_note"]                                                  # nada de realm sem número e sem motivo
+
+
+def test_a_bad_line_filter_from_the_client_is_refused_and_an_unknown_realm_is_ignored(machine, tmp_path):  # noqa: F811
+    import pytest
+    alpha = machine.project("alpha", git=False)
+    hermes_session(machine, "H1", alpha, days_ago=1)
+    hub = Hub(machine.observatory(), preferences=PreferencesFile(tmp_path / "orb"))
+    hub.poll_once()
+    for bad in ({"lines": "todos"}, {"lines": {"exclude": "x"}}, {"realm_lines": ["alpha"]}, {"realm_lines": {"alpha": {"nao": 1}}}):
+        with pytest.raises(ValueError):
+            hub.update_preferences(bad)
+    hub.update_preferences({"realm_lines": {"fantasma": {"include_markdown": True}}})   # id que não existe: ignorado
+    assert hub.preferences.realm_lines == {}
+
+
 def test_the_hub_turns_the_count_into_the_realm_state_with_the_class(machine, tmp_path):  # noqa: F811
     alpha = machine.project("alpha", git=False)
     (alpha / "main.py").write_text("\n".join(["x = 1"] * 1500) + "\n", encoding="utf-8")
@@ -168,3 +192,62 @@ def test_a_realm_the_user_just_changed_is_counted_before_the_others(tmp_path):
     scheduler.refresh(["proj"])                                                  # mas o Lucas mexeu no "proj"
     scheduler.run_once()
     assert "proj" in scheduler._last_check and "outra" not in scheduler._last_check        # o "proj" foi visto primeiro
+
+
+def test_a_count_that_goes_back_to_an_older_state_is_not_dropped_as_a_repeat(tmp_path):
+    from orb.core import World
+    flt = {"value": LineFilter()}
+    root = tmp_path / "proj"
+    root.mkdir()
+    (root / "a.py").write_text("x\n", encoding="utf-8")
+    (root / "N.md").write_text("a\nb\n", encoding="utf-8")
+    scheduler = LineScheduler(lambda: {"proj": Realm("proj", str(root))}, lambda realm: flt["value"], lambda: frozenset(),
+                              tracked=lambda r: ["a.py", "N.md"], clock=Clock())
+    world = World()
+    for value in (LineFilter(), LineFilter(include_markdown=True), LineFilter()):        # liga e desliga o .md
+        flt["value"] = value
+        scheduler.refresh()
+        time.sleep(0.002)                                                                # a hora do evento muda
+        scheduler.run_once()
+        for event in scheduler.drain():
+            assert world.apply(event)
+    assert world.snapshot()["realms"][0]["metrics"]["loc"] == 1                          # a última contagem vale, não a velha
+
+
+def test_the_background_thread_survives_an_unexpected_failure(tmp_path):
+    scheduler, _, _, _ = make(tmp_path)
+    calls = {"n": 0}
+    real = scheduler.run_once
+
+    def flaky():
+        calls["n"] += 1
+        if calls["n"] == 1:
+            raise RuntimeError("falha fora da contagem")
+        return real()
+
+    scheduler.run_once = flaky
+    scheduler.start(idle_seconds=0.01)
+    try:
+        deadline = time.time() + 5
+        found = []
+        while time.time() < deadline and not found:
+            found = scheduler.drain()
+            time.sleep(0.02)
+        assert found and "*" in scheduler.errors                                         # contou depois da falha e deixou o motivo
+    finally:
+        scheduler.stop()
+
+
+def test_refreshing_two_realms_in_a_row_keeps_both_in_front(tmp_path):
+    scheduler, _, _, realms = make(tmp_path)
+    for name in ("b", "c"):
+        folder = tmp_path / name
+        folder.mkdir()
+        (folder / "a.py").write_text("q\n", encoding="utf-8")
+        realms[name] = Realm(name, str(folder))
+    for _ in range(3):
+        scheduler.run_once()
+    scheduler.drain()
+    scheduler.refresh(["c"])
+    scheduler.refresh(["b"])
+    assert scheduler._priority == ["c", "b"]

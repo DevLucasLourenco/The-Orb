@@ -268,8 +268,8 @@ ticket existir.
 - **Contador de linhas** (R19, D-053 a D-056; ticket 09): faz parte dos Probes; conta linhas não vazias dos
   arquivos acompanhados pelo git, sem os ignorados e sem os gerados da lista de exclusões, e
   recalcula ao abrir e quando as alterações locais mudam (até 1×/min por realm). Somente leitura. **Como funciona:** a lista
-  vem do `git ls-files` (com `--no-optional-locks`, nunca grava no `.git`); link, pasta (submódulo), binário e arquivo de mais de 2 MB
-  ficam de fora; sem repositório ou sem git, o realm fica **sem número** (nunca um zero). O Probe separa listar (barato), identificar
+  vem do `git ls-files` (com `--no-optional-locks`, nunca grava no `.git`); link, pasta (submódulo), binário (UTF-16 com BOM conta como texto) e arquivo de mais de 2 MB
+  ficam de fora; o git roda sem as variáveis `GIT_DIR`/`GIT_WORK_TREE`/`GIT_INDEX_FILE`, com `core.fsmonitor=false` e sem entrada; sem repositório ou sem git, o realm fica **sem número** (nunca um zero) e a tela de configurações diz o motivo (`lines_note`). O Probe separa listar (barato), identificar
   mudança (`fingerprint`: arquivos que contam, tamanho, data e filtro) e contar (lê os arquivos). `gateway/probes.py` (`LineScheduler`)
   roda numa **thread própria, um realm por vez**, e devolve um evento `realm.metrics` que o Hub aplica no mundo (mudou o filtro: o realm
   afetado é contado já, na frente dos outros). O Core guarda o estado por realm (`World.metrics`) e deriva a classe (`rules.building_class`).

@@ -163,7 +163,7 @@ function lineControls(idPrefix, filter, onApply) {
 
 function renderLineSettings(settings, onChange) {
   const section = el("div");
-  section.append(el("h3", null, "Contagem de linhas"),
+  section.append(el("legend", null, "Contagem de linhas"),
     el("p", "hint", "As linhas não vazias dos arquivos que o git acompanha, sem os ignorados e sem estas exclusões. É o que dá a altura (classe) do prédio."));
   section.append(lineControls("lines", settings.lines, (parts) => onChange({ lines: parts })));
   const reset = el("button", "btn", "Restaurar a lista padrão");
@@ -177,6 +177,7 @@ function renderLineSettings(settings, onChange) {
   pick.onchange = () => { linesRealm = pick.value; renderLineSettings(settings, onChange); };
   const own = el("div");
   const realm = settings.realms.find((r) => r.id === pick.value);
+  if (realm?.lines_note) own.append(el("p", "hint", `Sem número de linhas: ${realm.lines_note}`));
   if (realm) {
     const useGeneral = document.createElement("input");
     useGeneral.type = "checkbox";
@@ -233,7 +234,7 @@ export function renderSettings(settings, onChange) {
     row.append(label, input, el("span", "muted", option.unit));
     options.append(row);
   }
-  const lines = el("div");
+  const lines = document.createElement("fieldset");         // um grupo com legenda: o leitor de tela sabe a que os controles pertencem
   lines.id = "settings-lines";
   body.replaceChildren(realms, options, lines);
   if (settings.lines) renderLineSettings(settings, onChange);

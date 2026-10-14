@@ -32,6 +32,15 @@ def test_a_realm_event_has_no_alter_ego_and_carries_the_lines_of_the_project():
     assert event["alter_ego"] is None and event["provider"] is None and validate(event) is None
 
 
+def test_a_realm_signal_needs_a_null_alter_ego_and_a_valid_files_count():
+    event = realm_metrics_event(10)
+    assert validate({**event, "alter_ego": "claude:s1"}) is not None             # só os Probes falam por um realm
+    assert validate({**event, "agent": "a1"}) is not None
+    for bad in (-1, 1.5, "3", True):
+        assert validate(realm_metrics_event(10, files=bad)) is not None, bad
+    assert validate(realm_metrics_event(10, files=0)) is None
+
+
 def test_realm_metrics_needs_a_whole_non_negative_number_of_lines():
     assert validate(realm_metrics_event(None)) is not None                      # falta `loc`
     for bad in (-1, 1.5, "10", True):
