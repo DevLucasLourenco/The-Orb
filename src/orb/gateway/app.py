@@ -33,6 +33,7 @@ from fastapi.staticfiles import StaticFiles
 
 from ..adapters._shared import alter_ego_id, norm_path
 from ..core import NameBook, NameSource, World, rules
+from ..core.rules import GENERATED_FILE_PATTERNS, LineFilter
 from ..protocol import validate
 from ..registry import SETTINGS, LocalRegistry, Preferences, PreferencesFile, orb_home
 from ..terminal_host import (
@@ -46,7 +47,8 @@ from ..terminal_host import (
     winpty_factory,
 )
 from .messages import handle_client_message
-from .realms import Feed, Observatory
+from .probes import LineScheduler
+from .realms import Feed, Observatory, Realm
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 WEB_CLIENT = REPO_ROOT / "clients" / "web"
@@ -85,7 +87,8 @@ class Hub:
     O Hub é a borda que conhece a hora: o Core é puro e só recebe a hora que o Hub informa (R47)."""
 
     def __init__(self, observatory: Observatory, *, clock: Callable[[], datetime] | None = None,
-                 names: NameSource | None = None, preferences: PreferencesFile | None = None) -> None:
+                 names: NameSource | None = None, preferences: PreferencesFile | None = None,
+                 tracked: Callable[[Any], list[str] | None] | None = None) -> None:
         self.observatory = observatory
         self.clock = clock or (lambda: datetime.now(UTC))
         self.preferences_file = preferences
@@ -94,6 +97,9 @@ class Hub:
             observatory.set_recent_seconds(self.preferences.recent_seconds)     # o que o Lucas escolheu vale desde a subida
         self.world = World(names=names, recent_seconds=observatory.recent_seconds)
         self._sync_hidden()
+        # O Probe de linhas (R19) roda numa thread própria, um realm por vez; aqui só se liga e se recebem os eventos.
+        self.lines = LineScheduler(lambda: self.observatory.realms, self._line_filter, lambda: self.world.hidden,
+                                   **({"tracked": tracked} if tracked is not None else {}))
         self.feed = Feed()
         self.clients: set[asyncio.Queue[dict[str, Any]]] = set()
         self._published_time_key: tuple | None = None      # o que os clientes viram da última vez
@@ -124,7 +130,7 @@ class Hub:
         """Lê todos os realms (chamado fora do loop). Devolve (eventos aplicados, mudou?)."""
         applied: list[dict[str, Any]] = []
         known = len(self.observatory.realms)
-        events = self.observatory.poll()
+        events = self.observatory.poll() + self.lines.drain()
         for realm_id in self.observatory.realms:
             self.world.add_realm(realm_id)           # todo realm detectado existe, mesmo "de noite" (D-059)
         self._sync_hidden()                          # antes de aplicar: um realm escondido recém-detectado nunca aparece, nem por um instante
@@ -134,6 +140,9 @@ class Hub:
                 self.feed.add(event)
         shown = [e for e in applied if e["realm"] not in self.world.hidden]       # o que o Lucas escondeu não é distribuído
         return shown, bool(shown) or len(self.observatory.realms) != known
+
+    def _line_filter(self, realm: Realm) -> LineFilter:
+        return self.preferences.line_filter(norm_path(realm.cwd))
 
     def _sync_hidden(self) -> None:
         """Os realms escondidos (R3c) são guardados pelo caminho do projeto; o id pode mudar, o caminho não."""
@@ -153,6 +162,12 @@ class Hub:
             known = {norm_path(realm.cwd) for realm in self.observatory.realms.values()}
             chosen = [norm_path(self.observatory.realms[i].cwd) for i in ids if isinstance(i, str) and i in self.observatory.realms]
             changes["hidden_realms"] = chosen + [p for p in self.preferences.hidden_realms if p not in known]
+        if "realm_lines" in changes:                      # o cliente fala em ids de realm; o arquivo guarda o caminho do projeto
+            own = changes["realm_lines"]
+            if not isinstance(own, dict):
+                raise ValueError("filtro de linhas por realm: precisa ser um objeto")
+            changes["realm_lines"] = {norm_path(self.observatory.realms[i].cwd): value for i, value in own.items()
+                                      if isinstance(i, str) and i in self.observatory.realms}
         new = self.preferences.updated(**changes)
         if self.preferences_file is not None:
             self.preferences_file.save(new)
@@ -160,16 +175,30 @@ class Hub:
         self.observatory.set_recent_seconds(new.recent_seconds)
         self.world.set_recent_seconds(new.recent_seconds)
         self._sync_hidden()
+        if "lines" in changes:
+            self.lines.refresh()                         # o Lucas mexeu no filtro de todos: conta tudo de novo já
+        elif "realm_lines" in changes:
+            paths = {norm_path(r.cwd): rid for rid, r in self.observatory.realms.items()}
+            self.lines.refresh([paths[p] for p in changes["realm_lines"] if p in paths])      # só os realms que ele mexeu, na frente
+
+    def _own_line_options(self, realm: Realm) -> dict[str, Any] | None:
+        """O que este realm muda no filtro de linhas (só isso; o resto vem do geral), ou None."""
+        own = self.preferences.realm_lines.get(norm_path(realm.cwd))
+        return None if not own else {k: list(v) if k == "exclude" else v for k, v in own.items()}
 
     def settings(self) -> dict[str, Any]:
         """O que a tela de configurações mostra: todos os realms detectados (inclusive os escondidos), os valores
         de hoje e a tabela de opções numéricas (os tickets 09 e 11 só acrescentam linhas a ela)."""
-        realms = [{"id": rid, "name": realm.name, "cwd": realm.cwd, "hidden": rid in self.world.hidden}
+        realms = [{"id": rid, "name": realm.name, "cwd": realm.cwd, "hidden": rid in self.world.hidden,
+                   "lines": self._own_line_options(realm)}
                   for rid, realm in sorted(self.observatory.realms.items())]
         options = [{"key": s.key, "kind": s.kind, "label": s.label, "unit": s.unit, "minimum": s.minimum, "maximum": s.maximum,
                     "value": self.preferences.options.get(s.key, s.default)} for s in SETTINGS]
         error = self.preferences_file.error if self.preferences_file is not None else None
+        general = self.preferences.lines
         return {"realms": realms, "options": options, "error": error, "persistent": self.preferences_file is not None,
+                "lines": {"include_markdown": general.include_markdown, "exclude": list(general.exclude),
+                          "default_exclude": list(GENERATED_FILE_PATTERNS)},
                 "preferences": {**self.preferences.options, "hidden_realms": sorted(self.world.hidden)}}
 
     def history(self, realm_id: str) -> list[dict[str, Any]]:
@@ -213,6 +242,7 @@ class Hub:
         return self.world.time_key(self.clock()) != self._published_time_key
 
     async def run(self, poll_seconds: float, idle_poll_seconds: float | None = None) -> None:
+        self.lines.start()
         last_tick = time.monotonic()
         while True:
             try:
@@ -249,6 +279,7 @@ def create_app(config: GatewayConfig, *, pty_factory: Callable = winpty_factory,
             yield
         finally:
             task.cancel()
+            hub.lines.stop()
 
     app = FastAPI(title="The Orb", lifespan=lifespan)
     app.state.hub = hub

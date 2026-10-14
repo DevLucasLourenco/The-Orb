@@ -134,4 +134,8 @@ def _validate_signal(signal: Any) -> str | None:
         return f"signal {kind} sem campos: {', '.join(sorted(missing))}"
     if kind == "activity" and signal["activity"] not in ACTIVITIES:
         return f"atividade inválida: {signal['activity']!r}"
+    if kind == "realm.metrics":
+        loc = signal["loc"]
+        if isinstance(loc, bool) or not isinstance(loc, int) or loc < 0:
+            return "realm.metrics: loc deve ser um inteiro >= 0"
     return None

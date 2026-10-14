@@ -1,6 +1,8 @@
 """Regras do mundo, como dados (docs/PROTOCOL.md §5). Mudar uma regra é mudar uma tabela aqui."""
 from __future__ import annotations
 
+from dataclasses import dataclass
+
 # Atividade/estado -> área do Environment no Rooftop Room. `None` = fora das áreas (ex.: parado).
 AREA_BY_STATE: dict[str, str | None] = {
     "CODING": "Development Center",
@@ -40,6 +42,36 @@ ASLEEP_AFTER_SECONDS = 15 * 60               # R31, D-044: sessão parada há ma
 SUBAGENT_NO_SIGNAL_AFTER_SECONDS = 5 * 60    # R7, D-045, D-050: subagente sem atividade fica "sem sinal"
 RECENT_SESSION_SECONDS = 10 * 24 * 3600      # R28a, D-027, D-059: a sala guarda as sessões dos últimos 10 dias;
                                              # as mais antigas vão para o Histórico do realm (o ticket 07 torna isto configurável)
+
+
+# As 6 classes de prédio por faixa de linhas de código (R19, D-051, D-052, D-091, VISUAL.md §8). Cada faixa começa no
+# número da tabela (fechada embaixo): 500 mil linhas já é Arranha-céu. Formas, alturas e andares vêm no ticket 10.
+BUILDING_CLASSES: tuple[tuple[str, int], ...] = (
+    ("Casa", 0), ("Sobrado", 1_000), ("Prédio", 5_000), ("Edifício", 20_000), ("Torre", 100_000), ("Arranha-céu", 500_000),
+)
+
+# A lista fixa e visível de arquivos gerados que não contam como linhas (D-054), além do `.gitignore`. Um padrão sem `/`
+# vale para o nome em qualquer pasta; com `/`, para o caminho a partir da raiz do projeto. O Lucas a edita nas configurações.
+GENERATED_FILE_PATTERNS: tuple[str, ...] = (
+    "package-lock.json", "yarn.lock", "pnpm-lock.yaml", "npm-shrinkwrap.json", "poetry.lock", "Pipfile.lock", "uv.lock",
+    "Cargo.lock", "Gemfile.lock", "composer.lock", "go.sum", "*.min.js", "*.min.css", "*.map", "dist/*", "build/*",
+)
+
+
+@dataclass(frozen=True)
+class LineFilter:
+    """O que entra na contagem de linhas (D-054, D-056): padrão só código, sem `.md`, sem a lista de gerados."""
+    include_markdown: bool = False
+    exclude: tuple[str, ...] = GENERATED_FILE_PATTERNS
+
+
+def building_class(lines: int) -> str:
+    """A classe do prédio de um projeto com `lines` linhas (as faixas são fixas, nunca relativas aos outros prédios)."""
+    name = BUILDING_CLASSES[0][0]
+    for candidate, lower in BUILDING_CLASSES:
+        if lines >= lower:
+            name = candidate
+    return name
 
 
 def area_for(state: str) -> str | None:

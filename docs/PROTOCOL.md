@@ -4,7 +4,7 @@
 > (Core, Gateway, clientes). Vocabulário: [CONTEXT.md](../CONTEXT.md) · Módulos:
 > [ARCHITECTURE.md](ARCHITECTURE.md) · Por que é assim: [ADR 0002](adr/0002-eventos-nativos-por-provider.md).
 
-Versão do protocolo: `0.2` (rascunho) · Última atualização: 2026-10-09 · Implementação:
+Versão do protocolo: `0.3` (rascunho; a 0.3 está sendo entregue em partes: eventos de realm e `realm.metrics` no ticket 09) · Última atualização: 2026-10-09 · Implementação:
 `src/orb/protocol/`
 
 > **Mudança desde a 0.1:** o protocolo deixou de traduzir eventos para um vocabulário universal.
@@ -104,6 +104,7 @@ Vocabulário **fechado**. Um tipo novo exige nova versão do protocolo.
 
 | `type` | Campos | Efeito no mundo |
 |---|---|---|
+| `realm.metrics` | `loc` (inteiro ≥ 0), `files?` | **0.3, evento de realm** (`alter_ego: null`, só Probes): as linhas não vazias de código do projeto. O mundo guarda por realm e deriva a classe do prédio pelas faixas fixas (`rules.BUILDING_CLASSES`); sem evento, o realm não tem número |
 | `session.started` | `cwd?`, `model?`, `title?` | O Alter Ego aparece no Rooftop Room |
 | `session.ended` | `reason?` | A sessão terminou; o Alter Ego **não é excluído**: fica na sala enquanto for recente e depois no Histórico do realm (R28) |
 | `session.updated` | `title?`, `model?`, `cwd?` | A identidade da sessão mudou (título, modelo); o estado não muda |
@@ -233,6 +234,8 @@ No canal do mundo (`/world`), o cliente pode pedir o histórico de uma sessão:
 | `event` | Um evento do protocolo (§2) |
 | `world` | Snapshot do mundo (Core), na hora do servidor, depois de aplicar eventos ou de o tempo mudar algo (dormindo, sem sinal), com todos os realms observados |
 | `feed` | Histórico de linhas de Inner World de uma sessão (`alter_ego`, `events`) |
+| `history` | Histórico do realm (`realm`, `sessions`, `total`) |
+| `settings` | A tela de configurações: realms, opções, filtro de linhas (`lines`), erro |
 | `exit` | O processo do terminal terminou |
 | `system` | Informação ou erro do Gateway |
 
@@ -246,7 +249,7 @@ No canal do mundo (`/world`), o cliente pode pedir o histórico de uma sessão:
 ## 12. Em aberto
 
 - ~~Probes (git, CI, LOC): sinais `realm.metrics`, `ci.status`, `git.commit` ainda não definidos.~~
-  **Decidido (D-084, D-085, R49): a versão 0.3** acrescenta ao vocabulário fechado:
+  **Decidido (D-084, D-085, R49): a versão 0.3** (`realm.metrics` entregue no ticket 09, com o campo `loc` e `files?`) acrescenta ao vocabulário fechado:
 
   | `type` | Campos (proposta para o ticket) | Efeito |
   |---|---|---|

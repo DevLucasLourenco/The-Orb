@@ -29,7 +29,7 @@ Situação: ✅ como está · ❌ precisa mudar · ❓ precisa de decisão.
 | Id | Elemento | Tipo | Significado / fonte | Situação |
 |---|---|---|---|---|
 | V-REALM-1 | Existir um prédio | Dado | Todo projeto que algum provider já registrou (R3, R3a), menos os escondidos pelo Lucas na lista (R3c) e as sessões fora de projeto (R3b) | ✅ Detectado pelo índice de sessões (ticket 03); falta esconder pela lista (R3c) |
-| V-REALM-2 | **Altura** | Dado | Linhas de código do projeto, ignorando o `.gitignore` (R19), em **escala absoluta por classes** (Casa a Arranha-céu), com saltos entre as classes (§8). Não depende dos outros prédios | ❌ Altura fixa igual para todos |
+| V-REALM-2 | **Altura** | Dado | Linhas de código do projeto, ignorando o `.gitignore` (R19), em **escala absoluta por classes** (Casa a Arranha-céu), com saltos entre as classes (§8). Não depende dos outros prédios | ⚠️ Ticket 09: a **classe** e o número real de linhas já vêm do mundo e aparecem no rótulo e no overview ("48 mil linhas · Edifício"); a altura ainda é igual para todos (ticket 10) |
 | V-REALM-12 | **Altura de cada andar** | Dado | Parcela das linhas do projeto que está naquela pasta de 1º nível; pastas pequenas demais se juntam em "demais pastas" (§8) | ⏳ |
 | V-REALM-13 | **Cintas de luz neutra no topo** (e antena no Arranha-céu) | Legenda | A classe do prédio por faixa de linhas: uma cinta a mais por classe (§8) | ⏳ |
 | V-REALM-15 | **Forma arquitetônica** do prédio | Legenda | A classe do prédio (Casa a Arranha-céu), cada uma com a sua forma (§8, R41) | ❌ Hoje todos têm a mesma forma |
@@ -260,7 +260,7 @@ Fontes: [Wettel e Lanza, VISSOFT 2007 (PDF)](https://www.si.usi.ch/assets/public
 4. **A marca específica de cada classe:** **cintas de luz neutra** (branca, sem cor de significado,
    R20c) em volta do topo, logo abaixo do Rooftop Room: uma a mais a cada classe; o Arranha-céu
    ganha também uma antena. Dá para ler a classe de longe, pela silhueta.
-5. **No rótulo e no overview:** o número real de linhas e o nome da classe (ex.:
+5. **No rótulo e no overview (feito no ticket 09):** o número real de linhas e o nome da classe (ex.:
    "`trisafe-enhanced` · 48 mil linhas · Edifício").
 6. **Andares (R20) dentro da altura.** Cada pasta de 1º nível é um andar, com altura proporcional à
    sua parcela das linhas do projeto; os arquivos da raiz formam o **térreo**. Cada andar tem pelo

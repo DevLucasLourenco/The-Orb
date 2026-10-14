@@ -119,6 +119,8 @@ select option { background: #0c111c; }
 .setting-row label { flex: 1; min-width: 0; display: flex; flex-direction: column; cursor: pointer; }
 .setting-row .path { font-size: 10.5px; }
 .setting-row input[type="number"] { width: 80px; background: rgba(255, 255, 255, .05); color: var(--fg); border: 1px solid var(--line-strong); border-radius: 8px; padding: 4px 8px; font: inherit; }
+.settings-body textarea { width: 100%; box-sizing: border-box; background: rgba(255, 255, 255, .05); color: var(--fg); border: 1px solid var(--line-strong); border-radius: 8px; padding: 6px 8px; font: 11.5px/1.4 var(--mono); resize: vertical; }
+.settings-body select { max-width: 100%; margin-top: 10px; }
 .setting-error { color: var(--err); font-size: 12px; }
 .icon-btn { background: none; border: 0; color: var(--muted); cursor: pointer; font-size: 14px; height: 26px; }
 .icon-btn:hover { color: var(--fg); }

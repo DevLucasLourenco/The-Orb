@@ -1,5 +1,5 @@
 // A camada 2D sobre o mundo: números de Mankind, lista de realms e o overview do realm.
-import { STATE_LABEL, ago, el, isAsleep, provider, sessionTitle, tokens } from "./providers.js";
+import { STATE_LABEL, ago, el, isAsleep, metricsText, provider, sessionTitle, tokens } from "./providers.js";
 
 export function summarize(realm) {
   const egos = realm.alter_egos || [];
@@ -136,6 +136,68 @@ export function renderHistory(history) {
 
 // Tela de configurações (R29, V-HUD-5, V-HUD-7). As opções numéricas vêm da tabela do servidor (`options`): os tickets
 // que acrescentam uma opção só acrescentam uma linha lá, esta tela já sabe desenhá-la.
+// Filtro de tipos e exclusões da contagem de linhas (R19, D-054, D-056), para todos os realms ou por realm.
+let linesRealm = "";           // o realm escolhido na seção "Por realm" (some a cada reabertura da janela, de propósito)
+
+function lineControls(idPrefix, filter, onApply) {
+  const box = el("div");
+  const row = el("div", "setting-row");
+  const md = document.createElement("input");
+  md.type = "checkbox";
+  md.id = `${idPrefix}-md`;
+  md.checked = Boolean(filter.include_markdown);
+  const label = el("label", null, "Contar arquivos .md");
+  label.htmlFor = md.id;
+  row.append(md, label);
+  const patterns = document.createElement("textarea");
+  patterns.id = `${idPrefix}-exclude`;
+  patterns.rows = 5;
+  patterns.value = filter.exclude.join("\n");
+  patterns.setAttribute("aria-label", "Exclusões: um padrão por linha");
+  const apply = () => onApply({ include_markdown: md.checked, exclude: patterns.value.split("\n").map((p) => p.trim()).filter(Boolean) });
+  md.onchange = apply;
+  patterns.onchange = apply;
+  box.append(row, el("p", "hint", "Exclusões, um padrão por linha. Sem barra vale para o nome em qualquer pasta (ex.: *.min.js); com barra, para o caminho (ex.: dist/*)."), patterns);
+  return box;
+}
+
+function renderLineSettings(settings, onChange) {
+  const section = el("div");
+  section.append(el("h3", null, "Contagem de linhas"),
+    el("p", "hint", "As linhas não vazias dos arquivos que o git acompanha, sem os ignorados e sem estas exclusões. É o que dá a altura (classe) do prédio."));
+  section.append(lineControls("lines", settings.lines, (parts) => onChange({ lines: parts })));
+  const reset = el("button", "btn", "Restaurar a lista padrão");
+  reset.onclick = () => onChange({ lines: { exclude: settings.lines.default_exclude } });
+  section.append(reset);
+  const pick = document.createElement("select");
+  pick.id = "lines-realm";
+  pick.setAttribute("aria-label", "Realm com filtro próprio");
+  pick.append(new Option("Por realm: escolha um realm…", ""), ...settings.realms.map((r) => new Option(r.name || r.id, r.id)));
+  pick.value = settings.realms.some((r) => r.id === linesRealm) ? linesRealm : "";
+  pick.onchange = () => { linesRealm = pick.value; renderLineSettings(settings, onChange); };
+  const own = el("div");
+  const realm = settings.realms.find((r) => r.id === pick.value);
+  if (realm) {
+    const useGeneral = document.createElement("input");
+    useGeneral.type = "checkbox";
+    useGeneral.id = "lines-general";
+    useGeneral.checked = !realm.lines;
+    useGeneral.onchange = () => onChange({ realm_lines: { [realm.id]: useGeneral.checked ? null : { include_markdown: settings.lines.include_markdown, exclude: settings.lines.exclude } } });
+    const row = el("div", "setting-row");
+    const label = el("label", null, "Este realm usa o filtro de todos");
+    label.htmlFor = useGeneral.id;
+    row.append(useGeneral, label);
+    own.append(row);
+    if (realm.lines) {
+      const effective = { include_markdown: realm.lines.include_markdown ?? settings.lines.include_markdown, exclude: realm.lines.exclude ?? settings.lines.exclude };
+      own.append(lineControls("realm-lines", effective, (parts) => onChange({ realm_lines: { [realm.id]: parts } })));
+    }
+  }
+  section.append(pick, own);
+  const host = document.getElementById("settings-lines");
+  host.replaceChildren(...section.childNodes);
+}
+
 export function renderSettings(settings, onChange) {
   const body = document.getElementById("settings-body");
   const focused = document.activeElement && body.contains(document.activeElement) ? document.activeElement.id : null;
@@ -171,7 +233,10 @@ export function renderSettings(settings, onChange) {
     row.append(label, input, el("span", "muted", option.unit));
     options.append(row);
   }
-  body.replaceChildren(realms, options);
+  const lines = el("div");
+  lines.id = "settings-lines";
+  body.replaceChildren(realms, options, lines);
+  if (settings.lines) renderLineSettings(settings, onChange);
   if (settings.persistent === false) body.append(el("p", "hint", "Sem pasta do Orb: as mudanças valem só até fechar."));
   if (settings.error) {
     const message = el("div", "setting-error", settings.error);
@@ -193,6 +258,7 @@ export function renderOverview(realm, onOpen) {
   panel.classList.remove("hidden");
   document.getElementById("ov-title").textContent = realm.name || realm.id;
   document.getElementById("ov-path").textContent = realm.cwd || "";
+  document.getElementById("ov-metrics").textContent = metricsText(realm) || "";
   const s = summarize(realm);
   const summary = document.getElementById("ov-summary");
   const cell = (k, v, cls = "") => { const c = el("div"); c.append(el("div", "k", k), el("div", `v ${cls}`, v)); return c; };
