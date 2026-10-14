@@ -36,13 +36,17 @@ SIGNAL_FIELDS: dict[str, frozenset[str]] = {
     # 0.3 (R49, D-085): sinais de realm (`alter_ego` nulo), produzidos pelos Probes. Os outros sinais da 0.3
     # (`command.result`, `realm.changes`, `account.limits`, `tasks.updated`) entram nos tickets deles.
     "realm.metrics": frozenset({"loc"}),
+    "realm.changes": frozenset({"changes"}),
 }
 
 # Sinais que só o sistema emite (nunca um adapter).
 SYSTEM_SIGNALS: frozenset[str] = frozenset({"signal.lost", "signal.restored"})
 
 # Sinais de realm: só Probes os emitem, e o evento tem `alter_ego: null`.
-REALM_SIGNALS: frozenset[str] = frozenset({"realm.metrics"})
+REALM_SIGNALS: frozenset[str] = frozenset({"realm.metrics", "realm.changes"})
+
+# Os tipos de alteração local do git (R20a): a ordem é a da fachada (VISUAL.md §6) e a das cores (VISUAL.md §5).
+CHANGE_TYPES: tuple[str, ...] = ("modified", "added", "untracked", "renamed", "deleted", "conflict")
 
 INNER_ROLES: frozenset[str] = frozenset({"thought", "narration", "tool", "result", "prompt", "system"})
 FIDELITIES: frozenset[str] = frozenset({"raw", "summary"})

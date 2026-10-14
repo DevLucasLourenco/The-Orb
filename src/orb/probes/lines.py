@@ -15,16 +15,15 @@ import fnmatch
 import hashlib
 import os
 import stat as _stat
-import subprocess
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Protocol
 
+from .git import run_git
+
 MAX_FILE_BYTES = 2 * 1024 * 1024     # arquivo maior que isto não é código de verdade (dump, dado): fica de fora
-GIT_TIMEOUT_SECONDS = 30.0
 _PEEK_BYTES = 8192                   # um byte nulo no começo marca arquivo binário
-_GIT_REDIRECTS = frozenset({"GIT_DIR", "GIT_WORK_TREE", "GIT_INDEX_FILE", "GIT_COMMON_DIR", "GIT_NAMESPACE", "GIT_CEILING_DIRECTORIES"})
 
 
 class Filter(Protocol):
@@ -48,25 +47,12 @@ class Count:
     folders: dict[str, int] = field(default_factory=dict)      # e as de cada pasta de primeiro nível (o fundo soma na pasta)
 
 
-def _git_env() -> dict[str, str]:
-    """O ambiente do processo sem as variáveis que redirecionariam o git para outro repositório ou índice."""
-    env = {k: v for k, v in os.environ.items() if k not in _GIT_REDIRECTS}
-    env["GIT_OPTIONAL_LOCKS"] = "0"
-    return env
-
-
 def _git(root: Path, *args: str) -> list[str] | None:
-    flags = getattr(subprocess, "CREATE_NO_WINDOW", 0)          # no Windows, sem abrir uma janela de console
-    try:
-        # `core.fsmonitor=false`: um repositório não pode mandar este processo executar um programa dele.
-        done = subprocess.run(["git", "--no-optional-locks", "-c", "core.fsmonitor=false", "-C", str(root), *args],
-                              capture_output=True, stdin=subprocess.DEVNULL, timeout=GIT_TIMEOUT_SECONDS,
-                              env=_git_env(), creationflags=flags, check=False)
-    except (OSError, subprocess.SubprocessError):
+    """Os nomes que o git imprime (separados por NUL) ou `None` se o git não respondeu."""
+    out = run_git(root, *args)
+    if out is None:
         return None
-    if done.returncode != 0:
-        return None
-    return [name for name in done.stdout.decode("utf-8", errors="replace").split("\0") if name]
+    return [name for name in out.decode("utf-8", errors="replace").split("\0") if name]
 
 
 def git_tracked_files(root: Path) -> list[str] | None:
@@ -118,7 +104,7 @@ def fingerprint(entries: list[Entry], flt: Filter) -> str:
     return digest.hexdigest()
 
 
-def _count_file(path: Path) -> int | None:
+def count_file(path: Path) -> int | None:
     """Linhas não vazias, ou `None` se o arquivo é binário ou não abre."""
     try:
         with open(path, "rb") as handle:
@@ -144,7 +130,7 @@ def count_lines(root: Path, entries: list[Entry]) -> Count:
     loc = files = at_root = 0
     folders: dict[str, int] = {}
     for entry in entries:
-        counted = _count_file(root / entry.rel)
+        counted = count_file(root / entry.rel)
         if counted is None:
             continue
         loc += counted

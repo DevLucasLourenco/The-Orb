@@ -1,6 +1,7 @@
 """Protocol: o contrato de eventos do The Orb (docs/PROTOCOL.md). Não depende de nenhum outro módulo."""
 from .events import (
                      MAX_BODY_BYTES,
+                     MAX_CHANGES,
                      MAX_FOLDERS,
                      MAX_INNER_TEXT,
                      MAX_STRING,
@@ -13,6 +14,7 @@ from .events import (
 from .vocab import (
                      ACTIVITIES,
                      ALL_STATES,
+                     CHANGE_TYPES,
                      DERIVED_STATES,
                      PROTOCOL_VERSION,
                      SIGNAL_FIELDS,
@@ -22,8 +24,10 @@ from .vocab import (
 __all__ = [
                      "ACTIVITIES",
                      "ALL_STATES",
+                     "CHANGE_TYPES",
                      "DERIVED_STATES",
                      "MAX_BODY_BYTES",
+                     "MAX_CHANGES",
                      "MAX_FOLDERS",
                      "MAX_INNER_TEXT",
                      "MAX_STRING",

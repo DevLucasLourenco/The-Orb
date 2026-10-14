@@ -48,7 +48,7 @@ from ..terminal_host import (
     winpty_factory,
 )
 from .messages import handle_client_message
-from .probes import LineScheduler
+from .probes import ChangeScheduler, LineScheduler
 from .realms import Feed, Observatory, Realm
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
@@ -96,11 +96,13 @@ class Hub:
         self.preferences = preferences.load() if preferences is not None else Preferences()
         if preferences is not None:
             observatory.set_recent_seconds(self.preferences.recent_seconds)     # o que o Lucas escolheu vale desde a subida
-        self.world = World(names=names, recent_seconds=observatory.recent_seconds)
+        self.world = World(names=names, recent_seconds=observatory.recent_seconds, window_percent=self.preferences.window_percent)
         self._sync_hidden()
         # O Probe de linhas (R19) roda numa thread própria, um realm por vez; aqui só se liga e se recebem os eventos.
         self.lines = LineScheduler(lambda: self.observatory.realms, self._line_filter, lambda: self.world.hidden,
                                    wall=self.clock, tracked=tracked or git_tracked_files)
+        # O Probe das alterações locais (R20b): lê o git de cada realm a cada poucos segundos, só leitura, numa thread própria.
+        self.changes = ChangeScheduler(lambda: self.observatory.realms, lambda: self.world.hidden, wall=self.clock)
         self.feed = Feed()
         self.clients: set[asyncio.Queue[dict[str, Any]]] = set()
         self._published_time_key: tuple | None = None      # o que os clientes viram da última vez
@@ -130,7 +132,7 @@ class Hub:
         """Lê todos os realms (chamado fora do loop). Devolve (eventos aplicados, mudou?)."""
         applied: list[dict[str, Any]] = []
         known = len(self.observatory.realms)
-        events = self.observatory.poll() + self.lines.drain()
+        events = self.observatory.poll() + self.lines.drain() + self.changes.drain()
         for realm_id in self.observatory.realms:
             self.world.add_realm(realm_id)           # todo realm detectado existe, mesmo "de noite" (D-059)
         self._sync_hidden()                          # antes de aplicar: um realm escondido recém-detectado nunca aparece, nem por um instante
@@ -174,6 +176,7 @@ class Hub:
         self.preferences = new
         self.observatory.set_recent_seconds(new.recent_seconds)
         self.world.set_recent_seconds(new.recent_seconds)
+        self.world.set_window_percent(new.window_percent)         # o x das janelas vale na hora (R20d)
         self._sync_hidden()
         if "lines" in changes:
             self.lines.refresh()                         # o Lucas mexeu no filtro de todos: conta tudo de novo já
@@ -244,6 +247,7 @@ class Hub:
 
     async def run(self, poll_seconds: float, idle_poll_seconds: float | None = None) -> None:
         self.lines.start()
+        self.changes.start()
         last_tick = time.monotonic()
         while True:
             try:
@@ -281,6 +285,7 @@ def create_app(config: GatewayConfig, *, pty_factory: Callable = winpty_factory,
         finally:
             task.cancel()
             hub.lines.stop()
+            hub.changes.stop()
 
     app = FastAPI(title="The Orb", lifespan=lifespan)
     app.state.hub = hub

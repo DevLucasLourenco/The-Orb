@@ -19,6 +19,7 @@ from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import Any
 
+from ..core import rules
 from ..core.rules import LineFilter
 
 PREFERENCES_FILE = "preferences.json"
@@ -39,6 +40,7 @@ class Setting:
 
 SETTINGS: tuple[Setting, ...] = (
     Setting("recent_days", "Sessões recentes na sala", "dias", 10, 1, 365),      # R28a, D-027
+    Setting("window_percent", "Alterações por janela acesa", "%", rules.WINDOW_PERCENT, 1, 50),    # R20d, D-042
 )
 _BY_KEY = {setting.key: setting for setting in SETTINGS}
 
@@ -94,6 +96,10 @@ class Preferences:
     @property
     def recent_days(self) -> float:
         return self.options["recent_days"]
+
+    @property
+    def window_percent(self) -> float:
+        return self.options["window_percent"]
 
     @property
     def recent_seconds(self) -> float:

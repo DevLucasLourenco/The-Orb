@@ -7,7 +7,6 @@ export const ROOF = 18;          // lado do Rooftop Room e do último andar do p
 export const LEVEL_H = 3;        // altura de um nível (uma fileira de janelas)
 export const ROOM_H = 5.5;
 const GROUND_Y = 1.2;            // topo da base (o pódio chão) onde o primeiro andar começa
-const FACADE_ROWS = 22;          // fileiras de janelas da textura da fachada (uma por nível)
 
 // A forma de cada classe de prédio (VISUAL.md §8, R41): os blocos de baixo para cima, cada um com a largura e a fração
 // da altura em que termina. O mundo manda a classe e os níveis; o cliente só desenha. Largura máxima 30 (o lote tem 46).
@@ -36,33 +35,44 @@ const LOBBY = { x: 0, z: 0.2, r: 1.9 };          // quem não está numa área (
 const UP = new THREE.Vector3(0, 1, 0);
 const DORM = { z: 7.9, x0: -7.6, x1: 7.6 };      // sessões dormindo: fileira na frente do quartinho
 
-function windowTexture(seed) {
-  const c = document.createElement("canvas");
-  c.width = 128; c.height = 256;
-  const g = c.getContext("2d");
-  g.fillStyle = "#000"; g.fillRect(0, 0, 128, 256);
-  let s = seed;
-  const rnd = () => ((s = (s * 9301 + 49297) % 233280) / 233280);
-  for (let row = 0; row < FACADE_ROWS; row++) {
-    for (let col = 0; col < 8; col++) {
-      const lit = rnd();
-      if (lit < 0.42) continue;
-      const warm = rnd() < 0.55;
-      const a = 0.35 + rnd() * 0.65;
-      g.fillStyle = warm ? `rgba(255,196,128,${a})` : `rgba(140,200,255,${a})`;
-      g.fillRect(6 + col * 15, 5 + row * 11.3, 8, 6);
+// As janelas (R20, VISUAL.md §5 e §6): cada janela acesa é um pacote de alterações locais do git, na cor do tipo de alteração
+// (a paleta do git do VS Code). A janela só tem dois estados, acesa ou apagada, com brilho fixo. O mundo diz quais acendem e onde.
+export const CHANGE_COLORS = {
+  modified: "#E2C08D", added: "#81B88B", untracked: "#73C991", renamed: "#73C991", deleted: "#C74E39", conflict: "#E4676B",
+};
+const FACADE_COLS = 8;                   // colunas de janelas em cada lado do prédio (o mundo usa o mesmo número)
+const FACE_MATERIAL = [4, 0, 5, 1];      // lado 0..3 do mundo -> posição do material na caixa (+z, +x, -z, -x)
+const PANE = 16;                         // pixels de uma janela na textura
+const LIT_INTENSITY = 1.1;               // brilho fixo da janela acesa (D-115: a atividade não acende a fachada)
+
+// A textura de um lado de um bloco: o vidro de cada janela (todas as posições) e, à parte, só as janelas acesas, na cor do tipo.
+function faceTextures(rows, lit) {
+  const make = () => {
+    const c = document.createElement("canvas");
+    c.width = FACADE_COLS * PANE; c.height = rows * PANE;
+    return c;
+  };
+  const glass = make(), glow = make();
+  const g = glass.getContext("2d"), l = glow.getContext("2d");
+  g.fillStyle = "#0c1322"; g.fillRect(0, 0, glass.width, glass.height);
+  l.fillStyle = "#000"; l.fillRect(0, 0, glow.width, glow.height);
+  for (let row = 0; row < rows; row++) {
+    for (let col = 0; col < FACADE_COLS; col++) {
+      g.fillStyle = "#22345a";
+      g.fillRect(col * PANE + 2, row * PANE + 2, PANE - 4, PANE - 4);
     }
   }
-  const tex = new THREE.CanvasTexture(c);
-  tex.colorSpace = THREE.SRGBColorSpace;
-  tex.anisotropy = 4;
-  return tex;
-}
-
-function hash(text) {
-  let h = 2166136261;
-  for (const ch of text) h = Math.imul(h ^ ch.charCodeAt(0), 16777619);
-  return Math.abs(h) % 100000;
+  for (const w of lit) {
+    l.fillStyle = CHANGE_COLORS[w.type] || "#000";
+    l.fillRect(w.col * PANE + 2, (rows - 1 - w.row) * PANE + 2, PANE - 4, PANE - 4);
+  }
+  const textures = [glass, glow].map((canvas) => {
+    const tex = new THREE.CanvasTexture(canvas);
+    tex.colorSpace = THREE.SRGBColorSpace;
+    tex.anisotropy = 4;
+    return tex;
+  });
+  return textures;
 }
 
 // Quantos níveis tem cada bloco da forma: cada um termina na sua fração da altura e tem pelo menos um nível.
@@ -82,7 +92,7 @@ function disposeTree(root) {
   root.traverse((o) => {
     o.geometry?.dispose?.();
     const mats = Array.isArray(o.material) ? o.material : o.material ? [o.material] : [];
-    mats.forEach((m) => { m.emissiveMap?.dispose?.(); m.dispose?.(); });
+    mats.forEach((m) => { m.map?.dispose?.(); m.emissiveMap?.dispose?.(); m.dispose?.(); });
     if (o.isCSS2DObject) o.element.remove();
   });
 }
@@ -93,9 +103,7 @@ export class RealmBuilding {
     this.scene = scene;
     this.group = new THREE.Group();
     this.pickables = [];
-    this.activity = 0;           // 0..1, acende as janelas
     this.waiting = 0;
-    this.windowMap = windowTexture(hash(realm.id));
 
     this.plinth = new THREE.Mesh(new THREE.BoxGeometry(1, 1.2, 1),
       new THREE.MeshStandardMaterial({ color: 0x0e1626, roughness: 0.8, metalness: 0.2 }));
@@ -132,14 +140,16 @@ export class RealmBuilding {
     this.room.add(this.label);
 
     this.bodyKey = null;
-    this._body(realm.metrics);
+    this._body(realm);
     scene.add(this.group);
   }
 
   // O corpo do prédio (VISUAL.md §8): a forma da classe, na altura em níveis que o mundo calculou, com a laje do teto, as
   // cintas de luz neutra e, no Arranha-céu, a coroa e a antena. Sem contagem de linhas, um volume liso de um nível.
-  _body(metrics) {
-    const key = metrics ? `${metrics.class}:${metrics.levels}` : "";
+  _body(realm) {
+    const metrics = realm.metrics;
+    const lit = metrics && realm.facade ? realm.facade.windows : null;       // sem leitura do git ou sem andares: sem janelas (nada inventado)
+    const key = `${metrics ? `${metrics.class}:${metrics.levels}` : ""}|${lit ? JSON.stringify(lit) : "-"}`;
     if (key === this.bodyKey) return;
     this.bodyKey = key;
     if (this.body) { this.group.remove(this.body); disposeTree(this.body); }
@@ -148,7 +158,6 @@ export class RealmBuilding {
     const body = (this.body = new THREE.Group());
     const plain = new THREE.MeshStandardMaterial({ color: 0x0c1322, roughness: 0.6, metalness: 0.45 });
     const stone = new THREE.MeshStandardMaterial({ color: 0x131d31, roughness: 0.92, metalness: 0.1 });
-    this.windowMats = [];
     this.pickables.length = 0;
     this.pickables.push(this.plinth, this.glass);
 
@@ -156,15 +165,25 @@ export class RealmBuilding {
     this.plinth.scale.set(widest + 6, 1, widest + 6);
 
     let y = GROUND_Y;
+    let firstLevel = 0;
     const spans = tierLevels(shape.tiers, levels);
     shape.tiers.forEach(([w], i) => {
       const h = shape.flat ? FLAT_H : spans[i] * LEVEL_H;
-      const windows = shape.flat ? plain : new THREE.MeshStandardMaterial({
-        color: 0x0d1526, roughness: 0.45, metalness: 0.55, emissive: 0xffffff, emissiveIntensity: 0.35,
-        emissiveMap: this._facade(spans[i]),
-      });
-      if (!shape.flat) this.windowMats.push(windows);
-      const block = new THREE.Mesh(new THREE.BoxGeometry(w, h, w), [windows, windows, plain, plain, windows, windows]);
+      const sides = [plain, plain, plain, plain];
+      if (lit && !shape.flat) {                  // as janelas deste bloco: as do mundo cujo nível cai nele
+        const here = lit.filter((x) => x.level >= firstLevel && x.level < firstLevel + spans[i]).map((x) => ({ ...x, row: x.level - firstLevel }));
+        for (let face = 0; face < 4; face++) {
+          const [glass, glow] = faceTextures(spans[i], here.filter((x) => x.face === face));
+          sides[face] = new THREE.MeshStandardMaterial({
+            color: 0xffffff, map: glass, roughness: 0.45, metalness: 0.55, emissive: 0xffffff, emissiveMap: glow, emissiveIntensity: LIT_INTENSITY,
+          });
+        }
+      }
+      firstLevel += spans[i];
+      const materials = [plain, plain, plain, plain, plain, plain];
+      sides.forEach((m, face) => { materials[FACE_MATERIAL[face]] = m; });
+      materials[2] = plain; materials[3] = plain;
+      const block = new THREE.Mesh(new THREE.BoxGeometry(w, h, w), materials);
       block.position.y = y + h / 2;
       block.castShadow = true;
       block.receiveShadow = true;
@@ -214,15 +233,6 @@ export class RealmBuilding {
       body.add(mast, tip);
     }
     this.group.add(body);
-  }
-
-  // A fachada de um bloco: uma fileira de janelas por nível (hoje a textura ainda é decoração; as janelas de verdade chegam no ticket 11).
-  _facade(levels) {
-    const map = this.windowMap.clone();
-    map.wrapT = THREE.RepeatWrapping;
-    map.repeat.set(1, levels / FACADE_ROWS);
-    map.needsUpdate = true;
-    return map;
   }
 
   _areas() {
@@ -279,8 +289,7 @@ export class RealmBuilding {
   }
 
   setData(realm, summary) {
-    this._body(realm.metrics);       // a classe ou a altura mudou (o Probe contou de novo): o corpo é refeito
-    this.activity = Math.min(1, summary.active / 3);
+    this._body(realm);       // a classe, a altura ou as janelas mudaram (os Probes leram de novo): o corpo é refeito
     this.waiting = summary.waiting;
     this.night = Boolean(realm.night);
     const size = metricsText(realm);          // "48 mil linhas · Edifício": só aparece quando há contagem real
@@ -310,8 +319,6 @@ export class RealmBuilding {
   }
 
   update(dt, t, near, focused = false) {
-    const target = 0.28 + this.activity * 1.1;
-    for (const m of this.windowMats) m.emissiveIntensity += (target - m.emissiveIntensity) * Math.min(1, dt * 2);
     const pulse = this.waiting ? 0.5 + 0.5 * Math.sin(t * 3.2) : 0;
     this.beacon.material.opacity = this.waiting ? 0.10 + 0.14 * pulse : 0;
     this.beaconRing.material.opacity = this.waiting ? 0.35 + 0.5 * pulse : 0;
@@ -328,7 +335,6 @@ export class RealmBuilding {
 
   dispose() {
     this.scene.remove(this.group);
-    this.windowMap.dispose();
     disposeTree(this.group);
   }
 }
