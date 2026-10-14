@@ -50,3 +50,11 @@ Implementado em 2026-10-14 (branch `ticket/11-janelas-pelas-alteracoes-locais`).
 - **O que não foi visto:** as janelas dos dados reais de perto (o ângulo de câmera do preview não mostrou a fachada do prédio com alterações); as seis cores lado a lado, com ACES e brilho, não
   foram comparadas com os hex da VISUAL §5 pixel a pixel (a tabela do cliente tem os seis valores exatos); a leitura de um repositório grande demais (o custo contínuo do `git status`
   a cada 15 s por realm não foi medido, só a subida); o contador de linhas segue por minuto (ver Q-T11-5).
+
+**Revisões (`/code-review`, padrões e spec):** nenhuma violação dura. Tratado: um caminho que o protocolo recusaria derrubava o evento inteiro (agora o Probe o descarta e conta em `more`, e a validação ficou
+mais estrita: sem segmentos vazios, `.`, `..`, NUL nem letra de unidade); o peso de um arquivo novo contava só linhas não vazias e o `numstat` conta todas (agora todas); a impressão digital não incluía `more`;
+`_floor_of` refazia o índice dos andares a cada alteração; a fachada levava `8` e `4` repetidos no cliente (agora o mundo manda `cols` e `faces`); a textura do vidro era recriada em cada lado; a base dos
+agendadores agora é abstrata; o risco residual do filtro `clean` do git ficou anotado em `probes/git.py`; textos desatualizados na VISUAL ("hoje padrão aleatório", "proposta para validar", "as janelas chegam no ticket 11")
+e na R20a (o tom renderizado não foi comparado pixel a pixel). **Não corrigido, com motivo:** o corte em 5.000 faz o x% ser das alterações que vieram (declarado na Q-T11-4 e na VISUAL); a regra de dobrar a capacidade
+de um andar cheio é a Q-T11-7; `ChangeScheduler.notes` (por que um realm não tem leitura) fica como diagnóstico, sem aparecer na tela de configurações, para não acrescentar tela fora do ticket; `Change` existe no Core e
+no Probe porque o Core não importa os Probes; o desenho refaz o corpo quando as janelas mudam (no máximo a cada 15 s por realm); o ticket continua `ready-for-agent` até o merge.

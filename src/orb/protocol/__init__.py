@@ -9,6 +9,7 @@ from .events import (
                      clip_body,
                      clip_text,
                      make_event,
+                     valid_change_path,
                      validate,
 )
 from .vocab import (
@@ -38,5 +39,6 @@ __all__ = [
                      "clip_body",
                      "clip_text",
                      "make_event",
+                     "valid_change_path",
                      "validate",
 ]

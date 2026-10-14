@@ -9,6 +9,7 @@ from __future__ import annotations
 import queue
 import threading
 import time
+from abc import ABC, abstractmethod
 from collections.abc import Callable
 from datetime import UTC, datetime
 from pathlib import Path
@@ -40,7 +41,7 @@ def _biggest(folders: dict[str, int]) -> dict[str, int]:
     return dict(ranked[:MAX_FOLDERS])
 
 
-class RealmScheduler:
+class RealmScheduler(ABC):
     """Decide qual realm olhar e quando. `run_once` trata no máximo um realm por chamada e devolve quantos eventos produziu.
     Cada Probe define `_measure` (o evento do realm, ou `None` se nada mudou ou não há resposta)."""
 
@@ -111,8 +112,9 @@ class RealmScheduler:
         self._events.put(event)
         return 1
 
+    @abstractmethod
     def _measure(self, realm: Realm) -> Event | None:
-        raise NotImplementedError
+        """O evento deste realm, ou `None` se nada mudou ou não há resposta."""
 
     def drain(self) -> list[Event]:
         """Os eventos prontos desde a última chamada."""
@@ -208,7 +210,7 @@ class ChangeScheduler(RealmScheduler):
             self._last_print.pop(realm.id, None)
             return None                                   # sem repositório: sem dado, nunca "tudo limpo"
         self.notes.pop(realm.id, None)
-        print_now = changes_fingerprint(result.items) + f":{result.more}"
+        print_now = changes_fingerprint(result.items, result.more)
         if self._last_print.get(realm.id) == print_now:
             return None                                   # nada mudou desde a última leitura
         self._last_print[realm.id] = print_now

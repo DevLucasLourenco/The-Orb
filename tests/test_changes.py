@@ -111,7 +111,7 @@ def write(root, name, text):
 def test_a_real_repository_gives_the_type_and_the_changed_lines_of_each_file(tmp_path):
     root, run = repo(tmp_path, {"a.py": "1\n2\n3\n", "b.py": "x\ny\n", "pasta/c.py": "p\n", ".gitignore": "*.log\n"})
     write(root, "a.py", "1\n2 mudou\n3\n4\n5\n")                       # modificado: 1 removida + 3 inseridas
-    write(root, "novo.py", "um\n\ndois\ntres\n")                       # não rastreado: 3 linhas não vazias
+    write(root, "novo.py", "um\n\ndois\ntres\n")                       # não rastreado: 4 linhas (todas, como o diff conta as de um adicionado)
     write(root, "bin.dat", b"\x00\x01\x02")                            # não rastreado e binário: peso 1
     write(root, "ignorado.log", "isto não conta\n")                    # ignorado pelo .gitignore
     (root / "b.py").unlink()                                            # apagado: as 2 linhas que tinha
@@ -120,7 +120,7 @@ def test_a_real_repository_gives_the_type_and_the_changed_lines_of_each_file(tmp
     run("mv", "pasta/c.py", "pasta/d.py")                               # renomeado
     result = git_changes(root)
     by_path = {c.path: (c.type, c.lines) for c in result.items}
-    assert by_path == {"a.py": ("modified", 4), "novo.py": ("untracked", 3), "bin.dat": ("untracked", 1),
+    assert by_path == {"a.py": ("modified", 4), "novo.py": ("untracked", 4), "bin.dat": ("untracked", 1),
                        "b.py": ("deleted", 2), "staged.py": ("added", 2), "pasta/d.py": ("renamed", 1)}
     assert [c.path for c in result.items] == sorted(by_path) and result.more == 0       # ordem estável pelo caminho
 
@@ -163,8 +163,21 @@ def test_a_huge_number_of_changes_is_cut_and_the_rest_is_counted(tmp_path):
     assert len(result.items) == 10 and result.more == 20                 # as primeiras pelo caminho; o resto vira contagem
 
 
+def test_a_path_the_protocol_would_refuse_is_left_out_and_counted_instead_of_breaking_the_event(monkeypatch, tmp_path):
+    long_path = "x" * 600 + "/" + "y" * 600 + ".txt"                            # 1.201 caracteres: passa de 1.024
+    out = status(b"? ok.txt", b"? " + long_path.encode(), b"? a//b.txt")
+
+    def fake_git(root, *args):
+        return {"status": out, "rev-parse": b"abc", "diff": b""}.get(args[0])
+
+    monkeypatch.setattr("orb.probes.changes.run_git", fake_git)
+    result = git_changes(tmp_path)
+    assert [c.path for c in result.items] == ["ok.txt"] and result.more == 2    # o que o protocolo recusaria sai, e conta como "de fora"
+
+
 def test_the_fingerprint_changes_only_when_the_changes_change():
     a = [Change("a.py", "modified", 3), Change("b.py", "added", 1)]
+    assert changes_fingerprint(a, 0) != changes_fingerprint(a, 5)                # quantas ficaram de fora também conta
     assert changes_fingerprint(a) == changes_fingerprint(list(a))
     assert changes_fingerprint(a) != changes_fingerprint([Change("a.py", "modified", 4), Change("b.py", "added", 1)])
     assert changes_fingerprint(a) != changes_fingerprint([Change("a.py", "deleted", 3), Change("b.py", "added", 1)])

@@ -161,6 +161,16 @@ def _validate_signal(signal: Any, event: dict[str, Any]) -> str | None:
     return None
 
 
+def valid_change_path(path: Any) -> bool:
+    """Um caminho de alteração: texto relativo à raiz do projeto, com `/`, sem segmentos vazios, `.` ou `..`, sem NUL, sem letra de
+    unidade (`C:`) e de até `MAX_CHANGE_PATH` caracteres. Quem monta o evento descarta o que não passa aqui."""
+    if not isinstance(path, str) or not path or len(path) > MAX_CHANGE_PATH or "\0" in path or "\\" in path:
+        return False
+    if len(path) > 1 and path[1] == ":":
+        return False
+    return all(part not in ("", ".", "..") for part in path.split("/"))
+
+
 def _validate_changes(signal: dict[str, Any]) -> str | None:
     """`realm.changes`: a lista de alterações locais (caminho relativo, tipo do vocabulário, linhas) e quantas ficaram de fora."""
     changes = signal["changes"]
@@ -170,9 +180,8 @@ def _validate_changes(signal: dict[str, Any]) -> str | None:
         if not isinstance(change, dict):
             return "realm.changes: cada alteração é um objeto"
         path, kind, lines = change.get("path"), change.get("type"), change.get("lines")
-        if not isinstance(path, str) or not path or len(path) > MAX_CHANGE_PATH or path.startswith("/") or "\\" in path \
-                or ".." in path.split("/"):
-            return "realm.changes: path deve ser um caminho relativo com barras normais"
+        if not valid_change_path(path):
+            return "realm.changes: path deve ser um caminho relativo com barras normais, sem segmentos vazios, `.` ou `..`"
         if kind not in CHANGE_TYPES:
             return f"realm.changes: tipo desconhecido {kind!r}"
         if isinstance(lines, bool) or not isinstance(lines, int) or lines < 0:

@@ -3,6 +3,9 @@
 Todo comando roda com `--no-optional-locks` (o git não atualiza o índice só por olhar), `core.fsmonitor=false` (um repositório
 não pode mandar este processo executar um programa dele), sem entrada, com tempo máximo e num ambiente sem as variáveis que
 redirecionariam o git para outro repositório ou índice.
+
+Limite conhecido: `git status` e `git diff` podem rodar um filtro `clean` que o próprio projeto declare no `.git/config` e no
+`.gitattributes` (um programa do projeto). O Orb não consegue desligar isso de forma geral; fica anotado como risco residual.
 """
 from __future__ import annotations
 

@@ -12,9 +12,9 @@ import os
 from dataclasses import dataclass
 from pathlib import Path
 
-from ..protocol import MAX_CHANGES
+from ..protocol import MAX_CHANGES, valid_change_path
 from .git import run_git
-from .lines import MAX_FILE_BYTES, count_file
+from .lines import MAX_FILE_BYTES
 
 __all__ = ["Change", "ChangeSet", "changes_fingerprint", "git_changes", "parse_numstat", "parse_status"]
 
@@ -107,15 +107,18 @@ def _base(root: Path) -> str:
 
 
 def _new_file_lines(root: Path, rel: str) -> int:
-    """As linhas de um arquivo novo; binário, grande demais ou ilegível vale 1."""
+    """As linhas de um arquivo novo (todas, como o `diff --numstat` conta as de um arquivo adicionado); binário, grande demais
+    ou ilegível vale 1."""
     path = root / rel
     try:
         if not path.is_file() or path.is_symlink() or os.path.getsize(path) > MAX_FILE_BYTES:
             return 1
+        data = path.read_bytes()
     except OSError:
         return 1
-    counted = count_file(path)
-    return counted if counted else 1
+    if b"\0" in data[:8192]:
+        return 1
+    return data.count(b"\n") + (0 if not data or data.endswith(b"\n") else 1)
 
 
 def git_changes(root: Path, *, limit: int = MAX_CHANGES) -> ChangeSet | None:
@@ -123,7 +126,8 @@ def git_changes(root: Path, *, limit: int = MAX_CHANGES) -> ChangeSet | None:
     out = run_git(root, "status", "--porcelain=v2", "-z", "--untracked-files=all", "--ignore-submodules=all")
     if out is None:
         return None
-    found = sorted(set(parse_status(out)))
+    parsed = sorted(set(parse_status(out)))
+    found = [item for item in parsed if valid_change_path(item[0])]     # um caminho que o protocolo recusaria derrubaria o evento todo
     chosen = found[:limit]
     diff = run_git(root, "diff", _base(root), "--numstat", "-z", "-M", "--no-ext-diff", "--no-textconv", "--ignore-submodules=all")
     weights = parse_numstat(diff) if diff is not None else {}
@@ -131,12 +135,13 @@ def git_changes(root: Path, *, limit: int = MAX_CHANGES) -> ChangeSet | None:
     for path, kind in chosen:
         weight = _new_file_lines(root, path) if kind == "untracked" else weights.get(path, 0)
         items.append(Change(path, kind, max(1, weight)))
-    return ChangeSet(items, max(0, len(found) - len(chosen)))
+    return ChangeSet(items, max(0, len(parsed) - len(chosen)))
 
 
-def changes_fingerprint(items: list[Change]) -> str:
-    """Muda quando uma alteração aparece, some ou muda de tipo ou de peso."""
+def changes_fingerprint(items: list[Change], more: int = 0) -> str:
+    """Muda quando uma alteração aparece, some ou muda de tipo ou de peso, ou quando muda quantas ficaram de fora."""
     digest = hashlib.sha1(usedforsecurity=False)
+    digest.update(f"{more}".encode())
     for change in items:
         digest.update(f"\0{change.path}\0{change.type}\0{change.lines}".encode())
     return digest.hexdigest()

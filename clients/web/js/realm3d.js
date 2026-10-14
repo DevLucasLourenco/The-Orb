@@ -40,39 +40,44 @@ const DORM = { z: 7.9, x0: -7.6, x1: 7.6 };      // sessões dormindo: fileira n
 export const CHANGE_COLORS = {
   modified: "#E2C08D", added: "#81B88B", untracked: "#73C991", renamed: "#73C991", deleted: "#C74E39", conflict: "#E4676B",
 };
-const FACADE_COLS = 8;                   // colunas de janelas em cada lado do prédio (o mundo usa o mesmo número)
 const FACE_MATERIAL = [4, 0, 5, 1];      // lado 0..3 do mundo -> posição do material na caixa (+z, +x, -z, -x)
 const PANE = 16;                         // pixels de uma janela na textura
 const LIT_INTENSITY = 1.1;               // brilho fixo da janela acesa (D-115: a atividade não acende a fachada)
 
-// A textura de um lado de um bloco: o vidro de cada janela (todas as posições) e, à parte, só as janelas acesas, na cor do tipo.
-function faceTextures(rows, lit) {
-  const make = () => {
-    const c = document.createElement("canvas");
-    c.width = FACADE_COLS * PANE; c.height = rows * PANE;
-    return c;
-  };
-  const glass = make(), glow = make();
-  const g = glass.getContext("2d"), l = glow.getContext("2d");
-  g.fillStyle = "#0c1322"; g.fillRect(0, 0, glass.width, glass.height);
-  l.fillStyle = "#000"; l.fillRect(0, 0, glow.width, glow.height);
+function canvasTexture(canvas) {
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.anisotropy = 4;
+  return tex;
+}
+
+function blank(cols, rows, color) {
+  const c = document.createElement("canvas");
+  c.width = cols * PANE; c.height = rows * PANE;
+  const g = c.getContext("2d");
+  g.fillStyle = color; g.fillRect(0, 0, c.width, c.height);
+  return [c, g];
+}
+
+// O vidro de um bloco: a parede com o vidro apagado de cada janela (todas as posições têm dado: "nada mudou"). É igual nos 4 lados.
+function glassTexture(cols, rows) {
+  const [canvas, g] = blank(cols, rows, "#0c1322");
+  g.fillStyle = "#22345a";
   for (let row = 0; row < rows; row++) {
-    for (let col = 0; col < FACADE_COLS; col++) {
-      g.fillStyle = "#22345a";
-      g.fillRect(col * PANE + 2, row * PANE + 2, PANE - 4, PANE - 4);
-    }
+    for (let col = 0; col < cols; col++) g.fillRect(col * PANE + 2, row * PANE + 2, PANE - 4, PANE - 4);
   }
+  return canvasTexture(canvas);
+}
+
+// As janelas acesas de um lado de um bloco, só elas, na cor do tipo de alteração (um tipo que o cliente não conhece não acende).
+function glowTexture(cols, rows, lit) {
+  const [canvas, g] = blank(cols, rows, "#000");
   for (const w of lit) {
-    l.fillStyle = CHANGE_COLORS[w.type] || "#000";
-    l.fillRect(w.col * PANE + 2, (rows - 1 - w.row) * PANE + 2, PANE - 4, PANE - 4);
+    if (!CHANGE_COLORS[w.type]) continue;
+    g.fillStyle = CHANGE_COLORS[w.type];
+    g.fillRect(w.col * PANE + 2, (rows - 1 - w.row) * PANE + 2, PANE - 4, PANE - 4);
   }
-  const textures = [glass, glow].map((canvas) => {
-    const tex = new THREE.CanvasTexture(canvas);
-    tex.colorSpace = THREE.SRGBColorSpace;
-    tex.anisotropy = 4;
-    return tex;
-  });
-  return textures;
+  return canvasTexture(canvas);
 }
 
 // Quantos níveis tem cada bloco da forma: cada um termina na sua fração da altura e tem pelo menos um nível.
@@ -148,8 +153,8 @@ export class RealmBuilding {
   // cintas de luz neutra e, no Arranha-céu, a coroa e a antena. Sem contagem de linhas, um volume liso de um nível.
   _body(realm) {
     const metrics = realm.metrics;
-    const lit = metrics && realm.facade ? realm.facade.windows : null;       // sem leitura do git ou sem andares: sem janelas (nada inventado)
-    const key = `${metrics ? `${metrics.class}:${metrics.levels}` : ""}|${lit ? JSON.stringify(lit) : "-"}`;
+    const lit = metrics && realm.facade ? realm.facade : null;               // sem leitura do git ou sem andares: sem janelas (nada inventado)
+    const key = `${metrics ? `${metrics.class}:${metrics.levels}` : ""}|${lit ? JSON.stringify(lit.windows) : "-"}`;
     if (key === this.bodyKey) return;
     this.bodyKey = key;
     if (this.body) { this.group.remove(this.body); disposeTree(this.body); }
@@ -171,18 +176,18 @@ export class RealmBuilding {
       const h = shape.flat ? FLAT_H : spans[i] * LEVEL_H;
       const sides = [plain, plain, plain, plain];
       if (lit && !shape.flat) {                  // as janelas deste bloco: as do mundo cujo nível cai nele
-        const here = lit.filter((x) => x.level >= firstLevel && x.level < firstLevel + spans[i]).map((x) => ({ ...x, row: x.level - firstLevel }));
-        for (let face = 0; face < 4; face++) {
-          const [glass, glow] = faceTextures(spans[i], here.filter((x) => x.face === face));
+        const here = lit.windows.filter((x) => x.level >= firstLevel && x.level < firstLevel + spans[i]).map((x) => ({ ...x, row: x.level - firstLevel }));
+        const glass = glassTexture(lit.cols, spans[i]);
+        for (let face = 0; face < lit.faces; face++) {
           sides[face] = new THREE.MeshStandardMaterial({
-            color: 0xffffff, map: glass, roughness: 0.45, metalness: 0.55, emissive: 0xffffff, emissiveMap: glow, emissiveIntensity: LIT_INTENSITY,
+            color: 0xffffff, map: glass, roughness: 0.45, metalness: 0.55, emissive: 0xffffff,
+            emissiveMap: glowTexture(lit.cols, spans[i], here.filter((x) => x.face === face)), emissiveIntensity: LIT_INTENSITY,
           });
         }
       }
       firstLevel += spans[i];
-      const materials = [plain, plain, plain, plain, plain, plain];
+      const materials = [plain, plain, plain, plain, plain, plain];            // o topo e o fundo ficam lisos
       sides.forEach((m, face) => { materials[FACE_MATERIAL[face]] = m; });
-      materials[2] = plain; materials[3] = plain;
       const block = new THREE.Mesh(new THREE.BoxGeometry(w, h, w), materials);
       block.position.y = y + h / 2;
       block.castShadow = true;

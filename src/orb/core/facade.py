@@ -19,23 +19,28 @@ class Change(NamedTuple):
     lines: int         # o peso: linhas alteradas
 
 
-def _floor_of(path: str, floors: Sequence[dict[str, Any]]) -> int:
-    """Em que andar cai uma alteração: arquivo da raiz no térreo; pasta de primeiro nível no andar dela. Pasta que não é andar
-    (ela só tem arquivos que a contagem de linhas não conta, como `.md`) cai em "demais pastas" e, se o prédio não tem esse
-    andar, no térreo; arquivo da raiz num prédio sem térreo cai em "demais pastas"."""
-    top, slash, _ = path.partition("/")
-    kinds = [floor["kind"] for floor in floors]
-    if slash:
+class _Floors(NamedTuple):
+    """Os andares indexados uma vez: onde está cada pasta, o térreo e "demais pastas"."""
+    folders: dict[str, int]
+    ground: int | None
+    rest: int | None
+
+    @classmethod
+    def of(cls, floors: Sequence[dict[str, Any]]) -> _Floors:
+        found: dict[str, int] = {}
         for index, floor in enumerate(floors):
-            if floor["kind"] == "folder" and floor["name"] == top:
-                return index
-        order = ("rest", "ground")
-    else:
-        order = ("ground", "rest")
-    for kind in order:
-        if kind in kinds:
-            return kinds.index(kind)
-    return 0
+            found.setdefault(floor["kind"] if floor["kind"] != "folder" else f"folder:{floor['name']}", index)
+        return cls({k[7:]: v for k, v in found.items() if k.startswith("folder:")}, found.get("ground"), found.get("rest"))
+
+    def of_path(self, path: str) -> int:
+        """Em que andar cai uma alteração: arquivo da raiz no térreo; pasta de primeiro nível no andar dela. Pasta que não é andar
+        (ela só tem arquivos que a contagem de linhas não conta, como `.md`) cai em "demais pastas" e, se o prédio não tem esse
+        andar, no térreo; arquivo da raiz num prédio sem térreo cai em "demais pastas"."""
+        top, slash, _ = path.partition("/")
+        if slash and top in self.folders:
+            return self.folders[top]
+        order = (self.rest, self.ground) if slash else (self.ground, self.rest)
+        return next((index for index in order if index is not None), 0)
 
 
 def _pack(group: list[Change], capacity: float) -> list[list[Change]]:
@@ -70,9 +75,10 @@ def windows(floors: Sequence[dict[str, Any]], changes: Iterable[Change], percent
     if not floors or not changes:
         return []
     capacity = sum(c.lines for c in changes) * percent / 100
+    where = _Floors.of(floors)
     grouped: dict[int, dict[str, list[Change]]] = {}
     for change in changes:
-        grouped.setdefault(_floor_of(change.path, floors), {}).setdefault(change.type, []).append(change)
+        grouped.setdefault(where.of_path(change.path), {}).setdefault(change.type, []).append(change)
     per_row = rules.FACADE_FACES * rules.FACADE_COLS
     starts, level = [], 0
     for floor in floors:

@@ -147,7 +147,8 @@ def test_the_changes_event_is_a_valid_realm_event_with_a_closed_list_of_types():
 def test_a_malformed_changes_event_is_rejected_at_the_border():
     bad = [[item(kind="mexido")], [item(path="")], [item(path="/etc/passwd")], [item(path="../fora.py")], [item(path="a/../b.py")],
            [item(lines=-1)], [item(lines=1.5)], [item(lines=True)], [item(lines="3")], ["texto"], [{"path": "a.py"}],
-           [item(path="x" * 1100)], [item(path="a\\b.py")]]
+           [item(path="x" * 1100)], [item(path="a\\b.py")], [item(path="a//b.py")], [item(path="./a.py")], [item(path="a/./b.py")],
+           [item(path="C:/x/a.py")], [item(path="a\0b.py")], [item(path="a/")]]
     for items in bad:
         assert validate(changes_event(items)) is not None, items
     assert validate(changes_event([item()], more=-1)) is not None
@@ -187,7 +188,7 @@ def test_without_a_changes_reading_or_without_floors_the_facade_has_no_data_inst
 def test_a_clean_repository_is_a_facade_with_every_window_dark_and_that_is_data():
     world = world_with()
     world.apply(changes_event([]))
-    assert realm_of(world)["facade"] == {"windows": [], "changes": 0, "more": 0}
+    assert realm_of(world)["facade"] == {"windows": [], "changes": 0, "more": 0, "cols": 8, "faces": 4}
 
 
 def test_the_newer_reading_replaces_the_older_one_and_a_late_one_does_not_go_back_in_time():

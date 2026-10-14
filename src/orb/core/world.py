@@ -10,7 +10,7 @@ from collections import deque
 from collections.abc import Iterable
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Any
+from typing import Any, NamedTuple
 
 from ..protocol import Event, validate
 from . import building, city, facade, rules
@@ -18,6 +18,14 @@ from .names import NameSource
 
 _TOKEN_FIELDS = ("input_tokens", "output_tokens", "cache_read_tokens", "reasoning_tokens")
 _ACTION_CHARS = 240     # tamanho do "fazendo agora" no overview
+
+
+class _FacadeCache(NamedTuple):
+    """A fachada de um realm e de que leituras (e x) ela saiu: só se refaz quando uma delas muda."""
+    read: dict[str, Any]
+    counted: dict[str, Any]
+    percent: float
+    built: dict[str, Any]
 
 
 def _require_aware(now: datetime | None) -> None:
@@ -156,7 +164,7 @@ class World:
         self.metrics: dict[str, dict[str, Any]] = {}          # estado por realm (D-085): última contagem de linhas
         self.changes: dict[str, dict[str, Any]] = {}          # estado por realm (D-085): última leitura das alterações locais (git)
         self.window_percent = window_percent                  # quanto vale uma janela acesa (R20d); o Hub o muda pelas preferências
-        self._facades: dict[str, tuple[Any, Any, float, dict[str, Any] | None]] = {}     # fachada por realm, até algo mudar
+        self._facades: dict[str, _FacadeCache] = {}           # fachada por realm, até algo mudar
         self._realm_seen: deque[str] = deque(maxlen=256)      # ids recentes de eventos de realm (dedupe)
         self._city: tuple[tuple[str, ...], dict[str, Any]] = ((), city.plan(()))     # o traçado da última lista de realms
 
@@ -255,11 +263,11 @@ class World:
         if read is None or metrics is None or metrics["floors"] is None:
             return None
         cached = self._facades.get(realm_id)
-        if cached is not None and cached[0] is read and cached[1] is self.metrics[realm_id] and cached[2] == self.window_percent:
-            return cached[3]
+        if cached is not None and cached.read is read and cached.counted is self.metrics[realm_id] and cached.percent == self.window_percent:
+            return cached.built
         built = {"windows": facade.windows(metrics["floors"], read["items"], self.window_percent),
-                 "changes": len(read["items"]), "more": read["more"]}
-        self._facades[realm_id] = (read, self.metrics[realm_id], self.window_percent, built)
+                 "changes": len(read["items"]), "more": read["more"], "cols": rules.FACADE_COLS, "faces": rules.FACADE_FACES}
+        self._facades[realm_id] = _FacadeCache(read, self.metrics[realm_id], self.window_percent, built)
         return built
 
     def _realm_metrics(self, realm_id: str) -> dict[str, Any] | None:
