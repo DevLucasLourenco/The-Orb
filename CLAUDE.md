@@ -115,6 +115,7 @@ src/orb/
     _shared/      fábrica de eventos, JSONL incremental, SQLite ro, classificador de comandos
     claude/ codex/ hermes/ opencode/    mapping.py (tabelas) + leitores          (só Protocol e _shared)
   registry/       registro local (SQLite próprio: nomes, e depois Chronicle e XP) e preferências (só Core)
+  probes/         leituras do mundo real, só leitura: linhas de código (e depois git, CI)  (só Protocol)
   terminal_host/  ConPTY, linha de lançamento com valores do Orb, ambiente limpo (nada do domínio)
   gateway/        FastAPI + WebSocket, Observatório, Hub                         (todos, por interfaces)
 clients/web/      mundo 3D (Three.js 0.170 por importmap, xterm.js), sem build   (só mensagens do Gateway)

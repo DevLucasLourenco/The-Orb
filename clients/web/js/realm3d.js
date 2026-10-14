@@ -1,7 +1,7 @@
 // Um Realm: o prédio do projeto, com o Rooftop Room de vidro no teto e as 5 áreas do Environment.
 import * as THREE from "three";
 import { CSS2DObject } from "three/addons/renderers/CSS2DRenderer.js";
-import { el } from "./providers.js";
+import { el, metricsText } from "./providers.js";
 
 export const ROOF = 18;          // lado do prédio e do quartinho
 export const TOWER_H = 36;
@@ -164,8 +164,10 @@ export class RealmBuilding {
     this.activity = Math.min(1, summary.active / 3);
     this.waiting = summary.waiting;
     this.night = Boolean(realm.night);
+    const size = metricsText(realm);          // "48 mil linhas · Edifício": só aparece quando há contagem real
     this.labelEl.replaceChildren(
       el("div", "n", realm.name || realm.id),
+      ...(size ? [el("div", "c", size)] : []),
       (() => {
         const c = el("div", "c", `${summary.sessions} sessões · ${summary.active} ativas`);
         if (summary.waiting) c.append(" · ", el("span", "w", `${summary.waiting} esperando`));

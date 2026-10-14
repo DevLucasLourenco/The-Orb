@@ -152,6 +152,8 @@ class World:
         self.names = names
         self._recent_seconds = recent_seconds       # o prazo da sala (R28a): quem sai dele vai para o Histórico do realm
         self.hidden: frozenset[str] = frozenset()   # realms que o Lucas escondeu (R3c): saem do estado da cidade
+        self.metrics: dict[str, dict[str, Any]] = {}          # estado por realm (D-085): última contagem de linhas
+        self._realm_seen: deque[str] = deque(maxlen=256)      # ids recentes de eventos de realm (dedupe)
 
     def set_recent_seconds(self, seconds: float) -> None:
         """O prazo da sala mudou na tela de configurações (R28a, R29)."""
@@ -179,7 +181,7 @@ class World:
             return False
         ego_id = event["alter_ego"]
         if ego_id is None:
-            return False        # eventos de realm (probes) ainda não alteram o mundo
+            return self._apply_to_realm(event)
         egos = self.realms.setdefault(event["realm"], {})
         ego = egos.get(ego_id)
         if ego is None:
@@ -215,6 +217,26 @@ class World:
         if self.names is None:
             return None
         return self.names.name_for(ego_id, frozenset(ego.name for ego in room.values() if ego.name))
+
+    def _apply_to_realm(self, event: Event) -> bool:
+        """Evento de realm (`alter_ego` nulo, protocolo 0.3): só os Probes os emitem. A contagem mais nova vence;
+        uma que chega atrasada não volta no tempo."""
+        signal = event.get("signal") or {}
+        if signal.get("type") != "realm.metrics" or event["id"] in self._realm_seen:
+            return False
+        self._realm_seen.append(event["id"])
+        self.realms.setdefault(event["realm"], {})
+        current = self.metrics.get(event["realm"])
+        if current is None or event["ts"] >= current["counted_at"]:
+            self.metrics[event["realm"]] = {"loc": signal["loc"], "files": signal.get("files"), "counted_at": event["ts"]}
+        return True
+
+    def _realm_metrics(self, realm_id: str) -> dict[str, Any] | None:
+        """As linhas reais do projeto e a classe que as faixas fixas dão; sem contagem, nada (R12)."""
+        current = self.metrics.get(realm_id)
+        if current is None:
+            return None
+        return {**current, "class": rules.building_class(current["loc"])}
 
     @staticmethod
     def _track_seq(ego: AlterEgo, event: Event) -> None:
@@ -304,7 +326,8 @@ class World:
                 continue
             egos = [ego.snapshot(now, self._recent_seconds) for ego in self.realms[realm_id].values()]
             # "Noite" (D-059, R47): nenhuma sessão na sala. O cliente só desenha a sala do teto apagada.
-            realms.append({"id": realm_id, "alter_egos": egos, "night": not any(ego["in_room"] for ego in egos)})
+            realms.append({"id": realm_id, "alter_egos": egos, "night": not any(ego["in_room"] for ego in egos),
+                           "metrics": self._realm_metrics(realm_id)})
             for ego in (e for e in egos if e["in_room"]):          # Mankind conta a sala; o Histórico não entra
                 total_egos += 1
                 active_subs += ego["active_subagents"]

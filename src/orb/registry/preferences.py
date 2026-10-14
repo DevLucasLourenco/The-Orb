@@ -19,6 +19,8 @@ from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import Any
 
+from ..core.rules import LineFilter
+
 PREFERENCES_FILE = "preferences.json"
 VERSION = 1
 
@@ -49,9 +51,35 @@ def _number(setting: Setting, value: Any) -> float:
     return value
 
 
+_LINE_KEYS = frozenset({"include_markdown", "exclude"})
+_MAX_PATTERNS, _MAX_PATTERN_CHARS = 200, 200
+
+
+def _line_parts(value: Any) -> dict[str, Any]:
+    """Um pedaço do filtro de linhas (D-054, D-056): `include_markdown` (verdadeiro/falso) e/ou `exclude` (lista de padrões)."""
+    if not isinstance(value, Mapping):
+        raise ValueError("filtro de linhas: precisa ser um objeto")  # noqa: TRY004 - todo valor inválido é ValueError
+    unknown = set(value) - _LINE_KEYS
+    if unknown:
+        raise ValueError(f"filtro de linhas: opção desconhecida: {', '.join(sorted(map(str, unknown)))}")
+    parts: dict[str, Any] = {}
+    if "include_markdown" in value:
+        if not isinstance(value["include_markdown"], bool):
+            raise ValueError("filtro de linhas: contar .md é verdadeiro ou falso")
+        parts["include_markdown"] = value["include_markdown"]
+    if "exclude" in value:
+        patterns = value["exclude"]
+        if isinstance(patterns, (str, bytes)) or not isinstance(patterns, (list, tuple)):
+            raise ValueError("filtro de linhas: as exclusões são uma lista")
+        if len(patterns) > _MAX_PATTERNS or not all(isinstance(p, str) and 0 < len(p) <= _MAX_PATTERN_CHARS for p in patterns):
+            raise ValueError(f"filtro de linhas: até {_MAX_PATTERNS} padrões de texto, de 1 a {_MAX_PATTERN_CHARS} caracteres")
+        parts["exclude"] = tuple(patterns)
+    return parts
+
+
 def _paths(value: Any) -> tuple[str, ...]:
     if isinstance(value, (str, bytes)) or not isinstance(value, Iterable):
-        raise ValueError("realms escondidos: precisa ser uma lista")  # noqa: TRY004 - todo valor inválido é ValueError
+        raise ValueError("realms escondidos: precisa ser uma lista")  # noqa: TRY004
     return tuple(sorted({item for item in value if isinstance(item, str) and item}))
 
 
@@ -59,6 +87,8 @@ def _paths(value: Any) -> tuple[str, ...]:
 class Preferences:
     hidden_realms: tuple[str, ...] = ()          # projetos escondidos da cidade (R3c), pelo caminho normalizado
     options: Mapping[str, float] = field(default_factory=lambda: {s.key: s.default for s in SETTINGS})   # uma por linha de SETTINGS
+    lines: LineFilter = field(default_factory=LineFilter)   # filtro de tipos e exclusões da contagem de linhas, para todos os realms
+    realm_lines: Mapping[str, Mapping[str, Any]] = field(default_factory=dict)    # caminho do projeto -> só o que ele muda
     extra: Mapping[str, Any] = field(default_factory=dict)
 
     @property
@@ -69,12 +99,31 @@ class Preferences:
     def recent_seconds(self) -> float:
         return self.recent_days * 24 * 3600
 
+    def line_filter(self, path: str | None) -> LineFilter:
+        """O filtro de linhas do projeto em `path` (o caminho normalizado): o geral, com o que o realm mudou por cima."""
+        own = self.realm_lines.get(path, {}) if path is not None else {}
+        return LineFilter(include_markdown=own.get("include_markdown", self.lines.include_markdown),
+                          exclude=tuple(own.get("exclude", self.lines.exclude)))
+
     def updated(self, /, **changes: Any) -> Preferences:
         """Uma cópia com as mudanças; valor fora da faixa ou opção desconhecida levanta `ValueError`."""
         out = self
         for key, value in changes.items():
             if key == "hidden_realms":
                 out = replace(out, hidden_realms=_paths(value))
+            elif key == "lines":
+                out = replace(out, lines=replace(out.lines, **_line_parts(value)))
+            elif key == "realm_lines":
+                if not isinstance(value, Mapping):
+                    raise ValueError("filtro de linhas por realm: precisa ser um objeto")
+                merged = dict(out.realm_lines)
+                for path, own in value.items():
+                    parts = {} if own is None else _line_parts(own)
+                    if parts:
+                        merged[path] = parts
+                    else:
+                        merged.pop(path, None)               # sem nada de próprio: volta ao filtro geral
+                out = replace(out, realm_lines=merged)
             elif key in _BY_KEY:
                 out = replace(out, options={**out.options, key: _number(_BY_KEY[key], value)})
             else:
@@ -82,7 +131,10 @@ class Preferences:
         return out
 
     def as_dict(self) -> dict[str, Any]:
-        return {**self.extra, "version": VERSION, "hidden_realms": list(self.hidden_realms), **self.options}
+        return {**self.extra, "version": VERSION, "hidden_realms": list(self.hidden_realms), **self.options,
+                "lines": {"include_markdown": self.lines.include_markdown, "exclude": list(self.lines.exclude)},
+                "realm_lines": {path: {k: list(v) if k == "exclude" else v for k, v in own.items()}
+                                for path, own in self.realm_lines.items()}}
 
 
 class PreferencesFile:
@@ -106,10 +158,10 @@ class PreferencesFile:
         if not isinstance(raw, dict):
             self.error = "preferências ilegíveis, valem os padrões: o arquivo não é um objeto"
             return Preferences()
-        known = {"version", "hidden_realms", *_BY_KEY}
+        known = {"version", "hidden_realms", "lines", "realm_lines", *_BY_KEY}
         prefs = Preferences(extra={k: v for k, v in raw.items() if k not in known})
         ignored = []
-        for key in ("hidden_realms", *_BY_KEY):
+        for key in ("hidden_realms", "lines", "realm_lines", *_BY_KEY):
             if key in raw:
                 try:
                     prefs = prefs.updated(**{key: raw[key]})

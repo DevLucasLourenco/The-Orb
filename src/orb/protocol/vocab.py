@@ -5,7 +5,7 @@ um provider fica no evento nativo, intacto.
 """
 from __future__ import annotations
 
-PROTOCOL_VERSION = "0.2"
+PROTOCOL_VERSION = "0.3"
 
 # Atividades que um adapter pode declarar num sinal `activity`.
 ACTIVITIES: frozenset[str] = frozenset({
@@ -33,10 +33,16 @@ SIGNAL_FIELDS: dict[str, frozenset[str]] = {
     "error": frozenset({"message"}),
     "signal.lost": frozenset(),
     "signal.restored": frozenset(),
+    # 0.3 (R49, D-085): sinais de realm (`alter_ego` nulo), produzidos pelos Probes. Os outros sinais da 0.3
+    # (`command.result`, `realm.changes`, `account.limits`, `tasks.updated`) entram nos tickets deles.
+    "realm.metrics": frozenset({"loc"}),
 }
 
 # Sinais que só o sistema emite (nunca um adapter).
 SYSTEM_SIGNALS: frozenset[str] = frozenset({"signal.lost", "signal.restored"})
+
+# Sinais de realm: só Probes os emitem, e o evento tem `alter_ego: null`.
+REALM_SIGNALS: frozenset[str] = frozenset({"realm.metrics"})
 
 INNER_ROLES: frozenset[str] = frozenset({"thought", "narration", "tool", "result", "prompt", "system"})
 FIDELITIES: frozenset[str] = frozenset({"raw", "summary"})

@@ -55,7 +55,7 @@
 | **Gateway** | `src/orb/gateway/` | Autenticar, ligar terminal + adapter + Core por sessão, validar mensagens do cliente, distribuir por WebSocket; detectar os realms (`realms.py`) e decidir pasta → projeto (`projects.py`, a borda que conhece o disco) | todos, por interfaces | internals de adapters |
 | **Registro local** | `src/orb/registry/` | O arquivo SQLite do próprio Orb (R36): hoje a associação sessão → nome e a sacola de nomes; implementa a interface `NameSource` do Core; a pasta do Orb (`paths.py`) | Core (só a sacola e a interface) | Adapters, Gateway, providers |
 | **Clients** | `clients/` | Renderizar o mundo e o Inner World, enviar teclas | só as mensagens do Gateway | adapters, providers |
-| **Probes** *(futuro)* | `src/orb/probes/` | Fatos do mundo real (git, CI, LOC respeitando `.gitignore`) | Protocol | Core, adapters |
+| **Probes** | `src/orb/probes/` | Fatos do mundo real, só leitura. **Feito (ticket 09):** o contador de linhas (`lines.py`). Depois: git (alterações locais), CI | só o que o chamador passa (o filtro é `orb.core.rules.LineFilter`) | adapters, Gateway |
 
 ### Regras de dependência
 
@@ -265,9 +265,15 @@ ticket existir.
   Eventos e linhas de Inner World de um realm escondido não são distribuídos; os caminhos escondidos de projetos que o Orb não detecta
   agora são mantidos no arquivo; sem pasta do Orb a tela avisa que as mudanças valem só até fechar. Realm escondido (`World.set_hidden`)
   sai do snapshot (cidade e Mankind) e continua detectado e lido.
-- **Contador de linhas** (R19, D-053 a D-056): faz parte dos Probes; conta linhas não vazias dos
+- **Contador de linhas** (R19, D-053 a D-056; ticket 09): faz parte dos Probes; conta linhas não vazias dos
   arquivos acompanhados pelo git, sem os ignorados e sem os gerados da lista de exclusões, e
-  recalcula ao abrir e quando as alterações locais mudam (até 1×/min por realm). Somente leitura.
+  recalcula ao abrir e quando as alterações locais mudam (até 1×/min por realm). Somente leitura. **Como funciona:** a lista
+  vem do `git ls-files` (com `--no-optional-locks`, nunca grava no `.git`); link, pasta (submódulo), binário (UTF-16 com BOM conta como texto) e arquivo de mais de 2 MB
+  ficam de fora; o git roda sem as variáveis `GIT_DIR`/`GIT_WORK_TREE`/`GIT_INDEX_FILE`, com `core.fsmonitor=false` e sem entrada; sem repositório ou sem git, o realm fica **sem número** (nunca um zero) e a tela de configurações diz o motivo (`lines_note`). O Probe separa listar (barato), identificar
+  mudança (`fingerprint`: arquivos que contam, tamanho, data e filtro) e contar (lê os arquivos). `gateway/probes.py` (`LineScheduler`)
+  roda numa **thread própria, um realm por vez**, e devolve um evento `realm.metrics` que o Hub aplica no mundo (mudou o filtro: o realm
+  afetado é contado já, na frente dos outros). O Core guarda o estado por realm (`World.metrics`) e deriva a classe (`rules.building_class`).
+  O filtro (`include_markdown`, `exclude`) fica nas preferências, geral e por realm, e a tela de configurações o edita.
 
 ## 4. Robustez
 
@@ -317,6 +323,7 @@ ticket existir.
 | Classificador de comandos | Tabela de casos | `tests/test_commands.py` |
 | Terminal Host | PTY falsa (sempre) + terminal real (quando `pywinpty` e o CLI existem) | `tests/test_terminal_host.py` |
 | Gateway | Validação de mensagens; app com terminal falso | `tests/test_gateway.py` |
+| Probes e estado por realm | Pasta de projeto falsa → linhas (arquivos, filtro, binário, link, git real quando instalado); quando contar (relógio falso); realm.metrics → classe no mundo | `tests/test_probes.py`, `tests/test_line_scheduler.py`, `tests/test_realm_metrics.py` |
 | Preferências | Arquivo numa pasta temporária (grava, relê, opção desconhecida, arquivo ilegível); realm escondido no mundo e no Hub; tela pelo `/world` | `tests/test_preferences.py`, `tests/test_realms.py` |
 | Nomes e registro local | Sacola e livro de nomes sem disco; registro numa pasta temporária (reabrir, falhas de disco) | `tests/test_names.py`, `tests/test_registry.py` |
 | Detecção de realms (as leituras do mundo real) | Pastas de CLIs e de projetos falsas → realms; regras de pasta → projeto; índice de sessões | `tests/test_realms.py`, `tests/test_projects.py`, `tests/test_session_index.py` (arquivos falsos em `tests/fakes.py`) |
@@ -347,6 +354,7 @@ The Orb/
 │   ├── protocol/        events.py · vocab.py
 │   ├── core/            world.py · rules.py · names.py
 │   ├── registry/        store.py · preferences.py · paths.py
+│   ├── probes/          lines.py
 │   ├── adapters/
 │   │   ├── _shared/     base.py · commands.py · index.py · jsonl.py · sqlite.py
 │   │   ├── claude/      mapping.py · transcript.py · index.py · hooks.py
