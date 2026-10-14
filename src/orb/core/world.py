@@ -13,7 +13,7 @@ from datetime import datetime
 from typing import Any
 
 from ..protocol import Event, validate
-from . import rules
+from . import city, rules
 from .names import NameSource
 
 _TOKEN_FIELDS = ("input_tokens", "output_tokens", "cache_read_tokens", "reasoning_tokens")
@@ -154,6 +154,7 @@ class World:
         self.hidden: frozenset[str] = frozenset()   # realms que o Lucas escondeu (R3c): saem do estado da cidade
         self.metrics: dict[str, dict[str, Any]] = {}          # estado por realm (D-085): última contagem de linhas
         self._realm_seen: deque[str] = deque(maxlen=256)      # ids recentes de eventos de realm (dedupe)
+        self._city: tuple[tuple[str, ...], dict[str, Any]] = ((), city.plan(()))     # o traçado da última lista de realms
 
     def set_recent_seconds(self, seconds: float) -> None:
         """O prazo da sala mudou na tela de configurações (R28a, R29)."""
@@ -315,24 +316,33 @@ class World:
         return any(not ego.asleep(now) and ego.in_room(now, self._recent_seconds)
                    for egos in self.realms.values() for ego in egos.values())
 
+    def layout(self) -> dict[str, Any]:
+        """O traçado da cidade (R32, VISUAL.md §7): de **todos** os realms conhecidos, também os escondidos, para o
+        realm escondido deixar o lote vago e os vizinhos não andarem. Só muda quando a lista de realms muda."""
+        ids = tuple(sorted(self.realms))
+        if self._city[0] != ids:
+            self._city = (ids, city.plan(ids))
+        return self._city[1]
+
     def snapshot(self, now: datetime | None = None) -> dict[str, Any]:
         """O estado do mundo. `now` (com fuso) é a hora de quem pede: com ela o mundo deriva o que
         depende do tempo (dormindo, sem sinal; R47). Sem `now`, nada que dependa do tempo é afirmado."""
         _require_aware(now)
         realms = []
         total_egos = active_subs = waiting = 0
+        plan = self.layout()
         for realm_id in sorted(self.realms):
             if realm_id in self.hidden:
                 continue
             egos = [ego.snapshot(now, self._recent_seconds) for ego in self.realms[realm_id].values()]
             # "Noite" (D-059, R47): nenhuma sessão na sala. O cliente só desenha a sala do teto apagada.
             realms.append({"id": realm_id, "alter_egos": egos, "night": not any(ego["in_room"] for ego in egos),
-                           "metrics": self._realm_metrics(realm_id)})
+                           "metrics": self._realm_metrics(realm_id), "place": plan["places"][realm_id]})
             for ego in (e for e in egos if e["in_room"]):          # Mankind conta a sala; o Histórico não entra
                 total_egos += 1
                 active_subs += ego["active_subagents"]
                 waiting += len(ego["waiting"])
-        return {"realms": realms, "hidden_realms": sorted(self.hidden),
+        return {"realms": realms, "city": plan, "hidden_realms": sorted(self.hidden),
                 "mankind": {"alter_egos": total_egos, "active_subagents": active_subs, "waiting": waiting}}
 
     def time_key(self, now: datetime) -> tuple:

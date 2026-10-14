@@ -50,6 +50,14 @@ BUILDING_CLASSES: tuple[tuple[str, int], ...] = (
     ("Casa", 0), ("Sobrado", 1_000), ("Prédio", 5_000), ("Edifício", 20_000), ("Torre", 100_000), ("Arranha-céu", 500_000),
 )
 
+# O traçado da cidade (R32, D-047, VISUAL.md §7), em unidades do mundo. Mudar o desenho da cidade é mudar esta tabela.
+CITY_LOT = 46            # lado de um lote: o prédio (base de 24) cabe com folga mesmo no maior deslocamento e giro
+CITY_PAD = 14            # calçada do bairro, em volta dos lotes; no canto fica a placa com a letra
+CITY_STREET = 18         # largura da rua entre dois bairros (cenário, R12a)
+CITY_JITTER = 6          # deslocamento máximo do prédio dentro do lote, em cada eixo
+CITY_TURN = 0.12         # giro máximo do prédio, em radianos (cerca de 7 graus)
+CITY_ASPECT = 16 / 9     # a cidade é mais larga que alta, como a tela
+
 # A lista fixa e visível de arquivos gerados que não contam como linhas (D-054), além do `.gitignore`. Um padrão sem `/`
 # vale para o nome em qualquer pasta; com `/`, para o caminho a partir da raiz do projeto. O Lucas a edita nas configurações.
 GENERATED_FILE_PATTERNS: tuple[str, ...] = (
