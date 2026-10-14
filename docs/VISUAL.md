@@ -205,7 +205,7 @@ com um ar **"aleatório", mas rastreável**, posicionados por uma **estrutura l�
 - **O que é grande se destaca de verdade**, com uma **delimitação** por faixas de milhares de linhas
   e **algo específico** que mostre a faixa (D-051).
 
-**Escala (definição delegada ao Claude, D-052; vale até o Lucas revisar):**
+**Escala (definição delegada ao Claude, D-052; vale até o Lucas revisar). Fronteiras (D-151):** cada faixa **começa** no número da tabela (1.000 já é Sobrado; 500.000 já é Arranha-céu); "até" e "a" abaixo não incluem o limite de cima.
 
 Referência: o *Software World*, uma das primeiras "cidades de software", usa uma escala absoluta (um
 andar a cada 10 linhas), sem comparar um prédio com outro. Aqui a escala também é absoluta, mas em
