@@ -20,6 +20,8 @@ from .vocab import (
 MAX_BODY_BYTES = 16 * 1024    # native.body serializado
 MAX_STRING = 4 * 1024         # cada string dentro de native.body
 MAX_INNER_TEXT = 4000         # inner.text, em caracteres
+MAX_FOLDERS = 64              # realm.metrics: pastas de primeiro nível listadas (as maiores; o resto fica no total)
+MAX_FOLDER_NAME = 255         # realm.metrics: tamanho do nome de uma pasta
 _ELLIPSIS = "…"
 
 Event = dict[str, Any]
@@ -150,4 +152,25 @@ def _validate_signal(signal: Any, event: dict[str, Any]) -> str | None:
         files = signal.get("files")
         if files is not None and (isinstance(files, bool) or not isinstance(files, int) or files < 0):
             return "realm.metrics: files deve ser um inteiro >= 0"
+        return _validate_split(signal, loc)
+    return None
+
+
+def _validate_split(signal: dict[str, Any], loc: int) -> str | None:
+    """`realm.metrics`: as linhas da raiz (`root`) e de cada pasta de primeiro nível (`folders`), que juntas não passam de `loc`."""
+    root = signal.get("root")
+    if root is not None and (isinstance(root, bool) or not isinstance(root, int) or root < 0):
+        return "realm.metrics: root deve ser um inteiro >= 0"
+    folders = signal.get("folders")
+    if folders is None:
+        return None
+    if not isinstance(folders, dict) or len(folders) > MAX_FOLDERS:
+        return f"realm.metrics: folders deve ser um objeto de até {MAX_FOLDERS} pastas"
+    for name, count in folders.items():
+        if not isinstance(name, str) or not name or len(name) > MAX_FOLDER_NAME or "/" in name or "\\" in name:
+            return f"realm.metrics: o nome de cada pasta é um texto de 1 a {MAX_FOLDER_NAME} caracteres, sem barra"
+        if isinstance(count, bool) or not isinstance(count, int) or count < 0:
+            return "realm.metrics: as linhas de cada pasta são um inteiro >= 0"
+    if (root or 0) + sum(folders.values()) > loc:
+        return "realm.metrics: a raiz e as pastas somam mais que loc"
     return None

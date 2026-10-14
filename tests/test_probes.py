@@ -123,3 +123,11 @@ def test_utf16_files_with_a_byte_order_mark_are_text_and_count(tmp_path):
 def test_the_comparison_of_patterns_does_not_depend_on_the_operating_system(tmp_path):
     root = project(tmp_path, {"A.LOCK": "x\n", "b.py": "y\n"})
     assert lines(root, ["A.LOCK", "b.py"], LineFilter(exclude=("*.lock",))) == 2         # maiúsculas contam como diferentes em qualquer sistema
+
+
+def test_the_count_also_splits_the_lines_between_the_root_and_each_first_level_folder(tmp_path):
+    names = ["a.py", "src/b.py", "src/deep/c.py", "tests/t.py", "blob.bin"]
+    root = project(tmp_path, {"a.py": "1\n2\n", "src/b.py": "x\n", "src/deep/c.py": "y\nz\n", "tests/t.py": "q\n", "blob.bin": b"\x00\x01"})
+    result = count_lines(root, list_countable(root, LineFilter(), tracked(*names)))
+    assert result.loc == 6 and result.root == 2 and result.folders == {"src": 3, "tests": 1}      # o fundo da pasta soma na de 1º nível
+    assert result.root + sum(result.folders.values()) == result.loc                               # nada se perde na divisão

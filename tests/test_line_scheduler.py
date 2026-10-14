@@ -39,7 +39,7 @@ def test_a_realm_is_counted_when_the_orb_opens_and_the_event_is_a_valid_realm_ev
     assert scheduler.run_once() == 1
     [event] = scheduler.drain()
     assert validate(event) is None and event["alter_ego"] is None and event["realm"] == "proj"
-    assert event["signal"] == {"type": "realm.metrics", "loc": 2, "files": 1}
+    assert event["signal"] == {"type": "realm.metrics", "loc": 2, "files": 1, "root": 2, "folders": {}}
     assert scheduler.drain() == []                                              # entregue uma vez só
 
 
@@ -251,3 +251,18 @@ def test_refreshing_two_realms_in_a_row_keeps_both_in_front(tmp_path):
     scheduler.refresh(["c"])
     scheduler.refresh(["b"])
     assert scheduler._priority == ["c", "b"]
+
+
+def test_the_event_carries_only_the_biggest_folders_and_the_rest_stays_in_the_total(tmp_path):
+    names = ["a.py"] + [f"p{n:03d}/f.py" for n in range(80)]
+    scheduler, _, root, _ = make(tmp_path, names=names)
+    for n in range(80):
+        folder = root / f"p{n:03d}"
+        folder.mkdir()
+        (folder / "f.py").write_text("x\n" * (n + 1), encoding="utf-8")
+    scheduler.run_once()
+    [event] = scheduler.drain()
+    folders = event["signal"]["folders"]
+    assert validate(event) is None and len(folders) == 64
+    assert "p079" in folders and "p000" not in folders                           # ficam as maiores
+    assert event["signal"]["root"] + sum(folders.values()) < event["signal"]["loc"]   # o resto vai para "demais pastas" pelo mundo

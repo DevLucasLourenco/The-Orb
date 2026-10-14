@@ -107,3 +107,43 @@ def test_a_hidden_realm_keeps_its_metrics_for_when_it_is_shown_again():
     assert world.snapshot(T0)["realms"] == []
     world.set_hidden(set())
     assert realm_of(world)["metrics"]["class"] == "Sobrado"
+
+
+# --- as pastas de primeiro nível e a altura (ticket 10) -------------------------------------------------------
+
+def test_the_event_can_carry_the_lines_of_the_root_and_of_each_first_level_folder():
+    event = realm_metrics_event(100, root=10, folders={"src": 60, "docs": 20})
+    assert validate(event) is None
+    assert validate(realm_metrics_event(100, root=0, folders={})) is None
+
+
+def test_the_split_by_folder_must_be_well_formed_and_cannot_exceed_the_total():
+    bad = [{"root": -1}, {"root": 1.5}, {"root": True}, {"folders": [1]}, {"folders": {"": 3}}, {"folders": {"a": -1}},
+           {"folders": {"a": 1.5}}, {"folders": {"a": True}}, {"folders": {7: 3}}, {"folders": {"x" * 300: 1}}, {"folders": {"a/b": 1}}, {"folders": {"a\\b": 1}},
+           {"folders": {f"p{n}": 1 for n in range(65)}}, {"root": 60, "folders": {"a": 50}}]        # passa do total (100)
+    for extra in bad:
+        assert validate(realm_metrics_event(100, **extra)) is not None, extra
+    assert validate(realm_metrics_event(100, folders={f"p{n}": 1 for n in range(64)})) is None
+
+
+def test_the_world_derives_the_height_trim_and_floors_from_the_lines_and_the_folders():
+    world = World()
+    world.apply(realm_metrics_event(48_000, files=312, root=2_000, folders={"src": 40_000, "tests": 6_000}))
+    metrics = realm_of(world)["metrics"]
+    assert (metrics["class"], metrics["levels"], metrics["bands"], metrics["antenna"]) == ("Edifício", 14, 3, False)
+    assert [(f["kind"], f["name"]) for f in metrics["floors"]] == [("ground", None), ("folder", "src"), ("folder", "tests")]
+    assert sum(f["levels"] for f in metrics["floors"]) == metrics["levels"] and sum(f["loc"] for f in metrics["floors"]) == 48_000
+
+
+def test_a_count_without_the_folder_split_has_a_height_but_no_floors_instead_of_invented_ones():
+    world = World()
+    world.apply(realm_metrics_event(800))
+    metrics = realm_of(world)["metrics"]
+    assert (metrics["class"], metrics["levels"], metrics["bands"], metrics["floors"]) == ("Casa", 1, 0, None)
+
+
+def test_the_skyscraper_has_five_bands_and_an_antenna():
+    world = World()
+    world.apply(realm_metrics_event(900_000))
+    metrics = realm_of(world)["metrics"]
+    assert (metrics["class"], metrics["bands"], metrics["antenna"]) == ("Arranha-céu", 5, True)

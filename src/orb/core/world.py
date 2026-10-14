@@ -13,7 +13,7 @@ from datetime import datetime
 from typing import Any
 
 from ..protocol import Event, validate
-from . import city, rules
+from . import building, city, rules
 from .names import NameSource
 
 _TOKEN_FIELDS = ("input_tokens", "output_tokens", "cache_read_tokens", "reasoning_tokens")
@@ -229,7 +229,8 @@ class World:
         self.realms.setdefault(event["realm"], {})
         current = self.metrics.get(event["realm"])
         if current is None or event["ts"] >= current["counted_at"]:
-            self.metrics[event["realm"]] = {"loc": signal["loc"], "files": signal.get("files"), "counted_at": event["ts"]}
+            self.metrics[event["realm"]] = {"loc": signal["loc"], "files": signal.get("files"), "counted_at": event["ts"],
+                                            "root": signal.get("root"), "folders": signal.get("folders")}
         return True
 
     def _realm_metrics(self, realm_id: str) -> dict[str, Any] | None:
@@ -237,7 +238,12 @@ class World:
         current = self.metrics.get(realm_id)
         if current is None:
             return None
-        return {**current, "class": rules.building_class(current["loc"])}
+        name, loc = rules.building_class(current["loc"]), current["loc"]
+        height = building.levels(loc)
+        split = current["folders"] is not None or current["root"] is not None      # sem a divisão por pasta, não há andares a inventar
+        floors = building.floors(height=height, loc=loc, root=current["root"] or 0, folders=current["folders"] or {}) if split else None
+        return {"loc": loc, "files": current["files"], "counted_at": current["counted_at"], "class": name, "levels": height,
+                "bands": rules.BUILDING_TRIM[name], "antenna": name in rules.ANTENNA_CLASSES, "floors": floors}
 
     @staticmethod
     def _track_seq(ego: AlterEgo, event: Event) -> None:

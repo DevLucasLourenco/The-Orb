@@ -49,7 +49,7 @@
 | Módulo | Pasta | Responsabilidade | Conhece | **Não** conhece |
 |---|---|---|---|---|
 | **Protocol** | `src/orb/protocol/` | Envelope, vocabulário fechado (atividades, sinais), limites de tamanho, validação | nada | todos os outros |
-| **Core** | `src/orb/core/` | O mundo: aplica eventos, deriva a atividade de cada personagem, Teams, pendências, Energy; snapshot; a sacola e o livro de nomes históricos (`names.py`); o traçado da cidade (`city.py`) | Protocol | Adapters, Gateway, disco, rede, relógio |
+| **Core** | `src/orb/core/` | O mundo: aplica eventos, deriva a atividade de cada personagem, Teams, pendências, Energy; snapshot; a sacola e o livro de nomes históricos (`names.py`); o traçado da cidade (`city.py`) e a altura e os andares dos prédios (`building.py`) | Protocol | Adapters, Gateway, disco, rede, relógio |
 | **Adapters** (claude, codex, hermes, opencode) | `src/orb/adapters/<provider>/` | Ler a fonte nativa do provider e produzir eventos (nativo + sinal + inner) pelo Mapa do provider | Protocol | Core, Gateway, outros adapters |
 | **Terminal Host** | `src/orb/terminal_host/` | Abrir o terminal real (ConPTY), chamar o CLI (lista fixa), transportar bytes, limpar o ambiente herdado | nada do domínio | Core, adapters |
 | **Gateway** | `src/orb/gateway/` | Autenticar, ligar terminal + adapter + Core por sessão, validar mensagens do cliente, distribuir por WebSocket; detectar os realms (`realms.py`) e decidir pasta → projeto (`projects.py`, a borda que conhece o disco) | todos, por interfaces | internals de adapters |
@@ -326,6 +326,7 @@ ticket existir.
 | Probes e estado por realm | Pasta de projeto falsa → linhas (arquivos, filtro, binário, link, git real quando instalado); quando contar (relógio falso); realm.metrics → classe no mundo | `tests/test_probes.py`, `tests/test_line_scheduler.py`, `tests/test_realm_metrics.py` |
 | Preferências | Arquivo numa pasta temporária (grava, relê, opção desconhecida, arquivo ilegível); realm escondido no mundo e no Hub; tela pelo `/world` | `tests/test_preferences.py`, `tests/test_realms.py` |
 | Cidade | Lista de realms → bairros, lotes, deslocamento e giro; estável ao incluir e ao esconder; no mundo e no Hub | `tests/test_city.py`, `tests/test_realms.py` |
+| Altura e andares | Linhas e pastas → níveis por classe, cintas, antena e andares (térreo, pastas, "demais pastas"); evento do Probe com a divisão por pasta | `tests/test_building.py`, `tests/test_realm_metrics.py`, `tests/test_probes.py` |
 | Nomes e registro local | Sacola e livro de nomes sem disco; registro numa pasta temporária (reabrir, falhas de disco) | `tests/test_names.py`, `tests/test_registry.py` |
 | Detecção de realms (as leituras do mundo real) | Pastas de CLIs e de projetos falsas → realms; regras de pasta → projeto; índice de sessões | `tests/test_realms.py`, `tests/test_projects.py`, `tests/test_session_index.py` (arquivos falsos em `tests/fakes.py`) |
 

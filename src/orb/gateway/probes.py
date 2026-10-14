@@ -17,13 +17,20 @@ from typing import Any
 
 from ..core.rules import LineFilter
 from ..probes import count_lines, fingerprint, git_tracked_files, list_countable
-from ..protocol import Event, make_event
+from ..protocol import MAX_FOLDERS, Event, make_event
 from .realms import Realm
 
 __all__ = ["LineScheduler", "Realm"]
 
 MIN_INTERVAL_SECONDS = 60.0      # D-055: no máximo uma contagem por minuto por realm
 IDLE_SECONDS = 1.0               # a thread olha de novo depois disto quando nada estava na hora
+
+
+def _biggest(folders: dict[str, int]) -> dict[str, int]:
+    """As pastas de primeiro nível que vão no evento: as `MAX_FOLDERS` maiores (no empate, pelo nome). O que sobra fica no total,
+    e o mundo o põe em "demais pastas"."""
+    ranked = sorted(((name, count) for name, count in folders.items() if count > 0), key=lambda item: (-item[1], item[0]))
+    return dict(ranked[:MAX_FOLDERS])
 
 
 class LineScheduler:
@@ -117,7 +124,8 @@ class LineScheduler:
         return make_event(id=f"{realm.id}:lines:{ts}", ts=ts,
                           provider=None, source="probe/lines", realm=realm.id, alter_ego=None, agent=None, seq=self._seq,
                           kind="realm/lines", body={"loc": result.loc, "files": result.files},
-                          signal={"type": "realm.metrics", "loc": result.loc, "files": result.files})
+                          signal={"type": "realm.metrics", "loc": result.loc, "files": result.files,
+                                  "root": result.root, "folders": _biggest(result.folders)})
 
     def drain(self) -> list[Event]:
         """Os eventos prontos desde a última chamada."""

@@ -29,10 +29,10 @@ Situação: ✅ como está · ❌ precisa mudar · ❓ precisa de decisão.
 | Id | Elemento | Tipo | Significado / fonte | Situação |
 |---|---|---|---|---|
 | V-REALM-1 | Existir um prédio | Dado | Todo projeto que algum provider já registrou (R3, R3a), menos os escondidos pelo Lucas na lista (R3c) e as sessões fora de projeto (R3b) | ✅ Detectado pelo índice de sessões (ticket 03); falta esconder pela lista (R3c) |
-| V-REALM-2 | **Altura** | Dado | Linhas de código do projeto, ignorando o `.gitignore` (R19), em **escala absoluta por classes** (Casa a Arranha-céu), com saltos entre as classes (§8). Não depende dos outros prédios | ⚠️ Ticket 09: a **classe** e o número real de linhas já vêm do mundo e aparecem no rótulo e no overview ("48 mil linhas · Edifício"); a altura ainda é igual para todos (ticket 10) |
-| V-REALM-12 | **Altura de cada andar** | Dado | Parcela das linhas do projeto que está naquela pasta de 1º nível; pastas pequenas demais se juntam em "demais pastas" (§8) | ⏳ |
-| V-REALM-13 | **Cintas de luz neutra no topo** (e antena no Arranha-céu) | Legenda | A classe do prédio por faixa de linhas: uma cinta a mais por classe (§8) | ⏳ |
-| V-REALM-15 | **Forma arquitetônica** do prédio | Legenda | A classe do prédio (Casa a Arranha-céu), cada uma com a sua forma (§8, R41) | ❌ Hoje todos têm a mesma forma |
+| V-REALM-2 | **Altura** | Dado | Linhas de código do projeto, ignorando o `.gitignore` (R19), em **escala absoluta por classes** (Casa a Arranha-céu), com saltos entre as classes (§8). Não depende dos outros prédios | ✅ Ticket 10: o mundo calcula a **altura em níveis** (`building.levels`) e o cliente a desenha; o número de linhas e a classe aparecem no rótulo e no overview (ticket 09). Realm **sem contagem** vira só uma laje lisa, sem janelas, classe nem marcas (nada inventado) |
+| V-REALM-12 | **Altura de cada andar** | Dado | Parcela das linhas do projeto que está naquela pasta de 1º nível; pastas pequenas demais se juntam em "demais pastas" (§8) | ⚠️ Ticket 10: o **mundo** calcula os andares por pasta (`building.floors`, no snapshot em `metrics.floors`); o cliente ainda **não os desenha**: eles passam a valer nas janelas (ticket 11) |
+| V-REALM-13 | **Cintas de luz neutra no topo** (e antena no Arranha-céu) | Legenda | A classe do prédio por faixa de linhas: uma cinta a mais por classe (§8) | ✅ Ticket 10: faixas finas de luz branca sob a laje do teto; o Arranha-céu também tem a coroa e a antena |
+| V-REALM-15 | **Forma arquitetônica** do prédio | Legenda | A classe do prédio (Casa a Arranha-céu), cada uma com a sua forma (§8, R41) | ✅ Ticket 10: as 6 formas, neutras, com o Rooftop Room sempre do mesmo tamanho no topo |
 | V-REALM-16 | **Céu sobre o prédio (Weather)**: limpo, chuva ou nada | Dado | Resultado dos últimos testes rodados nas sessões do realm: passaram = céu limpo; falharam = chuva; sem dado = nada (R42). Cores neutras (cinza, branco), fora do orçamento de cores | ⏳ |
 | V-REALM-3 | **Janelas: quais acendem e de que cor** | Dado | **Hoje: padrão aleatório**, sorteado pelo nome do realm, com cores quentes/frias sem significado. **Decidido:** andares = pastas de 1º nível (R20); as janelas mostram as **alterações locais** (R20b); **cada janela acesa = x% das alterações, e nenhuma alteração é dividida** (R20d, §6); **a cor é a do tipo de alteração no git**, paleta do VS Code (R20a, §5). A janela é só **acesa ou apagada**, sem esmaecer (D-043) | ❌ Viola R12 |
 | V-REALM-4 | ~~Brilho geral das janelas~~ | — | ~~Quantidade de sessões ativas no realm~~ **Revisto (D-115):** a janela acesa tem brilho fixo; a atividade aparece na sala e no rótulo | ❌ Retirar |
@@ -261,6 +261,23 @@ Fontes: [Wettel e Lanza, VISSOFT 2007 (PDF)](https://www.si.usi.ch/assets/public
    **Rooftop Room tem sempre o mesmo tamanho** no topo; os recuos acontecem abaixo dele, e as
    classes maiores têm a base mais larga. As janelas (§6) acompanham as fachadas de cada forma.
 
+   **Como ficou (ticket 10; os números estão em `rules.py` e em `SHAPES`, no `realm3d.js`):** o **nível** mede 3 unidades. Os blocos de cada
+   forma, de baixo para cima, com a largura e a fração da altura em que terminam (o último é sempre 18, a largura do Rooftop Room):
+
+   | Classe | Níveis | Blocos (largura → até) | Extras |
+   |---|---|---|---|
+   | Casa | 1 | 18 → 100% | — |
+   | Sobrado | 2 a 3 | 26 → 40%, 22 → 100% | o corpo (22) é mais largo que a sala (18): o terraço em volta dela |
+   | Prédio | 5 a 8 | 20 → 100% | marquise de 26 sobre o térreo |
+   | Edifício | 11 a 16 | 26 → 65%, 20 → 100% | um recuo |
+   | Torre | 20 a 28 | 30 → 12%, 22 → 60%, 20 → 85%, 18 → 100% | pódio e dois recuos |
+   | Arranha-céu | 34 a 48 | 30 → 8%, 26 → 40%, 22 → 65%, 20 → 85%, 18 → 100% | coroa de 21, antena de 22 e ponta branca |
+
+   A altura dentro da classe vem do logaritmo das linhas, arredondado; o Arranha-céu sobe **4 níveis a cada vez que as linhas dobram**, até
+   **48** (o teto). Cada bloco tem pelo menos um nível. Um prédio sem contagem de linhas é só uma **laje lisa** de 18 de lado e 1 unidade de altura, sem
+   janelas nem cintas (não tem classe para mostrar e não se parece com uma Casa). A maior largura (30) cabe no lote (§7). A fachada ainda usa a textura decorativa de antes, com uma
+   fileira por nível; as janelas de verdade chegam no ticket 11.
+
 2. **Delimitação visível.** As faixas de altura **não se encostam**: entre uma classe e a próxima há
    um salto (3 → 5, 8 → 11, 16 → 20, 28 → 34 níveis). Dois prédios de classes vizinhas nunca ficam
    com alturas parecidas.
@@ -271,12 +288,18 @@ Fontes: [Wettel e Lanza, VISSOFT 2007 (PDF)](https://www.si.usi.ch/assets/public
 4. **A marca específica de cada classe:** **cintas de luz neutra** (branca, sem cor de significado,
    R20c) em volta do topo, logo abaixo do Rooftop Room: uma a mais a cada classe; o Arranha-céu
    ganha também uma antena. Dá para ler a classe de longe, pela silhueta.
+   **Como ficou:** as cintas são faixas finas e brancas (um pouco mais largas que o bloco do topo) logo abaixo da laje do teto.
 5. **No rótulo e no overview (feito no ticket 09):** o número real de linhas e o nome da classe (ex.:
    "`trisafe-enhanced` · 48 mil linhas · Edifício").
 6. **Andares (R20) dentro da altura.** Cada pasta de 1º nível é um andar, com altura proporcional à
    sua parcela das linhas do projeto; os arquivos da raiz formam o **térreo**. Cada andar tem pelo
    menos um nível. Se o prédio tiver mais pastas do que níveis (ex.: uma Casa com várias pastas),
    as pastas menores se juntam num andar **"demais pastas"**, e as alterações delas acendem ali (§6).
+   **Como ficou (ticket 10, `building.floors`):** de baixo para cima, o térreo, as pastas em ordem alfabética e, no topo, "demais pastas". Os níveis
+   se repartem na proporção das linhas (um para cada andar e o resto pelo maior resto; no empate, o de baixo). Quando faltam níveis, ficam as
+   pastas maiores (no empate, pelo nome) e as outras vão para "demais pastas"; o térreo nunca se junta (num prédio de 1 nível o andar único é o próprio térreo). As linhas que o Probe não listou por
+   pasta (ele manda só as 64 maiores) entram em "demais pastas". Pasta sem linhas não é andar; uma Casa de 1 nível é um andar só (o térreo). Um realm
+   cuja contagem veio sem a divisão por pasta não tem andares (nada é inventado).
 7. **Contagem (D-053, D-054, D-056):** linhas **não vazias** dos arquivos que o git acompanha
    (comentários contam), ignorando o que o `.gitignore` ignora e uma **lista fixa e visível de
    arquivos gerados** (lockfiles, `*.min.js`, saídas de build versionadas). Padrão: só código, **sem
