@@ -43,7 +43,7 @@ Implementado em 2026-10-14 (branch `ticket/10-formas-por-classe-e-andares`). Só
   e desce com a altura.
 - **Testes:** 27 em `tests/test_building.py` (níveis por classe, saltos, logaritmo, andares, junção em "demais pastas") e os novos de `test_realm_metrics.py`, `test_probes.py` e
   `test_line_scheduler.py`.
-- **Decisões a confirmar:** Q-T10-1 a Q-T10-6 em `docs/DECISIONS.md` (provisórias, P2).
+- **Decisões:** o Lucas confirmou Q-T10-1 a Q-T10-6 em 2026-10-14 (D-166 a D-171 em `docs/DECISIONS.md`). **Aguarda:** o envio do PR.
 - **Dados reais (pasta do Orb temporária; só estrutura):** 18 dos 23 realms contados, com as seis classes presentes (7 Sobrados, 4 Prédios, 3 Torres, 2 Edifícios, 1 Casa e 1 Arranha-céu),
   de 1 a 36 níveis e de 1 a 18 andares; a soma dos níveis dos andares é a altura do prédio em todos. Na tela: prédios de alturas e formas diferentes e a sala do teto igual em todos; o
   voo para um realm (atalho `2`) e o Esc funcionaram; console sem erros. As seis formas também foram conferidas numa página temporária com métricas sintéticas (não versionada).
