@@ -1,6 +1,7 @@
 """Protocol: o contrato de eventos do The Orb (docs/PROTOCOL.md). Não depende de nenhum outro módulo."""
 from .events import (
                      MAX_BODY_BYTES,
+                     MAX_FOLDERS,
                      MAX_INNER_TEXT,
                      MAX_STRING,
                      Event,
@@ -23,6 +24,7 @@ __all__ = [
                      "ALL_STATES",
                      "DERIVED_STATES",
                      "MAX_BODY_BYTES",
+                     "MAX_FOLDERS",
                      "MAX_INNER_TEXT",
                      "MAX_STRING",
                      "PROTOCOL_VERSION",

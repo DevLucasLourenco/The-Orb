@@ -104,7 +104,7 @@ Vocabulário **fechado**. Um tipo novo exige nova versão do protocolo.
 
 | `type` | Campos | Efeito no mundo |
 |---|---|---|
-| `realm.metrics` | `loc` (inteiro ≥ 0), `files?` | **0.3, evento de realm** (`alter_ego: null`, só Probes): as linhas não vazias de código do projeto. O mundo guarda por realm e deriva a classe do prédio pelas faixas fixas (`rules.BUILDING_CLASSES`); sem evento, o realm não tem número |
+| `realm.metrics` | `loc` (inteiro ≥ 0), `files?`, `root?`, `folders?` | **0.3, evento de realm** (`alter_ego: null`, só Probes): as linhas não vazias de código do projeto. `root` são as linhas dos arquivos da raiz e `folders` (objeto de até 64 pastas, nome → linhas) as de cada pasta de primeiro nível, as maiores; `root` mais as pastas não passam de `loc`. O mundo guarda por realm e deriva a classe, a altura em níveis, as cintas e os andares do prédio (`rules.BUILDING_CLASSES`, `core/building.py`); sem evento, o realm não tem número |
 | `session.started` | `cwd?`, `model?`, `title?` | O Alter Ego aparece no Rooftop Room |
 | `session.ended` | `reason?` | A sessão terminou; o Alter Ego **não é excluído**: fica na sala enquanto for recente e depois no Histórico do realm (R28) |
 | `session.updated` | `title?`, `model?`, `cwd?` | A identidade da sessão mudou (título, modelo); o estado não muda |
@@ -254,7 +254,7 @@ No canal do mundo (`/world`), o cliente pode pedir o histórico de uma sessão:
   | `type` | Campos (proposta para o ticket) | Efeito |
   |---|---|---|
   | `command.result` | `ok`, `exit_code?`, `activity?` | Resultado de um comando (base do Weather e da XP). `exit_code` só quando o provider informa: Codex, Hermes e opencode sim; Claude não (só `is_error`/`interrupted`) |
-  | `realm.metrics` | `loc`, `class`, `floors?` | Linhas de código e classe do prédio (Probe de LOC, R19) |
+  | `realm.metrics` | `loc`, `files?`, `root?`, `folders?` | Linhas de código e a divisão por pasta; a classe e os andares o mundo deriva (R19). **Entregue nos tickets 09 e 10** |
   | `realm.changes` | `changes[]` (caminho, tipo, linhas) | Alterações locais do git (Probe, R20b) |
   | `account.limits` | `provider`, `limits` | Limites de uso da conta, quando o provider informa (Energy, R43) |
   | `tasks.updated` | `done`, `total`, `items?` | A lista de tarefas que o CLI mantém (D-093, R50); só quando o provider grava |

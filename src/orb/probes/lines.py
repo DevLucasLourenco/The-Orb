@@ -17,7 +17,7 @@ import os
 import stat as _stat
 import subprocess
 from collections.abc import Callable
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Protocol
 
@@ -44,6 +44,8 @@ class Entry:
 class Count:
     loc: int            # linhas não vazias
     files: int          # arquivos de texto que entraram na conta
+    root: int = 0       # destas, as dos arquivos que estão na raiz do projeto (o térreo do prédio)
+    folders: dict[str, int] = field(default_factory=dict)      # e as de cada pasta de primeiro nível (o fundo soma na pasta)
 
 
 def _git_env() -> dict[str, str]:
@@ -138,10 +140,18 @@ def handle_text(path: Path):
 
 
 def count_lines(root: Path, entries: list[Entry]) -> Count:
-    loc = files = 0
+    """Conta as linhas e as reparte entre a raiz e as pastas de primeiro nível: `root + soma(folders) == loc`."""
+    loc = files = at_root = 0
+    folders: dict[str, int] = {}
     for entry in entries:
         counted = _count_file(root / entry.rel)
-        if counted is not None:
-            loc += counted
-            files += 1
-    return Count(loc, files)
+        if counted is None:
+            continue
+        loc += counted
+        files += 1
+        top, slash, _ = entry.rel.partition("/")
+        if slash:
+            folders[top] = folders.get(top, 0) + counted
+        else:
+            at_root += counted
+    return Count(loc, files, at_root, folders)

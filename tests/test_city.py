@@ -92,8 +92,8 @@ def test_the_seed_does_not_depend_on_the_process(monkeypatch):
 
 
 def test_no_two_buildings_overlap_at_the_extreme_offsets():
-    # Prédio de 24 de lado (a base) com o maior deslocamento e giro ainda cabe no lote de 46.
-    half = 12 + rules.CITY_JITTER + 12 * rules.CITY_TURN
+    # O prédio mais largo (30 de lado, o pódio da Torre e do Arranha-céu) com o maior deslocamento e giro ainda cabe no lote de 46.
+    half = rules.CITY_MAX_BASE / 2 + rules.CITY_JITTER + rules.CITY_MAX_BASE / 2 * rules.CITY_TURN
     assert 2 * half < rules.CITY_LOT
 
 

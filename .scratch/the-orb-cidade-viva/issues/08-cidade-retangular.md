@@ -18,7 +18,7 @@ orgânico, mas é sempre o mesmo lugar. O traçado é calculado no mundo e o cli
 - [x] Números e símbolos num bairro "#" no começo; só existem bairros de letras com realm.
 - [x] Placa com a letra do bairro no chão, na esquina.
 - [x] Chão retangular com ruas entre os bairros, como cenário neutro; a grade polar sai.
-- [ ] Os atalhos 1–9 e o voo da câmera continuam funcionando. (a lógica não mudou; o voo não pôde ser visto: ver Comments)
+- [x] Os atalhos 1–9 e o voo da câmera continuam funcionando. (visto na tela em 2026-10-14, na conferência do ticket 10: o `2` voou até o realm, o Esc voltou à visão geral e o Orb abriu na visão geral)
 
 ## Testes
 

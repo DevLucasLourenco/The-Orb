@@ -50,8 +50,21 @@ BUILDING_CLASSES: tuple[tuple[str, int], ...] = (
     ("Casa", 0), ("Sobrado", 1_000), ("Prédio", 5_000), ("Edifício", 20_000), ("Torre", 100_000), ("Arranha-céu", 500_000),
 )
 
+# A altura do prédio em níveis (uma fileira de janelas), por classe (R19, D-052, VISUAL.md §8): de/até. Dentro da classe a
+# altura cresce com o logaritmo das linhas; entre as classes há um salto (3→5, 8→11, 16→20, 28→34), para as vizinhas nunca ficarem
+# parecidas. O Arranha-céu não tem fim de faixa: cresce `SKYSCRAPER_LEVELS_PER_DOUBLING` níveis a cada vez que as linhas dobram, até o teto.
+BUILDING_LEVELS: dict[str, tuple[int, int]] = {
+    "Casa": (1, 1), "Sobrado": (2, 3), "Prédio": (5, 8), "Edifício": (11, 16), "Torre": (20, 28), "Arranha-céu": (34, 48),
+}
+SKYSCRAPER_LEVELS_PER_DOUBLING = 4
+
+# A marca de cada classe no topo, que lê a classe de longe (D-052, R20c): quantas cintas de luz neutra, uma a mais por classe.
+BUILDING_TRIM: dict[str, int] = {"Casa": 0, "Sobrado": 1, "Prédio": 2, "Edifício": 3, "Torre": 4, "Arranha-céu": 5}
+ANTENNA_CLASSES: frozenset[str] = frozenset({"Arranha-céu"})
+
 # O traçado da cidade (R32, D-047, VISUAL.md §7), em unidades do mundo. Mudar o desenho da cidade é mudar esta tabela.
-CITY_LOT = 46            # lado de um lote: o prédio (base de 24) cabe com folga mesmo no maior deslocamento e giro
+CITY_LOT = 46            # lado de um lote: o prédio (a maior base, `CITY_MAX_BASE`) cabe mesmo no maior deslocamento e giro
+CITY_MAX_BASE = 30       # a maior largura de uma forma de prédio (o pódio da Torre e do Arranha-céu, VISUAL.md §8)
 CITY_PAD = 14            # calçada do bairro, em volta dos lotes; no canto fica a placa com a letra
 CITY_STREET = 18         # largura da rua entre dois bairros (cenário, R12a)
 CITY_JITTER = 6          # deslocamento máximo do prédio dentro do lote, em cada eixo

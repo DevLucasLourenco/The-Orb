@@ -14,11 +14,11 @@ vira um andar proporcional às suas linhas, com os arquivos da raiz no térreo e
 
 ## Critérios de aceite
 
-- [ ] O mundo calcula altura em níveis (saltos entre classes, crescimento logarítmico dentro da classe) e os andares por pasta.
-- [ ] Andares: arquivos da raiz no térreo; cada andar com pelo menos um nível; excedentes juntos em "demais pastas".
-- [ ] O cliente desenha as 6 formas de VISUAL.md §8, com o Rooftop Room sempre do mesmo tamanho no topo.
-- [ ] Cintas neutras (uma a mais por classe) e antena no Arranha-céu.
-- [ ] Nenhuma cor de significado nas formas.
+- [x] O mundo calcula altura em níveis (saltos entre classes, crescimento logarítmico dentro da classe) e os andares por pasta.
+- [x] Andares: arquivos da raiz no térreo; cada andar com pelo menos um nível; excedentes juntos em "demais pastas".
+- [x] O cliente desenha as 6 formas de VISUAL.md §8, com o Rooftop Room sempre do mesmo tamanho no topo.
+- [x] Cintas neutras (uma a mais por classe) e antena no Arranha-céu.
+- [x] Nenhuma cor de significado nas formas.
 
 ## Testes
 
@@ -34,3 +34,18 @@ Ponto de teste: o mundo (métricas → níveis e andares) e conferência no prev
 - Uma branch e um PR para este ticket (D-114).
 
 ## Comments
+
+Implementado em 2026-10-14 (branch `ticket/10-formas-por-classe-e-andares`). Só estrutura e contagens dos dados reais.
+
+- **O que mudou:** `core/building.py` (`levels`, `floors`) e as tabelas `rules.BUILDING_LEVELS`, `BUILDING_TRIM`, `ANTENNA_CLASSES`, `CITY_MAX_BASE`; o snapshot passa a ter, em
+  `realm.metrics`, `levels`, `bands`, `antenna` e `floors`; o Probe conta a raiz e cada pasta de primeiro nível (`Count.root`, `Count.folders`) e o evento `realm.metrics` leva
+  `root` e `folders` (as 64 maiores; validação em `protocol/events.py`); no cliente, `realm3d.js` desenha as 6 formas (`SHAPES`), as cintas, a coroa e a antena, e a sala do teto sobe
+  e desce com a altura.
+- **Testes:** 27 em `tests/test_building.py` (níveis por classe, saltos, logaritmo, andares, junção em "demais pastas") e os novos de `test_realm_metrics.py`, `test_probes.py` e
+  `test_line_scheduler.py`.
+- **Decisões a confirmar:** Q-T10-1 a Q-T10-6 em `docs/DECISIONS.md` (provisórias, P2).
+- **Dados reais (pasta do Orb temporária; só estrutura):** 18 dos 23 realms contados, com as seis classes presentes (7 Sobrados, 4 Prédios, 3 Torres, 2 Edifícios, 1 Casa e 1 Arranha-céu),
+  de 1 a 36 níveis e de 1 a 18 andares; a soma dos níveis dos andares é a altura do prédio em todos. Na tela: prédios de alturas e formas diferentes e a sala do teto igual em todos; o
+  voo para um realm (atalho `2`) e o Esc funcionaram; console sem erros. As seis formas também foram conferidas numa página temporária com métricas sintéticas (não versionada).
+- **O que não foi visto:** a fachada ainda usa a textura decorativa de antes (as janelas de verdade são o ticket 11), então ela segue contradizendo a R12; os **andares não são
+  desenhados** (só calculados); a posição real de uma Torre ao lado de outra no mesmo bairro (a maior largura, 30, cabe no lote de 46 pela conta, não vi um par na tela).
