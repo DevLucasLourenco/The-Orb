@@ -324,6 +324,22 @@ def test_a_realm_with_only_old_sessions_is_night_and_a_new_session_lights_it(mac
     assert {r["id"]: r["night"] for r in hub.snapshot()["realms"]}["alpha"] is False
 
 
+def test_every_detected_realm_has_a_lot_in_the_city_even_before_the_first_read_and_a_hidden_one_leaves_it_vacant(machine):
+    alpha, beta = machine.project("alpha"), machine.project("beta")
+    hermes_session(machine, "H-a", alpha, days_ago=1)
+    hermes_session(machine, "H-b", beta, days_ago=1)
+    hub = Hub(machine.observatory())
+    hub.observatory.refresh_index(force=True)                                   # detectado, mas o Hub ainda não leu nada
+    snap = hub.snapshot()                                                       # o realm já tem lugar
+    assert {r["id"]: r["place"]["district"] for r in snap["realms"]} == {"alpha": "A", "beta": "B"}
+    assert {d["letter"] for d in snap["city"]["districts"]} == {"A", "B"}
+    places = {r["id"]: r["place"] for r in snap["realms"]}
+    hub.world.set_hidden({"alpha"})
+    after = hub.snapshot()
+    assert [r["id"] for r in after["realms"]] == ["beta"] and after["realms"][0]["place"] == places["beta"]
+    assert after["city"] == snap["city"]                                        # o lote do escondido segue vago no traçado
+
+
 def test_the_content_is_read_only_for_the_room_window_and_it_comes_from_one_value(machine):
     from orb.core import rules
     observatory = machine.observatory()

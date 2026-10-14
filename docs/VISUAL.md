@@ -4,7 +4,7 @@
 > ([RULES.md](RULES.md)): todo elemento que parece dado **é** dado; o resto é **cenário**, declarado
 > aqui. Um elemento novo só entra no mundo depois de ter uma linha nesta tabela.
 
-Última atualização: 2026-10-13 · Decisões em ordem: [DECISIONS.md](DECISIONS.md)
+Última atualização: 2026-10-14 · Decisões em ordem: [DECISIONS.md](DECISIONS.md)
 
 Tipo: **Dado** (vem da telemetria) · **Legenda** (código fixo de cores/formas, sempre o mesmo
 significado) · **Cenário** (sem significado, só ambiente) · **Heurística** (deduzido pelo Orb;
@@ -16,11 +16,11 @@ Situação: ✅ como está · ❌ precisa mudar · ❓ precisa de decisão.
 
 | Id | Elemento | Tipo | Significado / fonte | Situação |
 |---|---|---|---|---|
-| V-CITY-1 | Chão da cidade | Cenário | **Decidido (R32): retangular**, com ruas entre os bairros (§7). Hoje: disco flutuante com borda de luz | ❌ Mudar para retangular |
-| V-CITY-2 | Grade polar no chão | Cenário | Referência de profundidade para a câmera | ✅ (R12a) |
+| V-CITY-1 | Chão da cidade | Cenário | **Retangular (R32)**: uma laje escura com borda de luz, os bairros em calçadas um pouco mais claras e as **ruas** no vão entre eles (§7). Os tons são azuis neutros, da mesma família do chão que já existia (a laje, a borda de luz e o brilho são os de antes; a calçada e a letra da placa são dois tons novos dessa família); nenhuma cor com significado | ✅ Ticket 08 |
+| V-CITY-2 | ~~Grade polar no chão~~ | ~~Cenário~~ | **Removida (ticket 08, R32):** a cidade é retangular; as calçadas e as ruas dão a referência de profundidade | ❌ Removida |
 | V-CITY-3 | Céu em degradê e estrelas | Cenário | Ambiente noturno | ✅ (R12a) |
-| V-CITY-4 | Posição de cada prédio | Legenda | **Decidido (R32):** bairros por letra inicial, em ordem alfabética; lotes em ordem alfabética; deslocamento e giro pela semente do nome (§7). Hoje: grade alfabética simples | ❌ Mudar para §7 |
-| V-CITY-6 | Placa do bairro (a letra) no chão | Legenda | A letra inicial dos realms daquele bairro (§7) | ⏳ |
+| V-CITY-4 | Posição de cada prédio | Legenda | **R32:** bairros por letra inicial, em ordem alfabética; lotes em ordem alfabética; deslocamento e giro pela semente do nome (§7). O **mundo** calcula e o cliente só desenha | ✅ Ticket 08 (a estabilidade vale para lote e giro; os bairros se reposicionam como blocos, D-159) |
+| V-CITY-6 | Placa do bairro (a letra) no chão | Legenda | A letra inicial dos realms daquele bairro, na esquina de trás e da esquerda da calçada (§7) | ✅ Ticket 08 |
 | V-CITY-7 | **O Gate**: um portão na borda da cidade, de frente para a câmera inicial, fora dos bairros | Dado | A contagem de quem espera o Lucas em todos os realms; clicar abre a lista e a escrita para qualquer Alter Ego (R46) | ⏳ |
 | V-CITY-5 | Barra superior (realms, sessões, ativas, esperando você, subagentes, tokens) | Dado | Soma do snapshot do Core | ✅ |
 
@@ -193,8 +193,19 @@ com um ar **"aleatório", mas rastreável**, posicionados por uma **estrutura l�
    explicar onde ele está ("`trisafe-enhanced`: bairro T, 2º lote").
 5. **Estabilidade.** Um projeto novo só reorganiza o seu próprio bairro, nunca a cidade inteira.
    Um realm escondido (R3c) deixa o lote vago, para os vizinhos não andarem.
+   **Como ficou (ticket 08; os números estão em `rules.py`, `CITY_*`):** o lote e o giro de um prédio só dependem do nome dele e
+   da posição dele no seu bairro; os prédios dos outros bairros não mudam de lote nem de giro. Quando um bairro cresce ou nasce uma
+   letra nova, os bairros inteiros são **reposicionados como blocos** (sem mexer no que há dentro deles), porque os bairros se leem
+   como um texto. O realm escondido continua contando para o traçado: o lote e o bairro ficam onde estão, vazios.
 6. **Placa do bairro.** A letra do bairro fica escrita no chão, na esquina (V-CITY-6).
 7. **Ruas** são cenário (R12a): separam os bairros e dão leitura ao mapa; não carregam dado.
+
+**Medidas (ticket 08, em unidades do mundo):** lote de 46 de lado; calçada de 14 em volta dos lotes de cada bairro; rua de 18 entre
+os bairros; deslocamento do prédio de até ±6 em cada eixo e giro de até ±0,12 rad (cerca de 7°), o que ainda deixa o prédio (base de
+24) longe do vizinho. O bairro tem as colunas e fileiras de lotes mais quadradas que couberem (`ceil(√n)`). **Ordem de leitura:** os
+bairros entram em fileiras, da esquerda para a direita, e o mundo escolhe, entre as quebras de fileira possíveis, a que deixa a cidade
+mais perto de 16:9. **Nome:** a ordem, a letra e a semente usam o **id do realm** (o nome da pasta em minúsculas, com hífens: `The Orb`
+é `the-orb`); a semente é um resumo `blake2b` do id, igual em qualquer máquina. Id que não começa com letra de A a Z vai para o bairro "#". A ordem é a dos caracteres do id (o hífen vem antes das letras: `the-orb` antes de `theta`). O chão tem no mínimo 260 × 150, para a cidade vazia ou de um bairro só não ficar flutuando.
 
 ## 8. A altura dos prédios (R19)
 

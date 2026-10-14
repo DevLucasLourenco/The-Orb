@@ -17,6 +17,7 @@ export const AREAS = {
   "Task Board":         { x: 0,    z: -7.3, w: 3.2, d: 2.2, color: 0xff6fa5 },
 };
 const LOBBY = { x: 0, z: 0.2, r: 1.9 };          // quem não está numa área (pensando, parado, esperando)
+const UP = new THREE.Vector3(0, 1, 0);
 const DORM = { z: 7.9, x0: -7.6, x1: 7.6 };      // sessões dormindo: fileira na frente do quartinho
 
 function windowTexture(seed) {
@@ -152,8 +153,15 @@ export class RealmBuilding {
     this.group.add(this.beacon, this.beaconRing);
   }
 
-  setPosition(x, z) {
-    this.group.position.set(x, 0, z);
+  // O lote que o mundo deu (R32): posição já com o deslocamento e o giro tirados do nome do realm.
+  setPlace(place) {
+    this.group.position.set(place.x, 0, place.z);
+    this.group.rotation.y = place.turn;
+  }
+
+  // Um ponto do prédio (no referencial dele) no mundo: o prédio gira, então as posições do piso giram junto.
+  _at(x, y, z) {
+    return new THREE.Vector3(x, y, z).applyAxisAngle(UP, this.group.rotation.y).add(this.group.position);
   }
 
   center() {
@@ -178,17 +186,16 @@ export class RealmBuilding {
 
   // Lugar no piso para o n-ésimo personagem de uma área (ou do lobby / dormitório).
   slot(area, index, count) {
-    const p = this.group.position;
     if (area === "__dorm") {
       const x = count > 1 ? DORM.x0 + (DORM.x1 - DORM.x0) * (index / (count - 1)) : 0;
-      return new THREE.Vector3(p.x + x, this.floorY, p.z + DORM.z);
+      return this._at(x, this.floorY, DORM.z);
     }
     const a = AREAS[area];
     const cx = a ? a.x : LOBBY.x, cz = a ? a.z : LOBBY.z;
-    if (count <= 1) return new THREE.Vector3(p.x + cx, this.floorY, p.z + cz);
+    if (count <= 1) return this._at(cx, this.floorY, cz);
     const radius = a ? Math.min(a.w, a.d) * 0.32 : LOBBY.r * 0.75;
     const angle = (index / count) * Math.PI * 2 + 0.6;
-    return new THREE.Vector3(p.x + cx + Math.cos(angle) * radius, this.floorY, p.z + cz + Math.sin(angle) * radius);
+    return this._at(cx + Math.cos(angle) * radius, this.floorY, cz + Math.sin(angle) * radius);
   }
 
   update(dt, t, near, focused = false) {

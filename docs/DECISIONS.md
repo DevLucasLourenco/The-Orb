@@ -5,7 +5,7 @@
 > [ARCHITECTURE.md](ARCHITECTURE.md), [adr/](adr/)…). Decisões difíceis de reverter também têm um ADR.
 > Nada é apagado: uma decisão revista fica listada, com a que a substituiu.
 
-Última atualização: 2026-10-13
+Última atualização: 2026-10-14
 
 Quem: **Lucas** = decidido por ele · **Delegada** = o Lucas deixou a definição com o Claude; vale até
 ele revisar, e a proposta está escrita no documento do assunto.
@@ -173,6 +173,13 @@ ele revisar, e a proposta está escrita no documento do assunto.
 | D-156 | 2026-10-14 | **A lista visível de arquivos gerados:** lockfiles (npm, yarn, pnpm, poetry, pipenv, uv, cargo, gem, composer, `go.sum`), `*.min.js`, `*.min.css`, `*.map`, `dist/*` e `build/*`; padrão sem `/` vale para o nome em qualquer pasta, com `/` para o caminho. Editável na tela de configurações | Lucas | Q-T09-6, D-054 |
 | D-157 | 2026-10-14 | **O filtro de linhas se edita na tela de configurações** em duas camadas: o de todos os realms (caixa `.md`, lista de padrões, "Restaurar a lista padrão") e, por realm, usar o de todos ou um próprio que muda só o que precisa. O realm que o Lucas mexe é contado na hora e na frente | Lucas | Q-T09-7, D-056, R29 |
 | D-158 | 2026-10-14 | **`realm.metrics` tem `loc` (inteiro ≥ 0) e `files?`**; a classe não vai no evento, **o mundo a deriva** (R47); o protocolo passa a **0.3** (parcial: os outros sinais chegam nos tickets deles) e `floors?` fica para o ticket 10 | Lucas | Q-T09-8, R49, D-085, D-099 |
+| D-159 | 2026-10-14 | **Estabilidade da cidade:** um projeto novo só reorganiza o **seu bairro** (qual prédio fica em qual lote, o deslocamento e o giro); quando um bairro cresce ou nasce uma letra, os bairros inteiros se **reposicionam como blocos**, sem mexer no que há dentro deles. Estabilidade total das posições exigiria área fixa por letra, o que a regra "só existem bairros de letras com realm" não permite | Lucas | Q-T08-1, R32, D-047 |
+| D-160 | 2026-10-14 | **A semente, a letra e a ordem do bairro saem do id do realm** (o nome da pasta em minúsculas, com hífens: `The Orb` é `the-orb`), com um resumo `blake2b` fixo, igual em qualquer máquina; id que não começa com letra de A a Z vai para o bairro "#" | Lucas | Q-T08-2, R32 |
+| D-161 | 2026-10-14 | **Medidas do traçado** (tabela `rules.CITY_*`): lote de 46, calçada de 14, rua de 18, deslocamento de até ±6 e giro de até ±7°; a base do prédio nunca encosta no vizinho | Lucas | Q-T08-3, VISUAL §7 |
+| D-162 | 2026-10-14 | **A proporção é a mais próxima de 16:9** que as quebras de fileira permitem (não exata); a escolha é sempre a mesma para os mesmos bairros | Lucas | Q-T08-4, VISUAL §7 |
+| D-163 | 2026-10-14 | **Bairro com todos os realms escondidos continua na cidade:** o bairro, a placa e os lotes vagos ficam onde estão ("com realm" vale para o realm detectado, não para o visível) | Lucas | Q-T08-5, R3c |
+| D-164 | 2026-10-14 | **Sem grade no chão** (a grade polar sai): calçadas e ruas dão a referência de profundidade; o chão usa tons azuis neutros, sem cor nova com significado | Lucas | Q-T08-6, V-CITY-1, V-CITY-2, R12a |
+| D-165 | 2026-10-14 | **Com vários realms o Orb abre na visão geral** da cidade inteira (o voo do Esc); com um realm só, ele abre selecionado | Lucas | ~~Q-T08-7~~ D-165 |
 
 ## Decisões revistas
 
@@ -454,3 +461,19 @@ mundo, as leituras do mundo real e o contador, com pastas de projeto falsas e um
 | ~~Q-T09-7~~ D-157 | Como se edita o filtro "por realm ou para todos"? | Na tela de configurações: **todos os realms** (caixa ".md" + lista de padrões, um por linha, com "Restaurar a lista padrão") e **por realm** (escolhe o realm; "usa o filtro de todos" ou um filtro próprio que muda só o que ele precisa). O realm que o Lucas mexe é contado **na hora e na frente**; mudar o filtro de todos reconta todos, um por vez |
 | ~~Q-T09-8~~ D-158 | Que campos tem `realm.metrics`? | `loc` (obrigatório, inteiro ≥ 0) e `files?`. A **classe não vai no evento**: o mundo a deriva (R47). A versão passa a **0.3** (parcial: os outros sinais da 0.3 chegam nos tickets deles). `floors?` fica para o ticket 10 |
 
+
+### Rodada: o que a implementação do ticket 08 decidiu por conta própria (aberta em 2026-10-14)
+
+Ao implementar o ticket 08 ([.scratch/the-orb-cidade-viva/issues/08-cidade-retangular.md](../.scratch/the-orb-cidade-viva/issues/08-cidade-retangular.md)),
+sete pontos **não estavam escritos** (o traçado foi delegado na D-047) e foram escolhidos de forma provisória (regra P2). Todos estão cobertos
+por teste (o mundo e o Hub, com realms sintéticos). **O Lucas confirmou as sete em 2026-10-14 (D-159 a D-165).**
+
+| Id | Pergunta | Proposta (já aplicada, provisória) |
+|---|---|---|
+| ~~Q-T08-1~~ D-159 | O que "projeto novo só reorganiza o seu bairro" garante, se os bairros se leem como um texto? | Os **lotes** (qual prédio fica em qual lote, o deslocamento e o giro) só mudam dentro do bairro do realm novo. Se um bairro cresce ou nasce uma letra, os bairros inteiros se **reposicionam como blocos**, sem mexer no que há dentro deles (e a divisão em fileiras pode mudar). Estabilidade total das posições exigiria bairros de tamanho fixo ou letras reservadas, o que a regra "só existem bairros de letras com realm" proíbe. Alternativa: reservar sempre a mesma área para cada bairro |
+| ~~Q-T08-2~~ D-160 | "Semente tirada do nome": qual nome? | O **id do realm** (o nome da pasta em minúsculas, com hífens: `The Orb` é `the-orb`), porque é o que o mundo conhece e não muda. A ordem alfabética, a letra do bairro e a semente (um resumo `blake2b`, igual em qualquer máquina) saem dele. Id que não começa com letra de A a Z vai para "#". Limite: o id já vem sem acento (`Ágil` vira `gil`), então a pasta entra no bairro da letra seguinte, não no "#" |
+| ~~Q-T08-3~~ D-161 | Medidas do traçado (a VISUAL §7 não as define) | Lote de 46, calçada de 14, rua de 18, deslocamento de até ±6 e giro de até ±7° (tabela `rules.CITY_*`). A base do prédio (24) nunca encosta no vizinho, mesmo no pior deslocamento e giro (coberto por teste) |
+| ~~Q-T08-4~~ D-162 | A proporção 16:9 é exata? | Não: entre as quebras de fileira possíveis, vale a que deixa a cidade **mais perto de 16:9**. Com poucos bairros grandes a proporção pode ficar entre 1,4 e 2,4 (numa simulação com nomes sintéticos e a distribuição de bairros desta máquina, 10 bairros, ficou em 2,25; o teste cobre essa faixa) |
+| ~~Q-T08-5~~ D-163 | Um bairro cujos realms estão todos escondidos some? | **Não**: o bairro, a placa e os lotes vagos ficam onde estão, para os outros não andarem (R3c). Isto lê "só existem bairros de letras com realm" como "realm detectado", não "realm visível". Alternativa: tirar o bairro vazio e reposicionar os seguintes |
+| ~~Q-T08-6~~ D-164 | O que substitui a grade polar do chão (V-CITY-2)? | Nada: as calçadas dos bairros e as ruas entre eles dão a referência de profundidade. O chão usa os tons que já existiam (laje escura, borda de luz, calçada um pouco mais clara) e a placa é a letra em azul-acinzentado: **nenhuma cor nova** e nada que pareça dado |
+| Q-T08-7 | Qual a vista da câmera ao abrir o Orb com vários realms? | A **visão geral** da cidade inteira (o mesmo voo do Esc). Com um realm só, ele já abre selecionado, como antes. Os atalhos 1–9, o F, o Esc e o voo continuam |

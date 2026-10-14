@@ -8,6 +8,8 @@ import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js"
 import { OutputPass } from "three/addons/postprocessing/OutputPass.js";
 
 const SKY = 0x070b16;
+const EDGE = 40;                 // o chão passa dos bairros por esta folga, em cada lado
+const MIN_GROUND = { width: 260, depth: 150 };   // chão mínimo, para a cidade vazia (ou de um bairro só) não ficar flutuando
 const ease = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
 
 export class Stage {
@@ -79,26 +81,50 @@ export class Stage {
   }
 
   _ground() {
-    // O Orb: um disco flutuante, com borda de luz e uma grade discreta.
-    const group = (this.ground = new THREE.Group());
-    const disc = new THREE.Mesh(
-      new THREE.CylinderGeometry(1, 1, 6, 128, 1),
-      new THREE.MeshStandardMaterial({ color: 0x15213a, roughness: 0.85, metalness: 0.2, emissive: 0x0a1630, emissiveIntensity: 0.6 }),
-    );
-    disc.position.y = -3;
-    disc.receiveShadow = true;
-    const rim = new THREE.Mesh(
-      new THREE.TorusGeometry(1, 0.006, 8, 256),
-      new THREE.MeshBasicMaterial({ color: 0x5fb6ff, toneMapped: false }),
-    );
-    rim.rotation.x = Math.PI / 2;
-    const grid = new THREE.PolarGridHelper(1, 24, 12, 128, 0x2a5a96, 0x1d3d66);
-    grid.position.y = 0.02;
-    grid.material.transparent = true;
-    grid.material.opacity = 0.6;
-    group.add(disc, rim, grid);
-    this.scene.add(group);
-    this.setGroundRadius(160);
+    // O chão da cidade (R32, VISUAL.md §7): um retângulo com os bairros em calçadas e as ruas no vão entre eles.
+    // Tudo é cenário neutro (R12a); o desenho vem do traçado que o mundo calcula (`setCity`).
+    this.ground = new THREE.Group();
+    this.scene.add(this.ground);
+    this.cityKey = "";
+    this.setCity({ width: 0, depth: 0, pad: 0, districts: [] });
+  }
+
+  // Desenha o chão a partir do traçado do mundo; só refaz quando o traçado muda.
+  setCity(city) {
+    const key = JSON.stringify([city.width, city.depth, city.pad, city.districts.map((d) => [d.letter, d.x, d.z, d.w, d.d])]);
+    if (key === this.cityKey) return;
+    this.cityKey = key;
+    for (const child of [...this.ground.children]) {
+      this.ground.remove(child);
+      child.traverse((o) => { o.geometry?.dispose?.(); o.material?.map?.dispose?.(); o.material?.dispose?.(); });
+    }
+    const width = Math.max(city.width + 2 * EDGE, MIN_GROUND.width), depth = Math.max(city.depth + 2 * EDGE, MIN_GROUND.depth);
+    const street = new THREE.Mesh(new THREE.BoxGeometry(width, 6, depth),
+      new THREE.MeshStandardMaterial({ color: 0x15213a, roughness: 0.85, metalness: 0.2, emissive: 0x0a1630, emissiveIntensity: 0.6 }));
+    street.position.y = -3;
+    street.receiveShadow = true;
+    const outline = new THREE.BoxGeometry(width, 0.02, depth);
+    const rim = new THREE.LineSegments(new THREE.EdgesGeometry(outline),
+      new THREE.LineBasicMaterial({ color: 0x5fb6ff, toneMapped: false }));
+    outline.dispose();                                    // só serviu de molde para as arestas
+    this.ground.add(street, rim);
+    const padMaterial = new THREE.MeshStandardMaterial({ color: 0x1d2c4a, roughness: 0.9, metalness: 0.1, emissive: 0x0a1630, emissiveIntensity: 0.5 });
+    for (const d of city.districts) {
+      const slab = new THREE.Mesh(new THREE.BoxGeometry(d.w, 0.3, d.d), padMaterial);
+      slab.position.set(d.x + d.w / 2, 0.15, d.z + d.d / 2);
+      slab.receiveShadow = true;
+      // A placa do bairro: a letra no chão, na esquina de trás à esquerda (V-CITY-6).
+      const plate = new THREE.Mesh(new THREE.PlaneGeometry(city.pad * 0.85, city.pad * 0.85),
+        new THREE.MeshBasicMaterial({ map: plateTexture(d.letter), transparent: true, depthWrite: false, toneMapped: false }));
+      plate.rotation.x = -Math.PI / 2;
+      plate.position.set(d.x + city.pad / 2, 0.34, d.z + city.pad / 2);
+      this.ground.add(slab, plate);
+    }
+    this.groundRadius = Math.hypot(city.width, city.depth) / 2 || 160;
+    // A sombra da lua cobre a cidade inteira, qualquer que seja o tamanho dela.
+    const s = this.moon.shadow.camera, reach = this.groundRadius + 70;
+    s.left = -reach; s.right = reach; s.top = reach; s.bottom = -reach;
+    s.updateProjectionMatrix();
   }
 
   _stars() {
@@ -113,12 +139,6 @@ export class Stage {
     geo.setAttribute("position", new THREE.BufferAttribute(pos, 3));
     const stars = new THREE.Points(geo, new THREE.PointsMaterial({ color: 0xaecbff, size: 2.2, sizeAttenuation: false, fog: false, transparent: true, opacity: 0.75 }));
     this.scene.add(stars);
-  }
-
-  setGroundRadius(r) {
-    this.ground.scale.set(r, 1, r);
-    this.ground.children[1].scale.set(1, 1, 1);
-    this.groundRadius = r;
   }
 
   resize() {
@@ -217,6 +237,22 @@ function skyTexture() {
   g.fillRect(0, 0, 4, 512);
   const tex = new THREE.CanvasTexture(c);
   tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
+}
+
+// A letra do bairro em azul-acinzentado, sobre fundo transparente (cenário neutro, sem cor nova).
+function plateTexture(letter) {
+  const c = document.createElement("canvas");
+  c.width = c.height = 128;
+  const g = c.getContext("2d");
+  g.font = "700 104px 'Segoe UI', system-ui, sans-serif";
+  g.textAlign = "center";
+  g.textBaseline = "middle";
+  g.fillStyle = "rgba(124, 164, 214, 0.78)";
+  g.fillText(letter, 64, 70);
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.anisotropy = 4;
   return tex;
 }
 

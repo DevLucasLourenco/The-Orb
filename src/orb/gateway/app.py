@@ -116,11 +116,10 @@ class Hub:
     def snapshot(self, now: datetime | None = None) -> dict[str, Any]:
         """O mundo na hora do servidor (`generated_at`): é com ela que o Core deriva dormindo e sem sinal."""
         now = now or self.clock()
+        for realm_id in self.observatory.realms:
+            self.world.add_realm(realm_id)           # todo realm observado existe e tem lote, mesmo sem nenhuma sessão ainda
         world = self.world.snapshot(now)
         world["generated_at"] = now.isoformat()
-        known = {realm["id"] for realm in world["realms"]} | self.world.hidden
-        # Todo realm observado e não escondido existe na cidade, mesmo sem nenhuma sessão ainda.
-        world["realms"] += [{"id": rid, "alter_egos": [], "night": True} for rid in self.observatory.realms if rid not in known]
         for realm in world["realms"]:
             if realm["id"] in self.observatory.realms:
                 realm.update({k: v for k, v in self.observatory.describe(realm["id"]).items() if k != "id"})

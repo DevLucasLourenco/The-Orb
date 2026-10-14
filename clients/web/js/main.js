@@ -17,30 +17,13 @@ let world = { realms: [] };
 let selectedRealm = null;
 const realmHistory = new Map();  // realm -> sessões que já saíram da sala (Histórico do realm)
 let roomCount = -1;              // quantas sessões o realm selecionado tem na sala: se mudar, o Histórico muda
-let layoutKey = "";
 const NEAR = 120;                 // distância da câmera em que os detalhes aparecem
 
 // ---------------------------------------------------------------------------------------------
-// Layout da cidade: os realms em quarteirões (grade) sobre o disco do Orb.
-const BLOCK = 46;                 // distância entre prédios
+// A cidade retangular (R32): o mundo calcula bairros, lotes, deslocamento e giro; aqui só se posiciona o que ele mandou.
 function layout() {
-  const ids = world.realms.map((r) => r.id);
-  const key = ids.join("|");
-  if (key === layoutKey) return;
-  layoutKey = key;
-  const n = ids.length;
-  const cols = Math.max(1, Math.ceil(Math.sqrt(n)));
-  const rows = Math.max(1, Math.ceil(n / cols));
-  ids.forEach((id, i) => {
-    const col = i % cols, row = Math.floor(i / cols);
-    // última fileira incompleta fica centralizada
-    const inRow = row === rows - 1 ? n - row * cols : cols;
-    const x = (col - (inRow - 1) / 2) * BLOCK;
-    const z = (row - (rows - 1) / 2) * BLOCK;
-    buildings.get(id)?.setPosition(x, z);
-  });
-  const half = Math.hypot((cols - 1) / 2, (rows - 1) / 2) * BLOCK;
-  stage.setGroundRadius(half + 48);
+  stage.setCity(world.city);
+  for (const realm of world.realms) buildings.get(realm.id)?.setPlace(realm.place);
 }
 
 // Na sala ficam só as sessões dos últimos 10 dias (R28a); o mundo marca quem já saiu (`in_room`) e as
@@ -146,6 +129,7 @@ const net = connectWorld({
     const first = !world.realms.length;
     syncWorld(w);
     if (first && w.realms.length === 1) selectRealm(w.realms[0].id);
+    else if (first && w.realms.length) overview();          // a cidade inteira já na primeira vista
   },
   onEvent: (event) => inner.push(event),
   onFeed: (egoId, events) => inner.setFeed(egoId, events),
