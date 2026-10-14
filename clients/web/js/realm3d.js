@@ -14,13 +14,14 @@ const FACADE_ROWS = 22;          // fileiras de janelas da textura da fachada (u
 // `canopy`: marquise no térreo; `crown`: coroa no topo. As formas são neutras (sem cor de significado).
 export const SHAPES = {
   "Casa":        { tiers: [[18, 1]] },
-  "Sobrado":     { tiers: [[24, 0.4], [18, 1]] },
+  "Sobrado":     { tiers: [[26, 0.4], [22, 1]] },       // o corpo (22) é mais largo que a sala (18): terraço em volta dela
   "Prédio":      { tiers: [[20, 1]], canopy: 26 },
   "Edifício":    { tiers: [[26, 0.65], [20, 1]] },
   "Torre":       { tiers: [[30, 0.12], [22, 0.6], [20, 0.85], [18, 1]] },
   "Arranha-céu": { tiers: [[30, 0.08], [26, 0.4], [22, 0.65], [20, 0.85], [18, 1]], crown: 21 },
 };
-const NO_COUNT = { tiers: [[18, 1]] };      // realm sem contagem de linhas: um volume baixo e liso, sem classe nem marcas
+const NO_COUNT = { tiers: [[18, 1]], flat: true };      // realm sem contagem de linhas: só uma laje lisa, sem janelas, classe nem marcas (não parece uma Casa)
+const FLAT_H = 1;
 const ANTENNA_H = 22;
 
 // Áreas do Environment no piso do quartinho (x, z, largura, profundidade, cor). +z = frente.
@@ -143,7 +144,7 @@ export class RealmBuilding {
     this.bodyKey = key;
     if (this.body) { this.group.remove(this.body); disposeTree(this.body); }
     const shape = (metrics && SHAPES[metrics.class]) || NO_COUNT;
-    const levels = metrics ? metrics.levels : 1;
+    const levels = metrics ? metrics.levels : 1;      // (a laje lisa ignora os níveis)
     const body = (this.body = new THREE.Group());
     const plain = new THREE.MeshStandardMaterial({ color: 0x0c1322, roughness: 0.6, metalness: 0.45 });
     const stone = new THREE.MeshStandardMaterial({ color: 0x131d31, roughness: 0.92, metalness: 0.1 });
@@ -157,12 +158,12 @@ export class RealmBuilding {
     let y = GROUND_Y;
     const spans = tierLevels(shape.tiers, levels);
     shape.tiers.forEach(([w], i) => {
-      const h = spans[i] * LEVEL_H;
-      const windows = new THREE.MeshStandardMaterial({
+      const h = shape.flat ? FLAT_H : spans[i] * LEVEL_H;
+      const windows = shape.flat ? plain : new THREE.MeshStandardMaterial({
         color: 0x0d1526, roughness: 0.45, metalness: 0.55, emissive: 0xffffff, emissiveIntensity: 0.35,
         emissiveMap: this._facade(spans[i]),
       });
-      this.windowMats.push(windows);
+      if (!shape.flat) this.windowMats.push(windows);
       const block = new THREE.Mesh(new THREE.BoxGeometry(w, h, w), [windows, windows, plain, plain, windows, windows]);
       block.position.y = y + h / 2;
       block.castShadow = true;

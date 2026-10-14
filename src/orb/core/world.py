@@ -241,7 +241,7 @@ class World:
         name, loc = rules.building_class(current["loc"]), current["loc"]
         height = building.levels(loc)
         split = current["folders"] is not None or current["root"] is not None      # sem a divisão por pasta, não há andares a inventar
-        floors = building.floors(levels=height, loc=loc, root=current["root"] or 0, folders=current["folders"] or {}) if split else None
+        floors = building.floors(height=height, loc=loc, root=current["root"] or 0, folders=current["folders"] or {}) if split else None
         return {"loc": loc, "files": current["files"], "counted_at": current["counted_at"], "class": name, "levels": height,
                 "bands": rules.BUILDING_TRIM[name], "antenna": name in rules.ANTENNA_CLASSES, "floors": floors}
 

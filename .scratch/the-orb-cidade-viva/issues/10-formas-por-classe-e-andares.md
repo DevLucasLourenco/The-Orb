@@ -49,3 +49,12 @@ Implementado em 2026-10-14 (branch `ticket/10-formas-por-classe-e-andares`). Só
   voo para um realm (atalho `2`) e o Esc funcionaram; console sem erros. As seis formas também foram conferidas numa página temporária com métricas sintéticas (não versionada).
 - **O que não foi visto:** a fachada ainda usa a textura decorativa de antes (as janelas de verdade são o ticket 11), então ela segue contradizendo a R12; os **andares não são
   desenhados** (só calculados); a posição real de uma Torre ao lado de outra no mesmo bairro (a maior largura, 30, cabe no lote de 46 pela conta, não vi um par na tela).
+
+**Revisões (`/code-review`, padrões e spec):** nenhuma violação dura de invariante. Tratado: o realm sem contagem era idêntico à Casa (agora é só uma laje lisa, sem janelas); o Sobrado não tinha
+terraço em volta da sala (corpo de 22 sobre a sala de 18); o térreo se juntava no prédio de 1 nível (o andar único agora é o térreo); a altura do Arranha-céu truncava enquanto as outras
+classes arredondavam; o desempate dos níveis dos andares usava ponto flutuante (agora inteiros); o parâmetro `levels` de `floors` escondia a função de mesmo nome (agora `height`); o nome de
+pasta do evento aceitava barra; o PROTOCOL não dizia o limite de 255; o R41 dizia "falta ver na tela" depois de vista. **Não corrigido, com motivo:** a divisão da altura entre os blocos
+(`tierLevels`) e a coroa ficam no cliente, por serem desenho (forma), e não têm teste porque o ponto de teste do projeto é o mundo (D-099); `BUILDING_TRIM` é o índice da classe, mas fica em tabela
+própria para a marca poder mudar sem mexer na ordem das classes; `_biggest` e `floors` ordenam do mesmo jeito (maior primeiro, depois o nome), cada um no seu módulo (o Probe não importa o Core);
+a `RULES.md` R32 e a caixa marcada do ticket 08 entram aqui porque o voo da câmera pendente do 08 foi visto na conferência deste ticket; `floors` vai no snapshot sem uso no cliente porque o ticket 11
+o usa (V-REALM-12).

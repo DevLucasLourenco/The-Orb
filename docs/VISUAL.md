@@ -29,7 +29,7 @@ Situação: ✅ como está · ❌ precisa mudar · ❓ precisa de decisão.
 | Id | Elemento | Tipo | Significado / fonte | Situação |
 |---|---|---|---|---|
 | V-REALM-1 | Existir um prédio | Dado | Todo projeto que algum provider já registrou (R3, R3a), menos os escondidos pelo Lucas na lista (R3c) e as sessões fora de projeto (R3b) | ✅ Detectado pelo índice de sessões (ticket 03); falta esconder pela lista (R3c) |
-| V-REALM-2 | **Altura** | Dado | Linhas de código do projeto, ignorando o `.gitignore` (R19), em **escala absoluta por classes** (Casa a Arranha-céu), com saltos entre as classes (§8). Não depende dos outros prédios | ✅ Ticket 10: o mundo calcula a **altura em níveis** (`building.levels`) e o cliente a desenha; o número de linhas e a classe aparecem no rótulo e no overview (ticket 09). Realm **sem contagem** vira um volume liso de 1 nível, sem classe nem marcas (nada inventado) |
+| V-REALM-2 | **Altura** | Dado | Linhas de código do projeto, ignorando o `.gitignore` (R19), em **escala absoluta por classes** (Casa a Arranha-céu), com saltos entre as classes (§8). Não depende dos outros prédios | ✅ Ticket 10: o mundo calcula a **altura em níveis** (`building.levels`) e o cliente a desenha; o número de linhas e a classe aparecem no rótulo e no overview (ticket 09). Realm **sem contagem** vira só uma laje lisa, sem janelas, classe nem marcas (nada inventado) |
 | V-REALM-12 | **Altura de cada andar** | Dado | Parcela das linhas do projeto que está naquela pasta de 1º nível; pastas pequenas demais se juntam em "demais pastas" (§8) | ⚠️ Ticket 10: o **mundo** calcula os andares por pasta (`building.floors`, no snapshot em `metrics.floors`); o cliente ainda **não os desenha**: eles passam a valer nas janelas (ticket 11) |
 | V-REALM-13 | **Cintas de luz neutra no topo** (e antena no Arranha-céu) | Legenda | A classe do prédio por faixa de linhas: uma cinta a mais por classe (§8) | ✅ Ticket 10: faixas finas de luz branca sob a laje do teto; o Arranha-céu também tem a coroa e a antena |
 | V-REALM-15 | **Forma arquitetônica** do prédio | Legenda | A classe do prédio (Casa a Arranha-céu), cada uma com a sua forma (§8, R41) | ✅ Ticket 10: as 6 formas, neutras, com o Rooftop Room sempre do mesmo tamanho no topo |
@@ -267,15 +267,15 @@ Fontes: [Wettel e Lanza, VISSOFT 2007 (PDF)](https://www.si.usi.ch/assets/public
    | Classe | Níveis | Blocos (largura → até) | Extras |
    |---|---|---|---|
    | Casa | 1 | 18 → 100% | — |
-   | Sobrado | 2 a 3 | 24 → 40%, 18 → 100% | a laje do bloco largo faz o terraço em volta da sala |
+   | Sobrado | 2 a 3 | 26 → 40%, 22 → 100% | o corpo (22) é mais largo que a sala (18): o terraço em volta dela |
    | Prédio | 5 a 8 | 20 → 100% | marquise de 26 sobre o térreo |
    | Edifício | 11 a 16 | 26 → 65%, 20 → 100% | um recuo |
    | Torre | 20 a 28 | 30 → 12%, 22 → 60%, 20 → 85%, 18 → 100% | pódio e dois recuos |
    | Arranha-céu | 34 a 48 | 30 → 8%, 26 → 40%, 22 → 65%, 20 → 85%, 18 → 100% | coroa de 21, antena de 22 e ponta branca |
 
    A altura dentro da classe vem do logaritmo das linhas, arredondado; o Arranha-céu sobe **4 níveis a cada vez que as linhas dobram**, até
-   **48** (o teto). Cada bloco tem pelo menos um nível. Um prédio sem contagem de linhas é um volume liso de 18 de lado e 1 nível, sem
-   cintas (não tem classe para mostrar). A maior largura (30) cabe no lote (§7). A fachada ainda usa a textura decorativa de antes, com uma
+   **48** (o teto). Cada bloco tem pelo menos um nível. Um prédio sem contagem de linhas é só uma **laje lisa** de 18 de lado e 1 unidade de altura, sem
+   janelas nem cintas (não tem classe para mostrar e não se parece com uma Casa). A maior largura (30) cabe no lote (§7). A fachada ainda usa a textura decorativa de antes, com uma
    fileira por nível; as janelas de verdade chegam no ticket 11.
 
 2. **Delimitação visível.** As faixas de altura **não se encostam**: entre uma classe e a próxima há
@@ -297,8 +297,8 @@ Fontes: [Wettel e Lanza, VISSOFT 2007 (PDF)](https://www.si.usi.ch/assets/public
    as pastas menores se juntam num andar **"demais pastas"**, e as alterações delas acendem ali (§6).
    **Como ficou (ticket 10, `building.floors`):** de baixo para cima, o térreo, as pastas em ordem alfabética e, no topo, "demais pastas". Os níveis
    se repartem na proporção das linhas (um para cada andar e o resto pelo maior resto; no empate, o de baixo). Quando faltam níveis, ficam as
-   pastas maiores (no empate, pelo nome) e as outras vão para "demais pastas"; o térreo nunca se junta. As linhas que o Probe não listou por
-   pasta (ele manda só as 64 maiores) entram em "demais pastas". Pasta sem linhas não é andar; uma Casa de 1 nível é um andar só. Um realm
+   pastas maiores (no empate, pelo nome) e as outras vão para "demais pastas"; o térreo nunca se junta (num prédio de 1 nível o andar único é o próprio térreo). As linhas que o Probe não listou por
+   pasta (ele manda só as 64 maiores) entram em "demais pastas". Pasta sem linhas não é andar; uma Casa de 1 nível é um andar só (o térreo). Um realm
    cuja contagem veio sem a divisão por pasta não tem andares (nada é inventado).
 7. **Contagem (D-053, D-054, D-056):** linhas **não vazias** dos arquivos que o git acompanha
    (comentários contam), ignorando o que o `.gitignore` ignora e uma **lista fixa e visível de

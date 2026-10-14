@@ -11,7 +11,7 @@ LEVEL_CASES = [
     (5_000, 5), (19_999, 8),               # Prédio: 5 a 8
     (20_000, 11), (99_999, 16),            # Edifício: 11 a 16
     (100_000, 20), (499_999, 28),          # Torre: 20 a 28
-    (500_000, 34), (1_000_000, 38),        # Arranha-céu: 34 e cresce devagar (4 níveis a cada vez que dobra)
+    (500_000, 34), (700_000, 36), (1_000_000, 38),   # Arranha-céu: 34 e cresce devagar (4 níveis a cada vez que dobra)
     (10_000_000, 48), (10**12, 48),        # ...e para num teto, para um monorepo gigante não sair da tela
 ]
 
@@ -57,13 +57,13 @@ def total(floors, key):
 
 
 def test_the_ground_floor_holds_the_root_files_and_each_folder_is_a_floor_in_alphabetical_order():
-    floors = building.floors(levels=12, loc=10_000, root=1_000, folders={"src": 6_000, "docs": 1_000, "tests": 2_000})
+    floors = building.floors(height=12, loc=10_000, root=1_000, folders={"src": 6_000, "docs": 1_000, "tests": 2_000})
     assert [(f["kind"], f["name"]) for f in floors] == [("ground", None), ("folder", "docs"), ("folder", "src"), ("folder", "tests")]
     assert total(floors, "loc") == 10_000 and total(floors, "levels") == 12
 
 
 def test_every_floor_has_at_least_one_level_and_the_height_follows_the_share_of_lines():
-    floors = building.floors(levels=12, loc=10_000, root=1_000, folders={"src": 6_000, "docs": 1_000, "tests": 2_000})
+    floors = building.floors(height=12, loc=10_000, root=1_000, folders={"src": 6_000, "docs": 1_000, "tests": 2_000})
     by_name = {f["name"]: f["levels"] for f in floors}
     assert min(f["levels"] for f in floors) >= 1
     assert by_name["src"] > by_name["tests"] >= by_name["docs"] >= 1                # proporcional às linhas
@@ -73,7 +73,7 @@ def test_every_floor_has_at_least_one_level_and_the_height_follows_the_share_of_
 def test_a_building_with_more_folders_than_levels_joins_the_smallest_ones_in_the_rest_floor():
     folders = {f"p{n}": 100 + n for n in range(10)}                                 # 10 pastas
     loc = sum(folders.values())
-    floors = building.floors(levels=5, loc=loc, root=0, folders=folders)
+    floors = building.floors(height=5, loc=loc, root=0, folders=folders)
     assert len(floors) == 5 and floors[-1]["kind"] == "rest"                        # "demais pastas" no topo
     kept = [f["name"] for f in floors[:-1]]
     assert kept == sorted(kept) and set(kept) == {"p9", "p8", "p7", "p6"}           # ficam as maiores
@@ -81,31 +81,31 @@ def test_a_building_with_more_folders_than_levels_joins_the_smallest_ones_in_the
 
 
 def test_the_ground_floor_is_never_the_one_that_gets_joined():
-    floors = building.floors(levels=3, loc=1_020, root=10, folders={"a": 500, "b": 400, "c": 110})
+    floors = building.floors(height=3, loc=1_020, root=10, folders={"a": 500, "b": 400, "c": 110})
     assert floors[0]["kind"] == "ground" and floors[0]["loc"] == 10
     assert [f["kind"] for f in floors] == ["ground", "folder", "rest"] and total(floors, "loc") == 1_020
 
 
 def test_lines_the_probe_did_not_list_go_to_the_rest_floor():
-    floors = building.floors(levels=10, loc=1_000, root=100, folders={"src": 700})             # 200 linhas em pastas que não vieram
+    floors = building.floors(height=10, loc=1_000, root=100, folders={"src": 700})             # 200 linhas em pastas que não vieram
     assert [f["kind"] for f in floors] == ["ground", "folder", "rest"] and floors[-1]["loc"] == 200
 
 
 def test_a_one_level_house_is_one_floor():
-    assert building.floors(levels=1, loc=500, root=500, folders={}) == [{"kind": "ground", "name": None, "levels": 1, "loc": 500}]
-    one = building.floors(levels=1, loc=500, root=100, folders={"src": 400})
-    assert one == [{"kind": "rest", "name": None, "levels": 1, "loc": 500}]
+    assert building.floors(height=1, loc=500, root=500, folders={}) == [{"kind": "ground", "name": None, "levels": 1, "loc": 500}]
+    one = building.floors(height=1, loc=500, root=100, folders={"src": 400})
+    assert one == [{"kind": "ground", "name": None, "levels": 1, "loc": 500}]          # o andar único é o térreo: nada se junta
 
 
 def test_folders_without_lines_are_not_floors_and_a_project_without_lines_has_none():
-    floors = building.floors(levels=5, loc=300, root=0, folders={"src": 300, "vazia": 0})
+    floors = building.floors(height=5, loc=300, root=0, folders={"src": 300, "vazia": 0})
     assert [f["name"] for f in floors] == ["src"]
-    assert building.floors(levels=1, loc=0, root=0, folders={}) == []
+    assert building.floors(height=1, loc=0, root=0, folders={}) == []
 
 
 def test_the_same_numbers_always_give_the_same_floors_in_any_order():
-    a = building.floors(levels=9, loc=900, root=0, folders={"x": 300, "y": 300, "z": 300})
-    b = building.floors(levels=9, loc=900, root=0, folders=dict(reversed(list({"x": 300, "y": 300, "z": 300}.items()))))
+    a = building.floors(height=9, loc=900, root=0, folders={"x": 300, "y": 300, "z": 300})
+    b = building.floors(height=9, loc=900, root=0, folders=dict(reversed(list({"x": 300, "y": 300, "z": 300}.items()))))
     assert a == b and [f["levels"] for f in a] == [3, 3, 3]
-    tie = building.floors(levels=2, loc=300, root=0, folders={"b": 100, "a": 100, "c": 100})     # empate: o nome decide quem se junta
+    tie = building.floors(height=2, loc=300, root=0, folders={"b": 100, "a": 100, "c": 100})     # empate: o nome decide quem se junta
     assert [(f["kind"], f["name"]) for f in tie] == [("folder", "a"), ("rest", None)]

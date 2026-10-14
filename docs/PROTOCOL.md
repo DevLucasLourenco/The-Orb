@@ -104,7 +104,7 @@ Vocabulário **fechado**. Um tipo novo exige nova versão do protocolo.
 
 | `type` | Campos | Efeito no mundo |
 |---|---|---|
-| `realm.metrics` | `loc` (inteiro ≥ 0), `files?`, `root?`, `folders?` | **0.3, evento de realm** (`alter_ego: null`, só Probes): as linhas não vazias de código do projeto. `root` são as linhas dos arquivos da raiz e `folders` (objeto de até 64 pastas, nome → linhas) as de cada pasta de primeiro nível, as maiores; `root` mais as pastas não passam de `loc`. O mundo guarda por realm e deriva a classe, a altura em níveis, as cintas e os andares do prédio (`rules.BUILDING_CLASSES`, `core/building.py`); sem evento, o realm não tem número |
+| `realm.metrics` | `loc` (inteiro ≥ 0), `files?`, `root?`, `folders?` | **0.3, evento de realm** (`alter_ego: null`, só Probes): as linhas não vazias de código do projeto. `root` são as linhas dos arquivos da raiz e `folders` (objeto de até 64 pastas, nome de 1 a 255 caracteres e sem barra → linhas) as de cada pasta de primeiro nível, as maiores; `root` mais as pastas não passam de `loc`. O mundo guarda por realm e deriva a classe, a altura em níveis, as cintas e os andares do prédio (`rules.BUILDING_CLASSES`, `core/building.py`); sem evento, o realm não tem número |
 | `session.started` | `cwd?`, `model?`, `title?` | O Alter Ego aparece no Rooftop Room |
 | `session.ended` | `reason?` | A sessão terminou; o Alter Ego **não é excluído**: fica na sala enquanto for recente e depois no Histórico do realm (R28) |
 | `session.updated` | `title?`, `model?`, `cwd?` | A identidade da sessão mudou (título, modelo); o estado não muda |
