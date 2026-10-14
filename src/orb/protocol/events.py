@@ -168,7 +168,7 @@ def _validate_split(signal: dict[str, Any], loc: int) -> str | None:
         return f"realm.metrics: folders deve ser um objeto de até {MAX_FOLDERS} pastas"
     for name, count in folders.items():
         if not isinstance(name, str) or not name or len(name) > MAX_FOLDER_NAME:
-            return "realm.metrics: o nome de cada pasta é um texto de 1 a %d caracteres" % MAX_FOLDER_NAME
+            return f"realm.metrics: o nome de cada pasta é um texto de 1 a {MAX_FOLDER_NAME} caracteres"
         if isinstance(count, bool) or not isinstance(count, int) or count < 0:
             return "realm.metrics: as linhas de cada pasta são um inteiro >= 0"
     if (root or 0) + sum(folders.values()) > loc:

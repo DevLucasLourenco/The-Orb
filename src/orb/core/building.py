@@ -36,7 +36,7 @@ def floors(*, levels: int, loc: int, root: int, folders: Mapping[str, int]) -> l
 
     Se há mais pastas do que níveis, as menores se juntam em "demais pastas" (o térreo nunca se junta). As linhas que o Probe não
     listou por pasta (`loc` menos a raiz e as pastas) entram em "demais pastas" também. Pasta sem linhas não é andar."""
-    ground = root if root > 0 else 0
+    ground = max(0, root)
     listed = {name: count for name, count in folders.items() if count > 0}
     unlisted = max(0, loc - ground - sum(listed.values()))
     if not ground and not listed and not unlisted:

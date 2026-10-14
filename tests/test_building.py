@@ -1,4 +1,6 @@
 """A altura e os andares do prédio (R19, R20, R41, D-052; VISUAL.md §8): métricas -> níveis e andares, no mundo."""
+from itertools import pairwise
+
 import pytest
 
 from orb.core import building, rules
@@ -25,7 +27,7 @@ def test_each_class_keeps_its_band_of_levels_and_the_bands_never_touch():
         low, high = rules.BUILDING_LEVELS[name]
         assert building.levels(lower) == low
         bounds.append((low, high))
-    for (_, high), (low, _) in zip(bounds[1:], bounds[2:], strict=False):
+    for (_, high), (low, _) in pairwise(bounds[1:]):
         assert low - high >= 2                       # o salto entre classes: 3→5, 8→11, 16→20, 28→34 (a Casa, de 1 nível, passa a 2 no Sobrado)
 
 
