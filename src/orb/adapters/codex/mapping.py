@@ -9,7 +9,7 @@ from __future__ import annotations
 import json
 from typing import Any
 
-from .._shared import Capabilities, classify_command
+from .._shared import Capabilities, classify_command, exit_code_of, result_signal
 
 PROVIDER = "codex"
 
@@ -89,6 +89,14 @@ def result_text(item: dict[str, Any]) -> str:
     exit_code = item.get("exitCode")
     prefix = f"[exit {exit_code}] " if exit_code not in (None, 0) else ""
     return prefix + str(output)
+
+
+def command_result(item: dict[str, Any]) -> dict[str, Any] | None:
+    """O resultado de um `commandExecution` que terminou: passou se o código de saída é 0. Sem código, nada se afirma."""
+    code = exit_code_of(item.get("exitCode"))
+    if code is None:
+        return None
+    return result_signal(None, ok=code == 0, exit_code=code, activity=command_activity(item))
 
 
 def usage_signal(token_usage: Any) -> dict[str, Any] | None:

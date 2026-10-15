@@ -1,6 +1,6 @@
 # 11: Janelas pelas alterações locais
 
-Status: ready-for-agent
+Status: concluído (2026-10-15)
 Blocked by: 10
 Origem: R20, R20a, R20b, R20d, R20e, R12; D-038 a D-043, D-092, D-115
 Spec: [../spec.md](../spec.md)
@@ -43,7 +43,7 @@ Implementado em 2026-10-14 (branch `ticket/11-janelas-pelas-alteracoes-locais`).
   a opção `window_percent` (x) na tabela `SETTINGS`; no cliente, `realm3d.js` desenha as janelas por lado e bloco, na cor do tipo, com o vidro apagado nas outras posições, e a textura
   aleatória e o brilho por atividade saíram.
 - **Testes:** `test_changes.py` (25, com um repositório git de verdade, só leitura), `test_facade.py` (22), `test_change_scheduler.py` (8) e o ajuste de `test_realms.py`.
-- **Decisões:** o Lucas confirmou Q-T11-1 a Q-T11-9 em 2026-10-15 (D-172 a D-180 em `docs/DECISIONS.md`). **Aguarda:** o envio do PR.
+- **Decisões:** o Lucas confirmou Q-T11-1 a Q-T11-9 em 2026-10-15 (D-172 a D-180 em `docs/DECISIONS.md`). PR 10 mesclado.
 - **Dados reais (pasta do Orb temporária; só estrutura):** 23 realms; 18 com contagem de linhas e leitura do git, e portanto com fachada; 16 limpos (vidro todo apagado) e 2 com alterações
   (2 e 18 alterações, em 2 e 14 janelas, dos tipos modificado e não rastreado); nenhuma janela fora da grade. Na tela, numa página temporária (não versionada) com janelas sintéticas dos seis
   tipos: as janelas acesas nas cores do git, o vidro apagado visível, o prédio sem leitura do git liso; console sem erros.

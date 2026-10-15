@@ -138,3 +138,7 @@ do Orb.
 4. Vínculo sessão hospedada ↔ Alter Ego sem flag de id (`--source`?).
 5. Tokens/custo por sessão (Energy).
 6. Fidelidade do pensamento nos modelos ainda não observados (§1, dúvidas 1 a 3).
+
+## command.result (ticket 19, D-084)
+
+A chamada de `terminal` (`tool_calls[].id` + `function.arguments.command`) é lembrada (até 512); a mensagem `tool` seguinte (`tool_call_id`) cujo `content` é um JSON com `exit_code` inteiro vira `command.result` no próprio evento `messages/tool` (`ok` = código 0). Conteúdo que não é esse JSON, ou resultado sem a chamada vista, não afirma nada; só se lembra a chamada que traz um `command` de verdade (`execute_code` não é shell). A fonte (`exit_code`, 262 de 262) vem da D-084 e não foi reconferida ao vivo no ticket 19.

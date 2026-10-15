@@ -12,17 +12,19 @@ import json
 import os
 import sqlite3
 import time
+from collections import OrderedDict
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
 from ...protocol import Event
-from .._shared import EventFactory, RealmOf, single_realm
+from .._shared import EventFactory, RealmOf, exit_code_of, result_signal, single_realm
 from .._shared.sqlite import connect_readonly, table_columns
 from . import mapping
 
 SOURCE = "hermes/state-db"
 BATCH = 500
+_SHELL_CALLS = 512        # comandos de shell sem resultado ainda, lembrados para dar o resultado a eles (Weather)
 
 _WANTED_MESSAGE_COLUMNS = ("id", "session_id", "role", "content", "tool_call_id", "tool_calls",
                            "tool_name", "timestamp", "finish_reason", "reasoning", "codex_reasoning_items",
@@ -59,6 +61,7 @@ class StateDbReader:
         self._sessions: dict[str, dict[str, Any] | None] = {}
         self._factories: dict[str, EventFactory] = {}
         self._announced: set[str] = set()
+        self._shell_calls: OrderedDict[str, str] = OrderedDict()      # tool_call_id -> comando, até o resultado
 
     def poll(self) -> list[Event]:
         if not self.db_path.is_file():
@@ -138,6 +141,13 @@ class StateDbReader:
                    "model": session.get("model")})
         return factory.make(f"{sid}:start", ts, "sessions", body, agent=agent, signal=signal)
 
+    def _command_result(self, msg: dict[str, Any], content: str) -> dict[str, Any] | None:
+        """O resultado de um comando de shell: o código de saída vem no JSON do resultado e o comando, da chamada vista antes."""
+        call_id = msg.get("tool_call_id")
+        command = self._shell_calls.pop(call_id, None) if isinstance(call_id, str) else None
+        code = _exit_code(content) if command is not None else None
+        return None if code is None else result_signal(command, ok=code == 0, exit_code=code)
+
     def _translate(self, conn: sqlite3.Connection, session: dict[str, Any], msg: dict[str, Any]) -> list[Event]:
         root, agent = self._root_and_agent(conn, session)
         factory = self._factory(session["_realm"], root)
@@ -156,7 +166,7 @@ class StateDbReader:
             return out
         if role == "tool":
             out.append(factory.make(key, ts, "messages/tool", native, agent=agent,
-                                    inner={"role": "result", "text": content}))
+                                    inner={"role": "result", "text": content}, signal=self._command_result(msg, content)))
             return out
         if role != "assistant":
             return out
@@ -176,6 +186,11 @@ class StateDbReader:
                 parsed = json.loads(arguments) if isinstance(arguments, str) else arguments
             except json.JSONDecodeError:
                 parsed = arguments
+            command = parsed.get("command") if isinstance(parsed, dict) else None
+            if name.lower() in mapping.SHELL_TOOLS and isinstance(command, str) and command and isinstance(call.get("id"), str):
+                self._shell_calls[call["id"]] = command         # só chamada com um comando de verdade (execute_code não é shell)
+                if len(self._shell_calls) > _SHELL_CALLS:
+                    self._shell_calls.popitem(last=False)
             out.append(factory.make(f"{key}#tool{index}", ts, "messages/assistant.tool_call", call, agent=agent,
                                     inner={"role": "tool", "text": f"{name} {arguments or ''}".strip()},
                                     signal={"type": "activity", "activity": mapping.activity_for_tool(name, parsed)}))
@@ -184,6 +199,15 @@ class StateDbReader:
             out.append(factory.make(f"{key}#stop", ts, "messages/assistant.stop", {"finish_reason": "stop"},
                                     signal={"type": "idle"}))
         return out
+
+
+def _exit_code(content: str) -> int | None:
+    """O `exit_code` do JSON que o `terminal` do Hermes grava como resultado; texto que não é isso não afirma nada."""
+    try:
+        data = json.loads(content)
+    except (json.JSONDecodeError, TypeError):
+        return None
+    return exit_code_of(data.get("exit_code")) if isinstance(data, dict) else None
 
 
 def _json_items(raw: Any) -> list[dict[str, Any]]:

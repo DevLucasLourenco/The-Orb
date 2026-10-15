@@ -31,10 +31,11 @@ SIGNAL_FIELDS: dict[str, frozenset[str]] = {
     "waiting.resolved": frozenset({"request"}),
     "usage": frozenset({"input_tokens", "output_tokens"}),
     "error": frozenset({"message"}),
+    "command.result": frozenset({"ok"}),
     "signal.lost": frozenset(),
     "signal.restored": frozenset(),
     # 0.3 (R49, D-085): sinais de realm (`alter_ego` nulo), produzidos pelos Probes. Os outros sinais da 0.3
-    # (`command.result`, `realm.changes`, `account.limits`, `tasks.updated`) entram nos tickets deles.
+    # (`account.limits`, `tasks.updated`) entram nos tickets deles; `command.result` é de sessão (ticket 19).
     "realm.metrics": frozenset({"loc"}),
     "realm.changes": frozenset({"changes"}),
 }

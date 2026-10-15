@@ -207,3 +207,7 @@ Só estrutura e contagens, nos 12 rollouts mais recentes (176 linhas `agent_mess
 3. Subagentes ao vivo no app-server (`parentThreadId` em `thread/started`).
 4. Se `--remote` mantém todos os recursos da TUI (slash commands, plugins, MCP).
 5. `codex resume <id>` para reabrir um Alter Ego: confirmar que mantém o id da thread.
+
+## command.result (ticket 19, D-084)
+
+**App-server:** `item/completed:commandExecution` com `exitCode` inteiro vira `command.result` no próprio evento (`ok` = código 0, atividade por `commandActions` ou pelo classificador); sem código (`inProgress`), nada se afirma. **Rollout:** `event_msg/item_completed` com `item.type = CommandExecution` e `exit_code` inteiro vira um evento novo `event_msg/item_completed` (o `command` é uma lista de argumentos, juntada para o classificador); a saída grande (`stdout`, `aggregated_output`) não vai no nativo (exceção à regra do nativo intacto, como o `encrypted_content`: o `native.body` leva só `id`, `command`, `exit_code`, `status` e `duration`). Outros itens e comandos sem código continuam ignorados.

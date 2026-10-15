@@ -13,7 +13,7 @@ from pathlib import Path
 from typing import Any
 
 from ...protocol import Event
-from .._shared import EventFactory, JsonlFollower, RealmOf, classify_command, single_realm
+from .._shared import EventFactory, JsonlFollower, RealmOf, classify_command, exit_code_of, result_signal, single_realm
 from . import mapping
 
 SOURCE = "codex/rollout"
@@ -249,8 +249,20 @@ class RolloutReader:
                 signal = {"type": "idle"}
             elif ptype == "task_started":
                 signal = {"type": "activity", "activity": "THINKING"}
+            elif ptype == "item_completed":
+                # Só o comando que terminou com código de saída vira evento (o resultado em texto já veio em
+                # `function_call_output`); a saída grande (`stdout`, `aggregated_output`) não vai no nativo.
+                item = payload.get("item") if isinstance(payload.get("item"), dict) else {}
+                code = exit_code_of(item.get("exit_code"))
+                if item.get("type") != "CommandExecution" or code is None:
+                    return None
+                command = item.get("command")
+                text = " ".join(str(part) for part in command) if isinstance(command, list) else str(command or "")
+                signal = result_signal(text, ok=code == 0, exit_code=code)
+                payload = {"item": {k: item.get(k) for k in ("id", "command", "exit_code", "status", "duration")}}
             else:
-                # token_count/item_completed: redundantes com as linhas acima. thread_settings_applied: o modelo
+                # token_count e os outros item_completed: redundantes com as linhas acima (só o comando com código de saída vira
+                # evento, acima). thread_settings_applied: o modelo
                 # já vem de `turn_context` (igual em 125 de 125 turnos) e o resto das configurações não tem sinal
                 # no vocabulário (CODEX.md §8).
                 return None

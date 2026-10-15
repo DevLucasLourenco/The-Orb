@@ -210,3 +210,7 @@ processo termina antes do `curl` (`SessionEnd` em `-p`); `SessionStart` não che
 3. Exercitar os hooks não provocados (§2.2).
 4. Opção que faça o Claude Code gravar mais texto de thinking (a investigar).
 5. Receptor mínimo do nível 1 como processo separado e sempre responsivo.
+
+## command.result (ticket 19, D-084)
+
+O bloco `tool_result` de uma chamada de `Bash`/`PowerShell` vira o sinal `command.result` no próprio evento `user/tool_result`: `ok` é falso se o bloco é `is_error` ou se o `toolUseResult.interrupted` do registro é verdadeiro. **O Claude não grava código de saída**, então não há `exit_code`. O comando vem da chamada (`tool_use`) vista antes, ligada pelo `tool_use_id` (até 512 pendentes na memória); resultado sem a chamada vista não afirma nada. `interrupted` conta como falha por decisão (D-084); o formato vem da D-084 e do que o `CLAUDE.md` §2 já registrava, e não foi reconferido ao vivo no ticket 19.

@@ -158,6 +158,21 @@ def _validate_signal(signal: Any, event: dict[str, Any]) -> str | None:
         return _validate_split(signal, loc)
     if kind == "realm.changes":
         return _validate_changes(signal)
+    if kind == "command.result":
+        return _validate_command_result(signal)
+    return None
+
+
+def _validate_command_result(signal: dict[str, Any]) -> str | None:
+    """`command.result`: passou ou falhou (`ok`), o código de saída só quando o provider informa e a atividade do comando."""
+    if not isinstance(signal["ok"], bool):
+        return "command.result: ok deve ser verdadeiro ou falso"
+    code = signal.get("exit_code")
+    if code is not None and (isinstance(code, bool) or not isinstance(code, int)):
+        return "command.result: exit_code deve ser um inteiro"
+    activity = signal.get("activity")
+    if activity is not None and activity not in ACTIVITIES:
+        return f"command.result: atividade inválida: {activity!r}"
     return None
 
 
