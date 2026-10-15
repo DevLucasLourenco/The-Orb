@@ -1,10 +1,13 @@
-// Identidade visual de cada provider. O personagem carrega a cor do CLI da sua sessão.
+// Identidade visual de cada provider (R30, VISUAL.md §5, D-187). O personagem carrega a cor do CLI da sua sessão: Claude laranja,
+// Codex azul, Hermes amarelo, opencode cinza (claro, para não se confundir com o cinza do "sem sinal").
 export const PROVIDERS = {
-  claude:   { label: "Claude",   color: "#e8845c" },
-  codex:    { label: "Codex",    color: "#2fd3a2" },
-  hermes:   { label: "Hermes",   color: "#b18cff" },
-  opencode: { label: "opencode", color: "#5aa8ff" },
+  claude:   { label: "Claude",   color: "#ff7a1a" },
+  codex:    { label: "Codex",    color: "#2f80ff" },
+  hermes:   { label: "Hermes",   color: "#ffd60a" },
+  opencode: { label: "opencode", color: "#b8c0cc" },
 };
+// "Esperando o Lucas" (R20c, D-187): magenta pulsante, a única cor de espera em todo o mundo (feixe, anel, arestas, marcador, rótulos).
+export const WAIT_COLOR = "#ff2bd6";
 const UNKNOWN = { label: "?", color: "#9aa7bd" };
 
 export const provider = (name) => PROVIDERS[name] || UNKNOWN;

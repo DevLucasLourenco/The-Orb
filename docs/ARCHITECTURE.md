@@ -4,7 +4,7 @@
 > âmbito. Vocabulário: [CONTEXT.md](../CONTEXT.md) · Contrato de eventos: [PROTOCOL.md](PROTOCOL.md)
 > · Decisões: [adr/](adr/).
 
-Última atualização: 2026-10-14
+Última atualização: 2026-10-15
 
 ---
 
@@ -368,7 +368,7 @@ The Orb/
 │   ├── terminal_host/   launch.py · env.py · terminal.py
 │   └── gateway/         app.py · messages.py · realms.py · projects.py
 ├── clients/
-│   ├── web/             o mundo 3D: index.html, styles.css, js/ (scene, realm3d, avatar, hud, innerworld, net)
+│   ├── web/             o mundo 3D: index.html, styles.css, js/ (scene, realm3d, areaicons, avatar, hud, innerworld, net, providers)
 │   └── godot/           terminal remoto (alternativa; godot-xterm só exibe)
 ├── tests/               (tests/governance/: testes das skills de acompanhamento)
 ├── tools/governance/    hook opcional de fechamento das entregas (skill delivery-summary)

@@ -34,8 +34,8 @@
 | Projeto apagado do disco | Pasta que não existe mais, mas está no histórico dos CLIs | **Decidido**: não entra (R3d) |
 | Tela de configurações do Orb | Preferências do Lucas (realms escondidos, prazo das sessões recentes) num arquivo próprio do Orb | **Decidido** (R29) |
 | Sessões recentes na sala, antigas no Histórico do realm | Na sala, ativas + últimos 10 dias (configurável); as demais no Histórico do realm | **Decidido** (R28a) |
-| Cores novas dos providers | Claude laranja, Codex azul, Hermes amarelo, opencode cinza | **Decidido** (R30); colisões resolvidas (D-040) |
-| Áreas identificadas por ícone e nome, sem cor | Libera as cores para git (janelas), providers (personagens) e "esperando" | **Decidido** (R20c, D-040); ícones em V-PEND-7d |
+| Cores novas dos providers | Claude laranja, Codex azul, Hermes amarelo, opencode cinza | **Decidido** (R30); colisões resolvidas (D-040); tons aprovados e em uso (ticket 05, D-187) |
+| Áreas identificadas por ícone e nome, sem cor | Libera as cores para git (janelas), providers (personagens) e "esperando" | **Decidido** (R20c, D-040); ícones, padrões e magenta aprovados e em uso (ticket 05, D-187) |
 | Lista de realms com marcação | O Lucas desmarca um realm para escondê-lo da cidade; preferência guardada pelo Orb | **Decidido** (R3c); ticket a criar |
 | Sessões encerradas permanecem | O Alter Ego não é excluído quando a sessão termina | **Decidido** (R28); na sala por 10 dias, depois no Histórico do realm (R28a) |
 | Cenário declarado | Céu, chão, grade, estrelas e luz são cenário, declarados em VISUAL.md | **Decidido** (R12a) |

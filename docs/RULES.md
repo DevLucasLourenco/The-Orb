@@ -6,7 +6,7 @@
 > · O que cada elemento visual significa: [VISUAL.md](VISUAL.md) · Todas as decisões, em ordem:
 > [DECISIONS.md](DECISIONS.md).
 
-Última atualização: 2026-10-14
+Última atualização: 2026-10-15
 
 ## Como usar este documento
 
@@ -80,9 +80,9 @@ Situação: ✅ cumprida · ⚠️ parcial ou com heurística não decidida · �
 | R20a | **A cor de uma janela acesa é a cor do tipo de alteração no git**, com a **paleta de alterações do git do VS Code** (inserção, modificação, remoção, não rastreado, renomeado, conflito). Valores em [VISUAL.md](VISUAL.md) §5. | Lucas, 2026-10-07 e 2026-10-08 | ✅ Ticket 11: a cor da janela é a do tipo de alteração, com os seis valores da VISUAL §5 no código (o tom renderizado, com brilho e *tone mapping*, não foi comparado pixel a pixel) |
 | R20b | As janelas mostram as **alterações locais** do projeto (o estado do repositório na máquina: modificado, novo, apagado…). Uma **alteração** é um arquivo com alteração local. Ler esse estado **nunca grava nada** no projeto nem no `.git` (R16). ~~Cada janela é um arquivo~~ (revisto por R20d). | Lucas, 2026-10-08 | ✅ Ticket 11: `git status` e `git diff --numstat` só leitura (`--no-optional-locks`), com tipo e linhas alteradas por arquivo; nada é gravado no projeto nem no `.git` |
 | R20d | **Janelas por percentual:** cada janela acesa representa **x% das alterações locais** do realm, com **x = 5%** (configurável no Orb), e **uma alteração nunca fica dividida entre duas janelas**. O peso de uma alteração são as **linhas alteradas**. Como as alterações viram janelas: [VISUAL.md](VISUAL.md) §6. | Lucas, 2026-10-08 (D-038, D-039, D-041, D-042) | ✅ Ticket 11: x = 5% (de 1 a 50, nas configurações), nenhuma alteração dividida, ordem estável pelo caminho, distribuição regular no andar (`core/facade.py`) |
-| R20c | **As áreas não têm cor própria**: piso neutro, cada área identificada por **ícone e nome** (e um padrão no piso). O sinal de **"esperando o Lucas"** é **magenta pulsante**. As cores ficam só para janelas (git), personagens (provider) e "esperando". | Lucas, 2026-10-08 (D-036, D-040) | ❌ Hoje as áreas são coloridas (Testing Lab verde, Code Review amarelo…) e "esperando" é âmbar |
+| R20c | **As áreas não têm cor própria**: piso neutro, cada área identificada por **ícone e nome** (e um padrão no piso). O sinal de **"esperando o Lucas"** é **magenta pulsante**. As cores ficam só para janelas (git), personagens (provider) e "esperando". | Lucas, 2026-10-08 (D-036, D-040) | ✅ Ticket 05: piso neutro com ícone, nome e padrão em cada área; "esperando" em magenta `#ff2bd6` pulsante (feixe, anel, arestas, marcador sobre a cabeça e painel). As arestas e o anel de repouso da sala seguem azuis (Q-T05-2); o desenho no piso foi conferido só numa página sintética (Q-T05-3) |
 | R20e | **Submódulos do git não acendem janela** no projeto pai: são outro repositório. | Lucas, 2026-10-09 (D-092) | ✅ Ticket 11: os submódulos ficam de fora (`--ignore-submodules=all` e o registro de submódulo é descartado) |
-| R30 | **Cores dos providers** (corpo e halo do personagem): **Claude laranja · Codex azul · Hermes amarelo · opencode cinza**, em tons saturados. | Lucas, 2026-10-08 (D-037, D-040) | ❌ Hoje Codex é verde-água, Hermes violeta e opencode azul |
+| R30 | **Cores dos providers** (corpo e halo do personagem): **Claude laranja · Codex azul · Hermes amarelo · opencode cinza**, em tons saturados. | Lucas, 2026-10-08 (D-037, D-040) | ✅ Ticket 05: Claude `#ff7a1a`, Codex `#2f80ff`, Hermes `#ffd60a`, opencode `#b8c0cc` (prévia aprovada, D-187 e D-188) |
 | R31 | Uma sessão recente aparece **"dormindo"** na sala depois de **15 min parada**. | Lucas, 2026-10-08 (D-044) | ✅ Derivado pelo mundo (`asleep`, ticket 01); o cliente só desenha |
 | R33 | **Sala cheia:** o Rooftop Room não cresce; cada área mostra até **8 personagens** e um contador **"+N"**; o overview lista todos. | Lucas, 2026-10-08 (D-057) | ❌ |
 | R34 | **Aviso de diálogo:** nas sessões abertas pelo Orb, um módulo próprio reconhece diálogos conhecidos do CLI pelo texto da tela e marca o personagem como "esperando o Lucas". **Nunca responde** (R16, ADR 0006). | Lucas, 2026-10-08 (D-060) | ⏳ |

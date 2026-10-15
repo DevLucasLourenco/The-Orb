@@ -1,7 +1,7 @@
 // Personagens: o Alter Ego (uma sessão, o líder) e os subagentes da Team. A cor é a do provider.
 import * as THREE from "three";
 import { CSS2DObject } from "three/addons/renderers/CSS2DRenderer.js";
-import { STATE_LABEL, el, isAsleep, provider, sessionTitle } from "./providers.js";
+import { STATE_LABEL, WAIT_COLOR, el, isAsleep, provider, sessionTitle } from "./providers.js";
 
 const WORKING = new Set(["READING", "RESEARCHING", "CODING", "EXECUTING", "TESTING", "REVIEWING"]);
 // Subagente sem sinal (R7, D-050): cinza neutro, translúcido, sem halo e com o ícone de sinal cortado.
@@ -57,9 +57,9 @@ export class Avatar {
       new THREE.MeshBasicMaterial({ color, toneMapped: false }));
     this.halo.rotation.x = Math.PI / 2;
     this.halo.position.y = 2.72;
-    // Marcador de espera: um losango âmbar girando sobre a cabeça.
+    // Marcador de espera: um losango magenta girando sobre a cabeça.
     this.alert = new THREE.Mesh(new THREE.OctahedronGeometry(0.34),
-      new THREE.MeshBasicMaterial({ color: 0xffb547, toneMapped: false }));
+      new THREE.MeshBasicMaterial({ color: new THREE.Color(WAIT_COLOR), toneMapped: false }));
     this.alert.position.y = 3.35;
     this.alert.visible = false;
     // Sem sinal (só subagentes): ícone de sinal cortado sobre a cabeça.

@@ -7,13 +7,13 @@
   --fg: #e6ecf5;
   --muted: #8a97ad;
   --accent: #7cc4ff;
-  --wait: #ffb547;
+  --wait: #ff2bd6;
   --ok: #5fe0a0;
   --err: #ff6b6b;
-  --claude: #e8845c;
-  --codex: #2fd3a2;
-  --hermes: #b18cff;
-  --opencode: #5aa8ff;
+  --claude: #ff7a1a;
+  --codex: #2f80ff;
+  --hermes: #ffd60a;
+  --opencode: #b8c0cc;
   --radius: 12px;
   --font: "Segoe UI Variable", "Segoe UI", system-ui, -apple-system, sans-serif;
   --mono: "Cascadia Mono", Consolas, ui-monospace, monospace;
@@ -57,7 +57,7 @@ button, select { font: inherit; color: inherit; }
 .realm-name { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .dots { display: flex; gap: 3px; flex-wrap: wrap; grid-column: 2 / 4; }
 .dot { width: 8px; height: 8px; border-radius: 50%; }
-.badge-wait { color: #1a1200; background: var(--wait); border-radius: 8px; padding: 0 6px; font-size: 11px; font-weight: 700; }
+.badge-wait { color: #1a0014; background: var(--wait); border-radius: 8px; padding: 0 6px; font-size: 11px; font-weight: 700; }
 
 /* ---------- painel de overview ---------- */
 .panel {
@@ -86,7 +86,7 @@ button, select { font: inherit; color: inherit; }
 .prov { font-size: 10px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--pc); }
 .title { font-weight: 600; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .chip { font-size: 10px; font-weight: 700; letter-spacing: .06em; padding: 2px 7px; border-radius: 999px; background: rgba(124, 196, 255, .14); color: var(--accent); }
-.chip.WAITING { background: rgba(255, 181, 71, .18); color: var(--wait); }
+.chip.WAITING { background: rgba(255, 43, 214, .18); color: var(--wait); }
 .chip.ERROR, .chip.NO_SIGNAL { background: rgba(255, 107, 107, .16); color: var(--err); }
 .chip.IDLE, .chip.COMPLETED { background: rgba(255, 255, 255, .07); color: var(--muted); }
 .now { margin-top: 6px; font-family: var(--mono); font-size: 11.5px; color: #c7d2e3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -144,7 +144,7 @@ select option { background: #0c111c; }
 .line .t { color: var(--muted); }
 .line .k { color: var(--accent); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .line .x { white-space: pre-wrap; word-break: break-word; color: #d6deea; max-height: 9.5em; overflow: hidden; }
-.line.prompt { background: rgba(255, 181, 71, .05); }
+.line.prompt { background: rgba(255, 43, 214, .05); }
 .line.prompt .k { color: var(--wait); }
 .line.thought .x { font-style: italic; color: #b7c3d6; }
 .line.result .x { color: var(--muted); }
