@@ -39,7 +39,7 @@ Implementado em 2026-10-15 (branch `ticket/19-weather`). Só estrutura e contage
   Claude (`is_error`/`interrupted`, ligado à chamada pelo `tool_use_id`), Codex (`exitCode` no app-server, `item.exit_code` no rollout), Hermes (`exit_code` no JSON do `terminal`, ligado pelo `tool_call_id`)
   e opencode (`state.metadata.exit` do `bash`); no mundo, `World.tests` (o último teste de cada realm) e `weather` no snapshot; no cliente, a lua ou a nuvem com chuva sobre o prédio e a linha "Weather" no rótulo.
 - **Testes:** `tests/test_command_result.py` (19 casos em 18 funções): o vocabulário, os quatro CLIs e o mundo (último vence, resultado atrasado, comando que não é teste, subagente, prazo da sala, sem hora, `time_key`).
-- **Decisões a confirmar:** Q-T19-1 a Q-T19-6 em `docs/DECISIONS.md` (provisórias, P2).
+- **Decisões:** o Lucas confirmou Q-T19-1 a Q-T19-6 em 2026-10-15 (D-181 a D-186 em `docs/DECISIONS.md`). **Aguarda:** o envio do PR.
 - **Dados reais:** só conferi a **estrutura** do `event_msg/item_completed` do Codex nesta máquina (6.562 comandos concluídos, `exit_code` inteiro em todos, `command` como lista de argumentos); não li conteúdo.
   Não rodei os quatro CLIs de verdade (isso consome cota): os formatos do Claude, Hermes e opencode seguem o que a D-084 já tinha conferido.
 - **Na tela:** numa página temporária (não versionada) com Weather sintético: a lua branca, a nuvem com chuva acima do rótulo, e o prédio sem dado sem nada; console sem erros. A animação da chuva não foi vista em movimento.
