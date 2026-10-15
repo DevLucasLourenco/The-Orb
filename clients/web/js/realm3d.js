@@ -41,6 +41,8 @@ export const AREAS = {
 };
 const AREA_FLOOR = 0x2a3550;      // piso neutro de todas as áreas (cinza-azulado, o mesmo para as cinco)
 const AREA_EDGE = 0xaebbd4;       // aresta neutra das áreas
+const ROOM_REST = 0x7cc4ff;       // azul de repouso da sala (arestas e anel do lobby): o tema da cidade, não uma cor com significado (Q-T05-2)
+const WAIT = new THREE.Color(WAIT_COLOR);        // magenta de "esperando o Lucas", uma cor só para o feixe, o anel e as arestas
 const LOBBY = { x: 0, z: 0.2, r: 1.9 };          // quem não está numa área (pensando, parado, esperando)
 const UP = new THREE.Vector3(0, 1, 0);
 const DORM = { z: 7.9, x0: -7.6, x1: 7.6 };      // sessões dormindo: fileira na frente do quartinho
@@ -136,7 +138,7 @@ export class RealmBuilding {
     glass.position.y = ROOM_H / 2;
     glass.userData.realmId = this.id;
     this.roomEdges = new THREE.LineSegments(new THREE.EdgesGeometry(roomGeo),
-      new THREE.LineBasicMaterial({ color: 0x7cc4ff, toneMapped: false, transparent: true, opacity: 0.85 }));
+      new THREE.LineBasicMaterial({ color: ROOM_REST, toneMapped: false, transparent: true, opacity: 0.85 }));
     this.roomEdges.position.copy(glass.position);
     this.glass = glass;
     this.light = new THREE.PointLight(0x9cc8ff, 22, 30, 1.4);
@@ -317,7 +319,7 @@ export class RealmBuilding {
       this.room.add(pad, edge, decal, label);
     }
     const lobby = new THREE.Mesh(new THREE.RingGeometry(LOBBY.r - 0.12, LOBBY.r, 48),
-      new THREE.MeshBasicMaterial({ color: 0x7cc4ff, toneMapped: false, transparent: true, opacity: 0.5, side: THREE.DoubleSide }));
+      new THREE.MeshBasicMaterial({ color: ROOM_REST, toneMapped: false, transparent: true, opacity: 0.5, side: THREE.DoubleSide }));
     lobby.rotation.x = -Math.PI / 2;
     lobby.position.set(LOBBY.x, 0.03, LOBBY.z);
     this.roomLights.push(lobby);
@@ -326,12 +328,12 @@ export class RealmBuilding {
 
   _beacon() {
     // Feixe de luz magenta (R20c): alguém deste realm está esperando o Lucas. Visível da cidade inteira.
-    const mat = new THREE.MeshBasicMaterial({ color: new THREE.Color(WAIT_COLOR), transparent: true, opacity: 0.0, toneMapped: false,
+    const mat = new THREE.MeshBasicMaterial({ color: WAIT, transparent: true, opacity: 0.0, toneMapped: false,
       blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide });
     this.beacon = new THREE.Mesh(new THREE.CylinderGeometry(1.1, 2.4, 140, 24, 1, true), mat);
     this.beacon.position.y = ROOM_H + 70;
     this.beaconRing = new THREE.Mesh(new THREE.TorusGeometry(ROOF * 0.72, 0.12, 8, 96),
-      new THREE.MeshBasicMaterial({ color: new THREE.Color(WAIT_COLOR), toneMapped: false, transparent: true, opacity: 0 }));
+      new THREE.MeshBasicMaterial({ color: WAIT, toneMapped: false, transparent: true, opacity: 0 }));
     this.beaconRing.rotation.x = Math.PI / 2;
     this.beaconRing.position.y = 0.25;
     this.room.add(this.beacon, this.beaconRing);
@@ -398,7 +400,8 @@ export class RealmBuilding {
     const pulse = this.waiting ? 0.5 + 0.5 * Math.sin(t * 3.2) : 0;
     this.beacon.material.opacity = this.waiting ? 0.10 + 0.14 * pulse : 0;
     this.beaconRing.material.opacity = this.waiting ? 0.35 + 0.5 * pulse : 0;
-    this.roomEdges.material.color.set(this.waiting ? WAIT_COLOR : 0x7cc4ff);
+    this.roomEdges.material.color.set(this.waiting ? WAIT : ROOM_REST);
+    this.roomEdges.material.opacity = this.waiting ? 0.6 + 0.4 * pulse : 0.85;          // as arestas também pulsam quando alguém espera
     // Noite: a sala do teto apaga (luz, pisos das áreas, arestas); as janelas da fachada seguem como estão.
     const lit = !this.night;
     this.light.visible = lit;

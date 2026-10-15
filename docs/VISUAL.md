@@ -133,7 +133,17 @@ prévia que o Lucas aprovou. (Antes: Claude `#E8845C`, Codex `#2FD3A2`, Hermes `
 
 **Decidido (R20c, D-187):** as áreas **não têm cor própria**: piso neutro, identificadas por **ícone e
 nome** (e um padrão no piso; ver V-REALM-8). "Esperando o Lucas" é **magenta pulsante**, `#ff2bd6`: feixe e anel do prédio, arestas
-da sala, marcador sobre a cabeça e, no painel, o contador, o selo, o cartão, o rótulo e o aviso de quem espera. É a única cor de espera.
+da sala, marcador sobre a cabeça e, no painel, o contador, o selo, o cartão, o rótulo e o aviso de quem espera. É a única cor de espera. Pulsam o feixe, o anel, as arestas da sala e o marcador sobre a cabeça; no painel a cor é fixa.
+
+| Elemento | Valor |
+|---|---|
+| "Esperando o Lucas" (feixe, anel, arestas, marcador, painel) | magenta `#ff2bd6` |
+| Texto sobre o selo de espera do painel | `#1a0014` (escuro, para o contraste) |
+| Piso das áreas (as cinco iguais) | `#2a3550`, 55% opaco |
+| Aresta das áreas | `#aebbd4`, 50% |
+| Traço do ícone da área | `#dfe7f5` |
+| Padrão do piso da área | `#9fb0cc`, 16% |
+| Azul de repouso da sala (arestas e anel do lobby), tema da cidade | `#7cc4ff` (Q-T05-2) |
 
 ### Subagente sem sinal (V-EGO-10, R7, D-050)
 

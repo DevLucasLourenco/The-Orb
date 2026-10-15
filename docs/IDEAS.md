@@ -5,7 +5,7 @@
 > §3, princípio 5): o Orb só visualiza; a única porta de escrita é o terminal do Inner World.
 > Escopo do MVP: [MVP.md](MVP.md).
 
-Última atualização: 2026-10-09
+Última atualização: 2026-10-15
 
 **Status:** `Feito` = implementado em `src/` · `MVP` = no escopo do MVP · `Próximo` = logo depois ·
 `Backlog` = guardado · `Pesquisa` = investigar antes · `Decidido` = registrado em ADR/visão ·

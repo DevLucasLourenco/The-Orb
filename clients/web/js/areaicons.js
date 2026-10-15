@@ -64,6 +64,7 @@ export const AREA_MARKS = {
 // nome (que fica na frente) e do lugar onde o personagem para. Transparente: a cor do piso é a do pad (neutra).
 export function areaDecal(name, w, d) {
   const mark = AREA_MARKS[name];
+  if (!mark) throw new Error(`área sem ícone e padrão em AREA_MARKS: ${name}`);        // AREAS e AREA_MARKS andam juntas
   const canvas = document.createElement("canvas");
   canvas.width = Math.round(w * PX_PER_UNIT);
   canvas.height = Math.round(d * PX_PER_UNIT);

@@ -59,7 +59,7 @@ export class Avatar {
     this.halo.position.y = 2.72;
     // Marcador de espera: um losango magenta girando sobre a cabeça.
     this.alert = new THREE.Mesh(new THREE.OctahedronGeometry(0.34),
-      new THREE.MeshBasicMaterial({ color: new THREE.Color(WAIT_COLOR), toneMapped: false }));
+      new THREE.MeshBasicMaterial({ color: new THREE.Color(WAIT_COLOR), toneMapped: false, transparent: true }));
     this.alert.position.y = 3.35;
     this.alert.visible = false;
     // Sem sinal (só subagentes): ícone de sinal cortado sobre a cabeça.
@@ -171,6 +171,7 @@ export class Avatar {
     this.alert.visible = this.waiting;
     if (this.waiting) {
       this.alert.rotation.y += dt * 2.5;
+      this.alert.material.opacity = 0.6 + 0.4 * (0.5 + 0.5 * Math.sin(t * 3.2));      // pulsa no mesmo ritmo do feixe e do anel
       this.alert.position.y = 3.35 + Math.sin(t * 4) * 0.12;
     }
     this.thoughts.visible = this.state === "THINKING" && !this.asleep;
