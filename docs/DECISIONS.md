@@ -5,7 +5,7 @@
 > [ARCHITECTURE.md](ARCHITECTURE.md), [adr/](adr/)…). Decisões difíceis de reverter também têm um ADR.
 > Nada é apagado: uma decisão revista fica listada, com a que a substituiu.
 
-Última atualização: 2026-10-14
+Última atualização: 2026-10-15
 
 Quem: **Lucas** = decidido por ele · **Delegada** = o Lucas deixou a definição com o Claude; vale até
 ele revisar, e a proposta está escrita no documento do assunto.
@@ -201,6 +201,11 @@ ele revisar, e a proposta está escrita no documento do assunto.
 | D-184 | 2026-10-15 | **Testes rodados antes de o Orb abrir não aparecem** (os leitores começam do fim): ao reabrir, o céu volta a "sem dado" até alguém rodar um teste; ler esse passado é o ticket 25 | Lucas | Q-T19-4, D-087, R48 |
 | D-185 | 2026-10-15 | **Claude: falha = `is_error` ou interrompido, sem `exit_code`** (uma interrupção do Lucas também vira chuva); o resultado só é ligado ao comando pela chamada vista antes (`tool_use_id`) | Lucas | Q-T19-5, D-084 |
 | D-186 | 2026-10-15 | **O céu:** céu limpo = lua branca (`#f1f4fa`); chuva = nuvem cinza (`#7b8394`) com riscos de chuva (`#aab4c4`) que descem; sem dado = nada; só tons neutros, fora do orçamento de cores (R20c); o rótulo ganha "Weather: céu limpo" ou "Weather: chuva" | Lucas | Q-T19-6, R42, V-REALM-16 |
+| D-187 | 2026-10-15 | **Cores, magenta e áreas do ticket 05 (V-PEND-7d):** a prévia foi aprovada como mostrada. Providers: Claude laranja `#ff7a1a`, Codex azul `#2f80ff`, Hermes amarelo `#ffd60a`, opencode cinza claro `#b8c0cc`. "Esperando o Lucas": magenta pulsante `#ff2bd6` (feixe, anel, arestas da sala, marcador sobre a cabeça e o painel). Áreas sem cor própria: piso neutro, ícone (código, frasco, lupa, olho, quadro de tarefas), nome e padrão no piso (diagonais, pontos, grade, listras, xadrez) | Lucas | previa05, R20c, R30, D-036, D-037, D-040 |
+| D-188 | 2026-10-15 | **O cinza do opencode é claro** (`#b8c0cc`), mais claro que o cinza do subagente sem sinal (`#8a909c`), que segue translúcido, sem halo e com o ícone de sinal cortado | Lucas | qt05-1, R7, R30 |
+| D-189 | 2026-10-15 | **O azul de repouso da sala fica** (arestas e anel do lobby, `#7cc4ff`): é o tema da cidade, não uma cor com significado; só o estado de espera muda para magenta. Tornar o tema neutro, se vier, é outro ticket | Lucas | qt05-2, R20c |
+| D-190 | 2026-10-15 | **O desenho das áreas no piso fica como implementado:** piso `#2a3550` (55% opaco) igual nas cinco, aresta `#aebbd4` (50%), padrão a 16% no piso todo e o ícone no fundo da área. Valores na VISUAL §5 | Lucas | qt05-3, R20c, V-REALM-8 |
+| D-191 | 2026-10-15 | **O magenta vale também no painel e nos rótulos, com cor fixa:** contador, selo, cartão, chip, aviso, linha de pedido e rótulos do personagem e do prédio usam `#ff2bd6`; só o mundo 3D pulsa; o texto do selo é escuro (`#1a0014`) | Lucas | qt05-4, R20c |
 
 ## Decisões revistas
 
@@ -549,3 +554,16 @@ e o mundo), menos o desenho do céu, que foi conferido na tela numa página com 
 | ~~Q-T19-4~~ D-184 | E os testes rodados antes de o Orb abrir? | **Não aparecem**: os leitores dos CLIs começam do fim do arquivo (D-087) e só veem o que acontece depois. Ao reabrir o Orb o céu volta a "sem dado" até alguém rodar um teste; ler esse passado é o ticket 25 (leitura única do passado, R48) |
 | ~~Q-T19-5~~ D-185 | Como o Claude, que não grava o código de saída, entra? | `ok` é falso se o bloco é `is_error` ou o comando foi `interrupted` (uma interrupção do Lucas também vira chuva: é o que a D-084 decidiu); **sem** `exit_code`. O resultado só é ligado ao comando pela chamada vista antes (`tool_use_id`, até 512 pendentes); resultado sem a chamada não afirma nada |
 | ~~Q-T19-6~~ D-186 | Como o céu aparece? | Acima da sala (e da antena do Arranha-céu): **céu limpo** = uma lua branca (`#f1f4fa`); **chuva** = uma nuvem cinza (`#7b8394`) com riscos de chuva (`#aab4c4`) que descem; **sem dado** = nada. Só tons neutros, fora do orçamento de cores (R20c). O rótulo ganha a linha "Weather: céu limpo" ou "Weather: chuva". O movimento da chuva é cenário: o dado é só "chuva" ou "não" |
+
+### Rodada: o que a implementação do ticket 05 decidiu por conta própria (aberta em 2026-10-15)
+
+O ticket 05 ([.scratch/the-orb-cidade-viva/issues/05-cores-e-areas.md](../.scratch/the-orb-cidade-viva/issues/05-cores-e-areas.md)) parou
+na prévia, que o Lucas aprovou (D-187) junto com o cinza do opencode (D-188). Ao desenhar no mundo, três pontos **não estavam escritos** e foram
+escolhidos de forma provisória (regra P2). O cliente só desenha: a conferência foi na tela, numa página sintética (ver o ticket). **O Lucas confirmou os três em 2026-10-15 (D-189 a D-191).**
+
+| Id | Pergunta | Proposta (já aplicada, provisória) |
+|---|---|---|
+| ~~Q-T05-1~~ D-188 | O cinza do opencode fica claro para não se confundir com o sem sinal? | **Sim**, `#b8c0cc`, mais claro que o sem sinal (`#8a909c`), que segue translúcido, sem halo e com o ícone de sinal cortado. **Confirmada pelo Lucas em 2026-10-15** |
+| ~~Q-T05-2~~ D-189 | As arestas e o anel de repouso da sala, hoje azuis (`#7cc4ff`), entram no orçamento de cores? | **Ficam como estão**: são o tema azul da cidade (céu, chão e sala) e o azul só muda para magenta quando alguém espera. O orçamento da R20c vale para o que tem significado; tornar o resto neutro é mudar o tema inteiro |
+| ~~Q-T05-3~~ D-190 | Como as áreas aparecem no piso do prédio? | Piso cinza-azulado igual nas cinco (`#2a3550`, 55% opaco), aresta neutra (`#aebbd4`, 50%), o padrão bem fraco (16%) no piso todo e o ícone (traço claro) no fundo da área, longe do nome e de onde o personagem para. Valores em VISUAL §5 |
+| ~~Q-T05-4~~ D-191 | O magenta também vale no painel e nos rótulos? | **Sim**: o contador "esperando você", o selo, o cartão, o chip, o aviso, a linha de pedido da linha do tempo e o rótulo do personagem e do prédio usam o mesmo `#ff2bd6`; o texto sobre o selo é escuro |

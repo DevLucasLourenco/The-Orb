@@ -4,7 +4,7 @@
 > ([RULES.md](RULES.md)): todo elemento que parece dado **é** dado; o resto é **cenário**, declarado
 > aqui. Um elemento novo só entra no mundo depois de ter uma linha nesta tabela.
 
-Última atualização: 2026-10-14 · Decisões em ordem: [DECISIONS.md](DECISIONS.md)
+Última atualização: 2026-10-15 · Decisões em ordem: [DECISIONS.md](DECISIONS.md)
 
 Tipo: **Dado** (vem da telemetria) · **Legenda** (código fixo de cores/formas, sempre o mesmo
 significado) · **Cenário** (sem significado, só ambiente) · **Heurística** (deduzido pelo Orb;
@@ -36,11 +36,11 @@ Situação: ✅ como está · ❌ precisa mudar · ❓ precisa de decisão.
 | V-REALM-16 | **Céu sobre o prédio (Weather)**: limpo, chuva ou nada | Dado | O **último** teste rodado nas sessões do realm (R42): passou = céu limpo; falhou = chuva; sem dado = nada. Cores neutras (cinza, branco), fora do orçamento de cores | ✅ Ticket 19: céu limpo = uma lua branca (`#f1f4fa`); chuva = uma nuvem cinza (`#7b8394`) com riscos de chuva (`#aab4c4`) que descem; acima da sala (e da antena). O mundo manda `weather`; o cliente só desenha. Visto na tela só com Weather sintético: a chuva em movimento e o Arranha-céu com antena e chuva por inteiro não foram vistos |
 | V-REALM-3 | **Janelas: quais acendem e de que cor** | Dado | **Antes: padrão aleatório** (saiu no ticket 11), sorteado pelo nome do realm, com cores quentes/frias sem significado. **Decidido:** andares = pastas de 1º nível (R20); as janelas mostram as **alterações locais** (R20b); **cada janela acesa = x% das alterações, e nenhuma alteração é dividida** (R20d, §6); **a cor é a do tipo de alteração no git**, paleta do VS Code (R20a, §5). A janela é só **acesa ou apagada**, sem esmaecer (D-043) | ✅ Ticket 11: o padrão aleatório saiu; o mundo calcula as janelas acesas (`facade.windows`, no snapshot em `facade`) e o cliente as desenha na cor do tipo (§5), com o vidro apagado nas outras posições |
 | V-REALM-4 | ~~Brilho geral das janelas~~ | — | ~~Quantidade de sessões ativas no realm~~ **Revisto (D-115):** a janela acesa tem brilho fixo; a atividade aparece na sala e no rótulo | ✅ Retirado no ticket 11: a janela acesa tem brilho fixo |
-| V-REALM-5 | Arestas de luz do Rooftop Room: azul / âmbar | Dado | Âmbar quando alguma sessão do realm espera o Lucas | ⚠️ A cor do "esperando" muda (R20c, V-PEND-7b) |
-| V-REALM-6 | Feixe âmbar subindo do prédio, anel âmbar pulsando | Dado | Alguma sessão do realm espera o Lucas (aprovação/pergunta); visível de toda a cidade | ⚠️ A cor do "esperando" muda (R20c, V-PEND-7b) |
+| V-REALM-5 | Arestas de luz do Rooftop Room: azul / magenta | Dado | Magenta (`#ff2bd6`) quando alguma sessão do realm espera o Lucas; azul no resto do tempo | ✅ Ticket 05: magenta (D-187). O azul de repouso segue como era (D-189) |
+| V-REALM-6 | Feixe magenta subindo do prédio, anel magenta pulsando | Dado | Alguma sessão do realm espera o Lucas (aprovação/pergunta); visível de toda a cidade | ✅ Ticket 05: magenta `#ff2bd6` (D-187) |
 | V-REALM-7 | Rótulo: nome, "N sessões · M ativas · K esperando" e, quando houver dado, o **Weather** e as **tarefas abertas** (D-097) | Dado | Snapshot do Core; sem dado, a parte não aparece | ⚠️ Ticket 19: o **Weather** ("Weather: céu limpo" ou "Weather: chuva") aparece no rótulo quando há dado; faltam as tarefas |
 | V-REALM-17 | **Task Board com as tarefas concluídas** da lista do CLI | Dado | A lista de tarefas que o provider grava (R50, D-093) | ⏳ |
-| V-REALM-8 | Cinco áreas no piso | Legenda | **Decidido (R20c):** piso neutro, cada área identificada por **ícone e nome** e um padrão no piso, sem cor própria. Hoje: Azul = Development Center · Verde = Testing Lab · Violeta = Research Center · Amarelo = Code Review · Rosa = Task Board (R21) | ❌ Mudar para R20c; ícones em V-PEND-7d |
+| V-REALM-8 | Cinco áreas no piso | Legenda | **Decidido (R20c, D-187):** piso neutro (o mesmo cinza-azulado nas cinco), cada área identificada por **ícone, nome e padrão no piso**, sem cor própria: Development Center = código `</>` e diagonais · Testing Lab = frasco e pontos · Research Center = lupa e grade · Code Review = olho e listras · Task Board = quadro de tarefas e xadrez (R21). O ícone fica no fundo da área, longe do nome | ✅ Ticket 05 (o desenho no piso: D-190) |
 | V-REALM-9 | Anel no centro da sala (lobby) | Legenda | Lugar de quem não está numa área: pensando, parado, esperando, delegando | ✅ |
 | V-REALM-10 | Fileira na frente da sala | Heurística | Sessões "dormindo" (parada há mais de 15 min, ou encerrada). Encerradas **não são excluídas** (R28). **Na sala só ficam as ativas e as dos últimos 10 dias** (configurável, R28a); as demais vão para o Histórico do realm | ✅ Prazo (R28a) e limite de 15 min (R31) decididos |
 | V-REALM-11 | Luz interna da sala, sombras | Cenário | Iluminação | ✅ (R12a) |
@@ -50,12 +50,12 @@ Situação: ✅ como está · ❌ precisa mudar · ❓ precisa de decisão.
 
 | Id | Elemento | Tipo | Significado / fonte | Situação |
 |---|---|---|---|---|
-| V-EGO-1 | **Cor** do corpo e do halo | Legenda | Provider da sessão. **Decidido (R30):** laranja = Claude · azul = Codex · amarelo = Hermes · cinza = opencode. Hoje: laranja-coral, verde-água, violeta, azul | ❌ Mudar para R30; colisões em V-PEND-7c |
+| V-EGO-1 | **Cor** do corpo e do halo | Legenda | Provider da sessão. **Decidido (R30, D-187):** laranja `#ff7a1a` = Claude · azul `#2f80ff` = Codex · amarelo `#ffd60a` = Hermes · cinza claro `#b8c0cc` = opencode (D-188) | ✅ Ticket 05 |
 | V-EGO-2 | **Posição** (área da sala) | Dado | Atividade atual da sessão → área ([PROTOCOL.md](PROTOCOL.md) §5) | ✅ |
 | V-EGO-3 | Caminhar até a área | Dado | Mudança de atividade | ✅ |
 | V-EGO-4 | Balanço do corpo, halo girando mais rápido | Dado | A sessão está trabalhando (lendo, editando, executando, testando, revisando, pesquisando) | ✅ |
 | V-EGO-5 | Três pontos orbitando a cabeça | Dado | `THINKING` | ✅ |
-| V-EGO-6 | Losango âmbar sobre a cabeça | Dado | A sessão espera o Lucas | ⚠️ A cor do "esperando" muda (R20c, V-PEND-7b) |
+| V-EGO-6 | Losango magenta sobre a cabeça | Dado | A sessão espera o Lucas | ✅ Ticket 05: magenta `#ff2bd6` (D-187) |
 | V-EGO-7 | Translúcido, cabeça baixa, sem halo | Heurística | "Dormindo": sessão recente parada há mais de 15 min (R31); o mundo informa `asleep` (R47) | ✅ |
 | V-EGO-8 | Rótulo: **nome histórico em destaque**; embaixo "provider · título da sessão"; depois atividade · última ação | Dado + Identidade | Título e modelo do próprio CLI; última ferramenta usada, com o texto do provider; o nome vem de §9 (D-066) | ✅ Ticket 04: nome em destaque, "provider · título" embaixo, depois atividade e última ação |
 | V-EGO-11 | **Nome histórico** do personagem (ex.: "Einstein") | Identidade | Sorteado sem reposição quando a sessão aparece, fica com a sessão (R37, §9) | ✅ Ticket 04 |
@@ -116,15 +116,34 @@ Arquivos ignorados pelo `.gitignore` não têm janela (R19).
 
 ### Providers — personagens (V-EGO-1, R30)
 
-**Decidido:** Claude **laranja** · Codex **azul** · Hermes **amarelo** · opencode **cinza**. Os tons
-exatos, saturados para se distinguirem da paleta do git, ficam para a V-PEND-7d. (Antes: Claude
-`#E8845C`, Codex `#2FD3A2`, Hermes `#B18CFF`, opencode `#5AA8FF`.)
+**Decidido (D-187, D-188), ticket 05:**
+
+| Provider | Cor | Hex |
+|---|---|---|
+| Claude | laranja | `#ff7a1a` |
+| Codex | azul | `#2f80ff` |
+| Hermes | amarelo | `#ffd60a` |
+| opencode | cinza claro | `#b8c0cc` |
+
+Saturados para se distinguirem da paleta do git. O cinza do opencode é **mais claro** que o do subagente sem sinal
+(`#8a909c`, translúcido, sem halo e com o ícone de sinal cortado), para os dois não se confundirem. Os tons passaram por uma
+prévia que o Lucas aprovou. (Antes: Claude `#E8845C`, Codex `#2FD3A2`, Hermes `#B18CFF`, opencode `#5AA8FF`.)
 
 ### Áreas e "esperando o Lucas"
 
-**Decidido (R20c):** as áreas **não têm cor própria**: piso neutro, identificadas por **ícone e
-nome** (e um padrão no piso). "Esperando o Lucas" é **magenta pulsante**. Ícones e tons exatos:
-V-PEND-7d.
+**Decidido (R20c, D-187):** as áreas **não têm cor própria**: piso neutro, identificadas por **ícone e
+nome** (e um padrão no piso; ver V-REALM-8). "Esperando o Lucas" é **magenta pulsante**, `#ff2bd6`: feixe e anel do prédio, arestas
+da sala, marcador sobre a cabeça e, no painel, o contador, o selo, o cartão, o rótulo e o aviso de quem espera. É a única cor de espera. Pulsam o feixe, o anel, as arestas da sala e o marcador sobre a cabeça; no painel a cor é fixa.
+
+| Elemento | Valor |
+|---|---|
+| "Esperando o Lucas" (feixe, anel, arestas, marcador, painel) | magenta `#ff2bd6` |
+| Texto sobre o selo de espera do painel | `#1a0014` (escuro, para o contraste) |
+| Piso das áreas (as cinco iguais) | `#2a3550`, 55% opaco |
+| Aresta das áreas | `#aebbd4`, 50% |
+| Traço do ícone da área | `#dfe7f5` |
+| Padrão do piso da área | `#9fb0cc`, 16% |
+| Azul de repouso da sala (arestas e anel do lobby), tema da cidade | `#7cc4ff` (D-189) |
 
 ### Subagente sem sinal (V-EGO-10, R7, D-050)
 
@@ -431,4 +450,4 @@ não fere a regra R12: é o nome do personagem, e assim é apresentado.
 | V-PEND-7 | **Conflito de cores (apontado pela regra P2).** As cores do git (verde = inserção, âmbar/amarelo = modificação, vermelho = remoção) já existem na legenda: verde = Testing Lab (V-REALM-8) e verde-água = Codex (V-EGO-1); amarelo = Code Review (V-REALM-8); âmbar = "esperando o Lucas" (V-REALM-5/6, V-EGO-6). ~~Qual muda? Qual a paleta do git?~~ **Decidido (2026-10-08): as janelas usam a paleta do git do VS Code; as áreas e o "esperando" trocam de cor (R20a, R20c).** | — |
 | V-PEND-7b | **As novas cores** das 5 áreas e do "esperando o Lucas", sem colidir com a paleta do git (§5). Atenção também às cores dos **providers**: o laranja do Claude fica perto do vermelho de remoção e do conflito, e o verde-água do Codex perto do verde de "não rastreado". Personagens e janelas são objetos diferentes; basta isso, ou os providers também mudam? | **Decidido (2026-10-08):** áreas em tons frios e neutros; "esperando" em magenta pulsante (R20c). Os providers **mudaram** (R30), o que reabre a escolha: V-PEND-7c. **Revisto em D-040:** áreas sem cor própria |
 | V-PEND-7c | **As cores novas dos providers (R30) colidem** (apontado pela regra P2): (a) **Hermes amarelo** × âmbar de "modificado" do git (`#E2C08D`) nas janelas; (b) **Codex azul** e **opencode cinza** × as áreas em tons frios e neutros (azul, cinza-azulado): um personagem azul sobre um piso azul some; (c) **Claude laranja** fica perto do vermelho de "apagado"/"conflito". | **Decidido (2026-10-08, D-040):** áreas sem cor própria (ícone, nome e padrão no piso); providers com as cores escolhidas, em tons saturados. |
-| V-PEND-7d | **Os tons exatos** (hex) de cada provider e do magenta, e **os ícones das 5 áreas** (Development Center, Testing Lab, Research Center, Code Review, Task Board). | Escolher junto da implementação, com uma prévia visual para o Lucas aprovar antes de valer |
+| ~~V-PEND-7d~~ | **Os tons exatos** (hex) de cada provider e do magenta, e **os ícones das 5 áreas** (Development Center, Testing Lab, Research Center, Code Review, Task Board). | **Decidido (2026-10-15, D-187 e D-188):** a prévia foi aprovada; os valores estão em §5 e em V-REALM-8 |

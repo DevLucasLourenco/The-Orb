@@ -1,7 +1,8 @@
 // Um Realm: o prédio do projeto, com o Rooftop Room de vidro no teto e as 5 áreas do Environment.
 import * as THREE from "three";
 import { CSS2DObject } from "three/addons/renderers/CSS2DRenderer.js";
-import { el, metricsText } from "./providers.js";
+import { WAIT_COLOR, el, metricsText } from "./providers.js";
+import { areaDecal } from "./areaicons.js";
 
 export const ROOF = 18;          // lado do Rooftop Room e do último andar do prédio: a sala é sempre do mesmo tamanho
 export const LEVEL_H = 3;        // altura de um nível (uma fileira de janelas)
@@ -29,14 +30,19 @@ const SKY_LABEL = { clear: "céu limpo", rain: "chuva" };
 const RAIN_STREAKS = 36;
 const RAIN_DEPTH = 12;
 
-// Áreas do Environment no piso do quartinho (x, z, largura, profundidade, cor). +z = frente.
+// Áreas do Environment no piso do quartinho (x, z, largura, profundidade). +z = frente. Sem cor própria (R20c, D-187): o piso é neutro e
+// cada área se identifica pelo ícone, pelo nome e por um padrão (areaicons.js).
 export const AREAS = {
-  "Development Center": { x: -4.7, z: 3.9, w: 6.6, d: 5.2, color: 0x3aa0ff },
-  "Testing Lab":        { x: 4.7,  z: 3.9, w: 6.6, d: 5.2, color: 0x8be04e },
-  "Research Center":    { x: -4.7, z: -3.9, w: 6.6, d: 5.2, color: 0x9d7bff },
-  "Code Review":        { x: 4.7,  z: -3.9, w: 6.6, d: 5.2, color: 0xffcc4d },
-  "Task Board":         { x: 0,    z: -7.3, w: 3.2, d: 2.2, color: 0xff6fa5 },
+  "Development Center": { x: -4.7, z: 3.9, w: 6.6, d: 5.2 },
+  "Testing Lab":        { x: 4.7,  z: 3.9, w: 6.6, d: 5.2 },
+  "Research Center":    { x: -4.7, z: -3.9, w: 6.6, d: 5.2 },
+  "Code Review":        { x: 4.7,  z: -3.9, w: 6.6, d: 5.2 },
+  "Task Board":         { x: 0,    z: -7.3, w: 3.2, d: 2.2 },
 };
+const AREA_FLOOR = 0x2a3550;      // piso neutro de todas as áreas (cinza-azulado, o mesmo para as cinco)
+const AREA_EDGE = 0xaebbd4;       // aresta neutra das áreas
+const ROOM_REST = 0x7cc4ff;       // azul de repouso da sala (arestas e anel do lobby): o tema da cidade, não uma cor com significado (Q-T05-2)
+const WAIT = new THREE.Color(WAIT_COLOR);        // magenta de "esperando o Lucas", uma cor só para o feixe, o anel e as arestas
 const LOBBY = { x: 0, z: 0.2, r: 1.9 };          // quem não está numa área (pensando, parado, esperando)
 const UP = new THREE.Vector3(0, 1, 0);
 const DORM = { z: 7.9, x0: -7.6, x1: 7.6 };      // sessões dormindo: fileira na frente do quartinho
@@ -132,7 +138,7 @@ export class RealmBuilding {
     glass.position.y = ROOM_H / 2;
     glass.userData.realmId = this.id;
     this.roomEdges = new THREE.LineSegments(new THREE.EdgesGeometry(roomGeo),
-      new THREE.LineBasicMaterial({ color: 0x7cc4ff, toneMapped: false, transparent: true, opacity: 0.85 }));
+      new THREE.LineBasicMaterial({ color: ROOM_REST, toneMapped: false, transparent: true, opacity: 0.85 }));
     this.roomEdges.position.copy(glass.position);
     this.glass = glass;
     this.light = new THREE.PointLight(0x9cc8ff, 22, 30, 1.4);
@@ -295,20 +301,25 @@ export class RealmBuilding {
     this.roomLights = [];        // o que se apaga de noite: pisos das áreas e anel do lobby
     for (const [name, a] of Object.entries(AREAS)) {
       const pad = new THREE.Mesh(new THREE.BoxGeometry(a.w, 0.12, a.d),
-        new THREE.MeshStandardMaterial({ color: a.color, emissive: a.color, emissiveIntensity: 0.18, transparent: true, opacity: 0.35, roughness: 0.4 }));
+        new THREE.MeshStandardMaterial({ color: AREA_FLOOR, emissive: AREA_FLOOR, emissiveIntensity: 0.18, transparent: true, opacity: 0.55, roughness: 0.4 }));
       pad.position.set(a.x, 0.06, a.z);
       pad.receiveShadow = true;
       const edge = new THREE.LineSegments(new THREE.EdgesGeometry(pad.geometry),
-        new THREE.LineBasicMaterial({ color: a.color, toneMapped: false, transparent: true, opacity: 0.9 }));
+        new THREE.LineBasicMaterial({ color: AREA_EDGE, toneMapped: false, transparent: true, opacity: 0.5 }));
       edge.position.copy(pad.position);
+      // O ícone e o padrão da área, num decalque transparente logo acima do piso (o topo do pad está em y = 0.12).
+      const decal = new THREE.Mesh(new THREE.PlaneGeometry(a.w, a.d),
+        new THREE.MeshBasicMaterial({ map: areaDecal(name, a.w, a.d), transparent: true, depthWrite: false, toneMapped: false }));
+      decal.rotation.x = -Math.PI / 2;
+      decal.position.set(a.x, 0.13, a.z);
       const label = new CSS2DObject(el("div", "lbl-area", name));
       label.position.set(a.x, 0.2, a.z + a.d / 2 - 0.4);
       this.areaLabels.push(label);
-      this.roomLights.push(pad, edge);
-      this.room.add(pad, edge, label);
+      this.roomLights.push(pad, edge, decal);
+      this.room.add(pad, edge, decal, label);
     }
     const lobby = new THREE.Mesh(new THREE.RingGeometry(LOBBY.r - 0.12, LOBBY.r, 48),
-      new THREE.MeshBasicMaterial({ color: 0x7cc4ff, toneMapped: false, transparent: true, opacity: 0.5, side: THREE.DoubleSide }));
+      new THREE.MeshBasicMaterial({ color: ROOM_REST, toneMapped: false, transparent: true, opacity: 0.5, side: THREE.DoubleSide }));
     lobby.rotation.x = -Math.PI / 2;
     lobby.position.set(LOBBY.x, 0.03, LOBBY.z);
     this.roomLights.push(lobby);
@@ -316,13 +327,13 @@ export class RealmBuilding {
   }
 
   _beacon() {
-    // Feixe de luz âmbar: alguém deste realm está esperando o Lucas. Visível da cidade inteira.
-    const mat = new THREE.MeshBasicMaterial({ color: 0xffb547, transparent: true, opacity: 0.0, toneMapped: false,
+    // Feixe de luz magenta (R20c): alguém deste realm está esperando o Lucas. Visível da cidade inteira.
+    const mat = new THREE.MeshBasicMaterial({ color: WAIT, transparent: true, opacity: 0.0, toneMapped: false,
       blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide });
     this.beacon = new THREE.Mesh(new THREE.CylinderGeometry(1.1, 2.4, 140, 24, 1, true), mat);
     this.beacon.position.y = ROOM_H + 70;
     this.beaconRing = new THREE.Mesh(new THREE.TorusGeometry(ROOF * 0.72, 0.12, 8, 96),
-      new THREE.MeshBasicMaterial({ color: 0xffb547, toneMapped: false, transparent: true, opacity: 0 }));
+      new THREE.MeshBasicMaterial({ color: WAIT, toneMapped: false, transparent: true, opacity: 0 }));
     this.beaconRing.rotation.x = Math.PI / 2;
     this.beaconRing.position.y = 0.25;
     this.room.add(this.beacon, this.beaconRing);
@@ -389,7 +400,8 @@ export class RealmBuilding {
     const pulse = this.waiting ? 0.5 + 0.5 * Math.sin(t * 3.2) : 0;
     this.beacon.material.opacity = this.waiting ? 0.10 + 0.14 * pulse : 0;
     this.beaconRing.material.opacity = this.waiting ? 0.35 + 0.5 * pulse : 0;
-    this.roomEdges.material.color.setHex(this.waiting ? 0xffc46b : 0x7cc4ff);
+    this.roomEdges.material.color.set(this.waiting ? WAIT : ROOM_REST);
+    this.roomEdges.material.opacity = this.waiting ? 0.6 + 0.4 * pulse : 0.85;          // as arestas também pulsam quando alguém espera
     // Noite: a sala do teto apaga (luz, pisos das áreas, arestas); as janelas da fachada seguem como estão.
     const lit = !this.night;
     this.light.visible = lit;
