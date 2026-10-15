@@ -68,6 +68,37 @@ export function renderRealmList(world, selected, onSelect) {
   }));
 }
 
+// Atributos por área (R40, D-096, V-HUD-16): uma barra por área com a parcela do trabalho da sessão. É a contagem do mundo, não pontuação.
+function attributeBars(attributes) {
+  const box = el("div", "attrs");
+  box.title = `${attributes.total} atividades contadas`;
+  for (const a of attributes.areas) {
+    const pct = Math.round(a.share * 100);
+    const bar = el("span", "bar");
+    bar.append(el("i"));
+    bar.firstChild.style.width = `${pct}%`;
+    box.append(el("span", "attr-name", a.area), bar, el("span", "attr-pct", `${pct}%`));
+  }
+  return box;
+}
+
+// A Team em árvore (R57, D-116, V-HUD-17): o mundo manda a lista na ordem da árvore, com a profundidade de cada um. Ficam os
+// ativos (os "sem sinal" também, em cinza) e os pais deles, para a árvore não perder o fio.
+function teamTree(team) {
+  const shown = team.map((sub) => sub.active);
+  for (let i = team.length - 1; i >= 0; i--) {
+    for (let j = i + 1; j < team.length && team[j].depth > team[i].depth; j++) if (shown[j]) shown[i] = true;
+  }
+  const box = el("div", "team");
+  team.forEach((sub, i) => {
+    if (!shown[i]) return;
+    const row = el("span", `sub${sub.active ? "" : " done"}`, `${sub.depth ? "└ " : ""}${sub.kind || "subagente"} · ${sub.active ? STATE_LABEL[sub.state] || sub.state : "concluído"}`);
+    row.style.marginLeft = `${sub.depth * 14}px`;
+    box.append(row);
+  });
+  return box.children.length ? box : null;
+}
+
 function sessionCard(ego, onOpen) {
   const p = provider(ego.provider);
   const asleep = isAsleep(ego);
@@ -76,7 +107,7 @@ function sessionCard(ego, onOpen) {
   card.style.setProperty("--pc", p.color);
   const top = el("div", "card-top");
   if (ego.name) top.append(el("span", "ego-name", ego.name));
-  top.append(el("span", "prov", p.label), el("span", "title", sessionTitle(ego)),
+  top.append(el("span", "prov", p.label), ...(ego.role ? [el("span", "role", ego.role)] : []), el("span", "title", sessionTitle(ego)),
              el("span", `chip ${ego.state}`, asleep ? "dormindo" : STATE_LABEL[ego.state] || ego.state));
   card.append(top);
   if (waiting) {
@@ -87,14 +118,9 @@ function sessionCard(ego, onOpen) {
   now.append(ego.last_action || (asleep ? "sem atividade recente" : "—"));
   now.title = ego.last_action || "";
   card.append(now);
-  const team = ego.team.filter((sub) => sub.active);     // inclui os "sem sinal": ficam listados, em cinza
-  if (team.length) {
-    const t = el("div", "team");
-    for (const sub of team) {
-      t.append(el("span", "sub", `${sub.kind || "subagente"} · ${STATE_LABEL[sub.state] || sub.state}`));
-    }
-    card.append(t);
-  }
+  if (ego.attributes) card.append(attributeBars(ego.attributes));
+  const tree = teamTree(ego.team);
+  if (tree) card.append(tree);
   const meta = el("div", "meta");
   meta.append(el("span", null, ego.model || "modelo ?"), el("span", null, tokens(ego.usage)));
   if (ego.usage.cost_usd) meta.append(el("span", null, `US$ ${ego.usage.cost_usd.toFixed(2)}`));

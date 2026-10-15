@@ -13,7 +13,7 @@ from datetime import datetime
 from typing import Any, NamedTuple
 
 from ..protocol import Event, validate
-from . import building, city, facade, rules
+from . import building, city, facade, profile, rules
 from .names import NameSource
 
 _TOKEN_FIELDS = ("input_tokens", "output_tokens", "cache_read_tokens", "reasoning_tokens")
@@ -95,6 +95,7 @@ class AlterEgo:
     waiting: dict[str, str | None] = field(default_factory=dict)   # request -> ação
     subagents: dict[str, Subagent] = field(default_factory=dict)
     usage: dict[str, float] = field(default_factory=dict)
+    work: dict[str, int] = field(default_factory=dict)       # atividades do líder por área (R40): o papel e os atributos saem daqui
     events: int = 0
     seq_gaps: int = 0
     last_action: str | None = None   # a última ferramenta/ação, com o texto do provider
@@ -145,7 +146,9 @@ class AlterEgo:
             "waiting": [{"request": r, "action": a} for r, a in self.waiting.items()],
             "events": self.events, "seq_gaps": self.seq_gaps,
             "usage": dict(self.usage), "last_ts": self.last_ts,
-            "team": [sub.snapshot(now) for sub in self.subagents.values()],
+            "role": profile.role(self.work), "attributes": profile.attributes(self.work),
+            "team": [{**self.subagents[agent].snapshot(now), "depth": depth}
+                     for agent, depth in profile.team_order({a: sub.parent for a, sub in self.subagents.items()})],
         }
 
 
@@ -334,6 +337,7 @@ class World:
             ego.waiting.clear()
         elif kind == "activity":
             ego.base, ego.target, ego.error = signal["activity"], signal.get("target"), None
+            profile.tally(ego.work, signal["activity"])
         elif kind == "waiting":
             ego.waiting[str(signal["request"])] = signal.get("action")
         elif kind == "waiting.resolved":

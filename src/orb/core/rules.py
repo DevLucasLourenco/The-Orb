@@ -21,6 +21,17 @@ AREA_BY_STATE: dict[str, str | None] = {
     "NO_SIGNAL": None,
 }
 
+# O perfil de trabalho do Alter Ego (R40, D-069, D-096): as áreas que contam como "trabalho" e o papel de quem mais fez em cada uma. A
+# contagem é a das atividades do líder que caem numa destas áreas (a atividade vai para a área por `AREA_BY_STATE`); pensar, delegar,
+# bloquear e concluir não têm área e não entram. A ordem é a das barras no overview.
+ATTRIBUTE_AREAS: tuple[str, ...] = ("Development Center", "Testing Lab", "Research Center", "Code Review")
+ROLE_BY_AREA: dict[str, str] = {
+    "Development Center": "desenvolvedor",
+    "Testing Lab": "testador",
+    "Research Center": "pesquisador",
+    "Code Review": "revisor",
+}
+
 # Estado-base depois de cada sinal (para o personagem a quem o sinal se refere).
 BASE_STATE_AFTER: dict[str, str] = {
     "session.started": "IDLE",
