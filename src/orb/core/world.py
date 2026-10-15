@@ -163,6 +163,7 @@ class World:
         self.hidden: frozenset[str] = frozenset()   # realms que o Lucas escondeu (R3c): saem do estado da cidade
         self.metrics: dict[str, dict[str, Any]] = {}          # estado por realm (D-085): última contagem de linhas
         self.changes: dict[str, dict[str, Any]] = {}          # estado por realm (D-085): última leitura das alterações locais (git)
+        self.tests: dict[str, dict[str, Any]] = {}            # estado por realm (D-085): o último resultado de um comando de teste (Weather)
         self.window_percent = window_percent                  # quanto vale uma janela acesa (R20d); o Hub o muda pelas preferências
         self._facades: dict[str, _FacadeCache] = {}           # fachada por realm, até algo mudar
         self._realm_seen: deque[str] = deque(maxlen=256)      # ids recentes de eventos de realm (dedupe)
@@ -218,6 +219,8 @@ class World:
             else:
                 self._subagent(ego, event["agent"]).last_action = action
         signal = event.get("signal")
+        if signal and signal["type"] == "command.result":
+            self._record_test(event, signal)
         if signal:
             if event["agent"] is None:
                 self._apply_to_leader(ego, signal)
@@ -227,6 +230,27 @@ class World:
         if sub is not None:
             sub.touch(event["ts"])
         return True
+
+    def _record_test(self, event: Event, signal: dict[str, Any]) -> None:
+        """O resultado de um comando de teste vale para o realm inteiro (R42): fica o mais novo, venha de que sessão vier. Comando que
+        não é teste não é Weather."""
+        if signal.get("activity") != "TESTING":
+            return
+        current = self.tests.get(event["realm"])
+        if current is None or event["ts"] >= current["at"]:
+            self.tests[event["realm"]] = {"ok": signal["ok"], "at": event["ts"], "exit_code": signal.get("exit_code"),
+                                          "alter_ego": event["alter_ego"]}
+
+    def _realm_weather(self, realm_id: str, now: datetime | None) -> dict[str, Any] | None:
+        """O céu sobre o prédio (R42): limpo se o último teste rodado passou, chuva se falhou. Sem resultado, ou com um resultado mais
+        velho que a sala (R28a) ou sem hora para dizer a idade, não há Weather: nada é inventado (R12)."""
+        read = self.tests.get(realm_id)
+        if read is None:
+            return None
+        age = _idle_seconds(read["at"], now)
+        if age is None or age > self._recent_seconds:
+            return None
+        return {"sky": "clear" if read["ok"] else "rain", "at": read["at"], "exit_code": read["exit_code"], "alter_ego": read["alter_ego"]}
 
     def _name_for(self, ego_id: str, room: dict[str, AlterEgo]) -> str | None:
         """O nome da sessão que acabou de aparecer; os outros personagens da sala não se repetem (D-064).
@@ -381,7 +405,8 @@ class World:
             metrics = self._realm_metrics(realm_id)
             # "Noite" (D-059, R47): nenhuma sessão na sala. O cliente só desenha a sala do teto apagada.
             realms.append({"id": realm_id, "alter_egos": egos, "night": not any(ego["in_room"] for ego in egos),
-                           "metrics": metrics, "facade": self._realm_facade(realm_id, metrics), "place": plan["places"][realm_id]})
+                           "metrics": metrics, "facade": self._realm_facade(realm_id, metrics), "weather": self._realm_weather(realm_id, now),
+                           "place": plan["places"][realm_id]})
             for ego in (e for e in egos if e["in_room"]):          # Mankind conta a sala; o Histórico não entra
                 total_egos += 1
                 active_subs += ego["active_subagents"]
@@ -394,6 +419,7 @@ class World:
         Quem distribui o mundo compara esta chave para avisar os clientes sem esperar um evento novo.
         Fora da sala (R28a) também só o tempo muda. O ticket "hoje" (20) estende a chave quando criar estados novos de tempo."""
         _require_aware(now)
-        return tuple((ego.id, ego.asleep(now), ego.in_room(now, self._recent_seconds),
-                      tuple(sub.without_signal(now) for sub in ego.subagents.values()))
-                     for egos in self.realms.values() for ego in egos.values())
+        return (tuple((ego.id, ego.asleep(now), ego.in_room(now, self._recent_seconds),
+                       tuple(sub.without_signal(now) for sub in ego.subagents.values()))
+                      for egos in self.realms.values() for ego in egos.values()),
+                tuple((realm_id, self._realm_weather(realm_id, now) is not None) for realm_id in sorted(self.tests)))

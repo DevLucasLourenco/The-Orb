@@ -19,7 +19,7 @@ from pathlib import Path
 from typing import Any
 
 from ...protocol import Event
-from .._shared import EventFactory, RealmOf, connect_readonly, single_realm, table_columns
+from .._shared import EventFactory, RealmOf, connect_readonly, result_signal, single_realm, table_columns
 from . import mapping
 
 SOURCE = "opencode/db"
@@ -49,6 +49,19 @@ def select(conn: sqlite3.Connection, table: str, columns: list[str], where: str,
     if table not in ALLOWED_TABLES:
         raise PermissionError(f"tabela fora do permitido: {table}")
     return conn.execute(f'SELECT {", ".join(columns)} FROM "{table}" {where}', params).fetchall()
+
+
+def _command_result(name: str, state: dict[str, Any]) -> dict[str, Any] | None:
+    """O resultado de um `bash` que terminou: o código de saída está em `state.metadata.exit`; sem ele vale o estado da ferramenta."""
+    if name.lower() not in mapping.SHELL_TOOLS:
+        return None
+    tool_input = state.get("input")
+    command = tool_input.get("command") if isinstance(tool_input, dict) and isinstance(tool_input.get("command"), str) else None
+    metadata = state.get("metadata") if isinstance(state.get("metadata"), dict) else {}
+    code = metadata.get("exit")
+    if isinstance(code, int) and not isinstance(code, bool):
+        return result_signal(command, ok=code == 0, exit_code=code)
+    return result_signal(command, ok=state.get("status") == "completed")
 
 
 class OpencodeDbReader:
@@ -202,7 +215,8 @@ class OpencodeDbReader:
                     out.append(make(f"{key}:end", ts, f"{kind}:tool_result", {"name": name, "status": state.get("status"),
                                                                                "content": state.get("content")},
                                     agent=agent, inner={"role": "result",
-                                                        "text": ("[erro] " if state.get("status") == "error" else "") + text}))
+                                                        "text": ("[erro] " if state.get("status") == "error" else "") + text},
+                                    signal=_command_result(name, state)))
             elif completed and btype in ("text", "reasoning") and block.get("text") and self._once(mid, str(index)):
                 if btype == "text":
                     out.append(make(key, ts, f"{kind}:text", block, agent=agent,

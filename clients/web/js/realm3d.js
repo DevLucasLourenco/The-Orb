@@ -23,6 +23,12 @@ const NO_COUNT = { tiers: [[18, 1]], flat: true };      // realm sem contagem de
 const FLAT_H = 1;
 const ANTENNA_H = 22;
 
+// O céu sobre o prédio (Weather, R42, VISUAL.md V-REALM-16): céu limpo = uma lua branca; chuva = uma nuvem cinza com chuva. Só tons neutros,
+// fora do orçamento de cores. O mundo diz qual dos dois (ou nenhum); o cliente só desenha.
+const SKY_LABEL = { clear: "céu limpo", rain: "chuva" };
+const RAIN_STREAKS = 36;
+const RAIN_DEPTH = 12;
+
 // Áreas do Environment no piso do quartinho (x, z, largura, profundidade, cor). +z = frente.
 export const AREAS = {
   "Development Center": { x: -4.7, z: 3.9, w: 6.6, d: 5.2, color: 0x3aa0ff },
@@ -133,7 +139,10 @@ export class RealmBuilding {
     this.light.position.y = ROOM_H + 2.5;
     this.night = false;          // "noite" (D-059): nenhuma sessão nos últimos 10 dias; o mundo diz, aqui só se desenha
 
-    this.room.add(glass, this.roomEdges, this.light);
+    this.sky = new THREE.Group();            // o céu sobre o prédio: troca quando o Weather muda
+    this.skyKey = null;
+    this.rain = null;
+    this.room.add(glass, this.roomEdges, this.light, this.sky);
     this.group.add(this.plinth, this.room);
     this._areas();
     this._beacon();
@@ -146,6 +155,7 @@ export class RealmBuilding {
 
     this.bodyKey = null;
     this._body(realm);
+    this._sky(realm);
     scene.add(this.group);
   }
 
@@ -240,6 +250,46 @@ export class RealmBuilding {
     this.group.add(body);
   }
 
+  // O céu (Weather): uma lua branca ou uma nuvem cinza com chuva, acima da sala (e da antena, se houver). Sem Weather, nada.
+  _sky(realm) {
+    const sky = realm.weather ? realm.weather.sky : null;
+    const antenna = Boolean(realm.metrics && realm.metrics.antenna);
+    const key = `${sky}|${antenna}`;
+    if (key === this.skyKey) return;
+    this.skyKey = key;
+    for (const child of [...this.sky.children]) { this.sky.remove(child); disposeTree(child); }
+    this.rain = null;
+    if (!sky) return;
+    this.sky.position.y = ROOM_H + (antenna ? ANTENNA_H + 8 : 16);          // acima do rótulo, que sobe até ROOM_H + 12
+    if (sky === "clear") {
+      const moon = new THREE.Mesh(new THREE.SphereGeometry(2.4, 24, 16), new THREE.MeshBasicMaterial({ color: 0xf1f4fa, toneMapped: false }));
+      const halo = new THREE.Mesh(new THREE.SphereGeometry(4.2, 24, 16),
+        new THREE.MeshBasicMaterial({ color: 0xf1f4fa, transparent: true, opacity: 0.12, depthWrite: false, toneMapped: false }));
+      this.sky.add(moon, halo);
+      return;
+    }
+    const cloudMaterial = new THREE.MeshBasicMaterial({ color: 0x7b8394, transparent: true, opacity: 0.92, toneMapped: false });
+    for (const [x, z, r] of [[-3.2, 0, 3.2], [0, 0.6, 4.2], [3.4, -0.4, 3.4], [0.4, -2.2, 3]]) {
+      const puff = new THREE.Mesh(new THREE.SphereGeometry(r, 16, 12), cloudMaterial);
+      puff.scale.y = 0.55;
+      puff.position.set(x, 0, z);
+      this.sky.add(puff);
+    }
+    // A chuva: riscos que descem da nuvem e voltam ao alto (movimento de cenário, sem dado: o dado é "chuva" ou "não").
+    const points = new Float32Array(RAIN_STREAKS * 6);
+    const speeds = [];
+    for (let i = 0; i < RAIN_STREAKS; i++) {
+      const angle = (i * 2.399963) % (Math.PI * 2), radius = 1.5 + 5.5 * Math.sqrt((i + 0.5) / RAIN_STREAKS);
+      const y = -((i * 0.6180339) % 1) * RAIN_DEPTH;
+      points.set([Math.cos(angle) * radius, y, Math.sin(angle) * radius, Math.cos(angle) * radius, y - 1.4, Math.sin(angle) * radius], i * 6);
+      speeds.push(7 + (i % 5));
+    }
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute("position", new THREE.BufferAttribute(points, 3));
+    this.sky.add(new THREE.LineSegments(geometry, new THREE.LineBasicMaterial({ color: 0xaab4c4, transparent: true, opacity: 0.65, toneMapped: false })));
+    this.rain = { geometry, points, speeds };
+  }
+
   _areas() {
     this.areaLabels = [];
     this.roomLights = [];        // o que se apaga de noite: pisos das áreas e anel do lobby
@@ -295,12 +345,14 @@ export class RealmBuilding {
 
   setData(realm, summary) {
     this._body(realm);       // a classe, a altura ou as janelas mudaram (os Probes leram de novo): o corpo é refeito
+    this._sky(realm);        // o Weather mudou (um teste passou ou falhou): o céu é refeito
     this.waiting = summary.waiting;
     this.night = Boolean(realm.night);
     const size = metricsText(realm);          // "48 mil linhas · Edifício": só aparece quando há contagem real
     this.labelEl.replaceChildren(
       el("div", "n", realm.name || realm.id),
       ...(size ? [el("div", "c", size)] : []),
+      ...(realm.weather && SKY_LABEL[realm.weather.sky] ? [el("div", "c", `Weather: ${SKY_LABEL[realm.weather.sky]}`)] : []),
       (() => {
         const c = el("div", "c", `${summary.sessions} sessões · ${summary.active} ativas`);
         if (summary.waiting) c.append(" · ", el("span", "w", `${summary.waiting} esperando`));
@@ -324,6 +376,17 @@ export class RealmBuilding {
   }
 
   update(dt, t, near, focused = false) {
+    if (this.rain) {                      // a chuva desce e volta ao alto
+      const { points, speeds, geometry } = this.rain;
+      for (let i = 0; i < speeds.length; i++) {
+        const drop = i * 6 + 1;
+        let y = points[drop] - speeds[i] * dt;
+        if (y < -RAIN_DEPTH) y += RAIN_DEPTH;
+        points[drop] = y;
+        points[drop + 3] = y - 1.4;
+      }
+      geometry.attributes.position.needsUpdate = true;
+    }
     const pulse = this.waiting ? 0.5 + 0.5 * Math.sin(t * 3.2) : 0;
     this.beacon.material.opacity = this.waiting ? 0.10 + 0.14 * pulse : 0;
     this.beaconRing.material.opacity = this.waiting ? 0.35 + 0.5 * pulse : 0;

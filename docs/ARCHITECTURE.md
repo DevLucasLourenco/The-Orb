@@ -228,11 +228,11 @@ ticket existir.
 
 ### Módulos novos decididos (2026-10-08 e 2026-10-09), ainda sem implementação
 
-- **Weather local** (R42, D-076): deriva o resultado dos testes das sessões, a partir dos eventos
-  que os adapters já produzem (comando classificado como teste + o sinal `command.result` do
-  protocolo 0.3, D-084). A forma de obter o código de saída varia por provider (ex.: `exitCode` no Codex,
-  resultado com erro no Claude) e se confirma na implementação. Sem rede; o CI do GitHub é um
-  Probe opcional, futuro, só leitura.
+- **Weather local** (R42, D-076; **feito no ticket 19**): os quatro adapters produzem o sinal `command.result` (D-084) quando um comando de shell
+  termina (Claude: `is_error`/`interrupted`; Codex: `exitCode` no app-server e `item.exit_code` no rollout; Hermes: `exit_code` no JSON do
+  `terminal`; opencode: `state.metadata.exit` do `bash`), com a atividade do comando pelo classificador. O Core guarda o último resultado
+  `TESTING` de cada realm (`World.tests`) e deriva o Weather no snapshot (`weather`: `sky` = `clear` ou `rain`, só dentro do prazo da sala).
+  Sem rede; o CI do GitHub é um Probe opcional, futuro, só leitura.
 - **Energy** (R43, D-077): soma no Core os `usage` que os providers informam, por sessão, realm e
   dia; nunca estima custo.
 
@@ -327,6 +327,7 @@ ticket existir.
 | Preferências | Arquivo numa pasta temporária (grava, relê, opção desconhecida, arquivo ilegível); realm escondido no mundo e no Hub; tela pelo `/world` | `tests/test_preferences.py`, `tests/test_realms.py` |
 | Cidade | Lista de realms → bairros, lotes, deslocamento e giro; estável ao incluir e ao esconder; no mundo e no Hub | `tests/test_city.py`, `tests/test_realms.py` |
 | Alterações locais e fachada | Repositório git falso (com git real) → alterações com tipo e linhas; leitura sem gravar no `.git`; quando ler (relógio falso); alterações → janelas por andar, tipo e x% | `tests/test_changes.py`, `tests/test_change_scheduler.py`, `tests/test_facade.py` |
+| Resultado de comando e Weather | Amostras dos quatro CLIs → `command.result` (código de saída, falha, comando que não é shell); resultados → Weather do realm (último vence, prazo da sala) | `tests/test_command_result.py` |
 | Altura e andares | Linhas e pastas → níveis por classe, cintas, antena e andares (térreo, pastas, "demais pastas"); evento do Probe com a divisão por pasta | `tests/test_building.py`, `tests/test_realm_metrics.py`, `tests/test_probes.py` |
 | Nomes e registro local | Sacola e livro de nomes sem disco; registro numa pasta temporária (reabrir, falhas de disco) | `tests/test_names.py`, `tests/test_registry.py` |
 | Detecção de realms (as leituras do mundo real) | Pastas de CLIs e de projetos falsas → realms; regras de pasta → projeto; índice de sessões | `tests/test_realms.py`, `tests/test_projects.py`, `tests/test_session_index.py` (arquivos falsos em `tests/fakes.py`) |

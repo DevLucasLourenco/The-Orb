@@ -120,3 +120,7 @@ de eventos e confirmar que nada muda na configuração do Lucas.
 3. Nível 1 pelo servidor próprio + `--server`.
 4. Aprovações (`permission`) e subagentes ao vivo.
 5. Fidelidade do pensamento em outros modelos (§2, dúvida).
+
+## command.result (ticket 19, D-084)
+
+Quando um bloco `bash` termina (`state.status` `completed` ou `error`), o evento `:tool_result` ganha `command.result`: `ok` = `state.metadata.exit` igual a 0; sem esse campo vale o estado da ferramenta (`completed`), sem `exit_code`. Outras ferramentas não geram o sinal.

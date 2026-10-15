@@ -56,6 +56,15 @@ def first_command(command: str) -> str:
     return ""
 
 
+def result_signal(command: str | None, *, ok: bool, exit_code: int | None = None) -> dict[str, object]:
+    """O sinal `command.result` de um comando de shell: passou ou falhou, a atividade dele (pelo classificador) e o código de
+    saída só quando o provider o informa (o Claude não informa: R42, D-084)."""
+    signal: dict[str, object] = {"type": "command.result", "ok": ok, "activity": classify_command(command)}
+    if isinstance(exit_code, int) and not isinstance(exit_code, bool):
+        signal["exit_code"] = exit_code
+    return signal
+
+
 def classify_command(command: str | None) -> str:
     """Atividade do mundo para um comando de shell. Nunca levanta."""
     if not command or not isinstance(command, str):

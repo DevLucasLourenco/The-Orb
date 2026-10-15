@@ -527,3 +527,19 @@ de verdade e o agendador), menos o desenho no cliente, que foi conferido na tela
 | ~~Q-T11-7~~ D-178 | Onde cai cada janela dentro do andar? | Cada nível tem **4 lados de 8 colunas** (32 posições); as janelas do andar se espalham por igual pelas posições (nunca amontoadas num canto). Se um andar pede mais janelas do que tem, os pacotes dele se juntam mais (o x daquele andar sobe) até caber, sem dividir nenhuma alteração |
 | ~~Q-T11-8~~ D-179 | Quais os limites e o padrão do x? | Padrão **5%** (D-042), de **1 a 50**, na tela de configurações (linha `window_percent` da tabela `SETTINGS`), com efeito na hora e guardado em `preferences.json` |
 | ~~Q-T11-9~~ D-180 | Como se desenha a janela apagada e a acesa? | **Apagada:** vidro escuro (`#22345a`) em todas as posições da fachada que têm dado. **Acesa:** a cor do tipo (VISUAL §5), com brilho **fixo** (D-115). Os valores estão em `realm3d.js` (`CHANGE_COLORS`, `LIT_INTENSITY`); só se desenha o que o mundo mandou |
+
+
+### Rodada: o que a implementação do ticket 19 decidiu por conta própria (aberta em 2026-10-15)
+
+Ao implementar o ticket 19 ([.scratch/the-orb-cidade-viva/issues/19-weather.md](../.scratch/the-orb-cidade-viva/issues/19-weather.md)),
+seis pontos **não estavam escritos** e foram escolhidos de forma provisória (regra P2). Todos estão cobertos por teste (as amostras dos quatro CLIs
+e o mundo), menos o desenho do céu, que foi conferido na tela numa página com Weather sintético (ver o ticket). O Lucas responde por número.
+
+| Id | Pergunta | Proposta (já aplicada, provisória) |
+|---|---|---|
+| Q-T19-1 | O sinal `command.result` é de sessão ou de realm, e para que comandos? | **De sessão** (leva o Alter Ego e o agente, como `usage`): todo comando de shell com resultado conhecido o produz, com a atividade dele (a XP do ticket 22 usará os outros); só `TESTING` conta para o Weather. Nos adapters ele vai **no evento de resultado que já existia** (Claude, Hermes, opencode, app-server do Codex); só no rollout do Codex vira um evento novo, e só quando há código de saída. Não muda o estado do personagem |
+| Q-T19-2 | O que é "o último teste" do Weather? | O **último** `command.result` de atividade `TESTING` do **realm** (de qualquer sessão, subagentes também): código 0 ou sem erro = **céu limpo**; falhou = **chuva**. Um teste que passa depois de um que falhou limpa o céu. Comando que não está na tabela de testes do classificador (`pytest`, `jest`, `npm test`, `go test`, `cargo test`…) não conta: um `make test` ou um script próprio não vira Weather até entrar na tabela |
+| Q-T19-3 | O Weather envelhece? | Sim: um resultado mais velho que o **prazo da sala** (10 dias, configurável, R28a) deixa de valer e o céu fica sem dado; sem a hora do mundo, nada se afirma (R47). Fim do prazo vira "só o tempo mudou" (`time_key`) e os clientes são avisados |
+| Q-T19-4 | E os testes rodados antes de o Orb abrir? | **Não aparecem**: os leitores dos CLIs começam do fim do arquivo (D-087) e só veem o que acontece depois. Ao reabrir o Orb o céu volta a "sem dado" até alguém rodar um teste; ler esse passado é o ticket 25 (leitura única do passado, R48) |
+| Q-T19-5 | Como o Claude, que não grava o código de saída, entra? | `ok` é falso se o bloco é `is_error` ou o comando foi `interrupted`; **sem** `exit_code`. O resultado só é ligado ao comando pela chamada vista antes (`tool_use_id`, até 512 pendentes); resultado sem a chamada não afirma nada |
+| Q-T19-6 | Como o céu aparece? | Acima da sala (e da antena do Arranha-céu): **céu limpo** = uma lua branca (`#f1f4fa`); **chuva** = uma nuvem cinza (`#7b8394`) com riscos de chuva (`#aab4c4`) que descem; **sem dado** = nada. Só tons neutros, fora do orçamento de cores (R20c). O rótulo ganha a linha "Weather: céu limpo" ou "Weather: chuva". O movimento da chuva é cenário: o dado é só "chuva" ou "não" |

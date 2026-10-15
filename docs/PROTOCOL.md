@@ -106,6 +106,7 @@ Vocabulário **fechado**. Um tipo novo exige nova versão do protocolo.
 |---|---|---|
 | `realm.metrics` | `loc` (inteiro ≥ 0), `files?`, `root?`, `folders?` | **0.3, evento de realm** (`alter_ego: null`, só Probes): as linhas não vazias de código do projeto. `root` são as linhas dos arquivos da raiz e `folders` (objeto de até 64 pastas, nome de 1 a 255 caracteres e sem barra → linhas) as de cada pasta de primeiro nível, as maiores; `root` mais as pastas não passam de `loc`. O mundo guarda por realm e deriva a classe, a altura em níveis, as cintas e os andares do prédio (`rules.BUILDING_CLASSES`, `core/building.py`); sem evento, o realm não tem número |
 | `realm.changes` | `changes` (lista de até 5.000 objetos `{path, type, lines}`), `more?` | **0.3, evento de realm** (só Probes): as alterações locais do git. `path` é relativo à raiz do projeto, com `/`, sem `..`; `type` é um de `modified`, `added`, `untracked`, `renamed`, `deleted`, `conflict`; `lines` são as linhas alteradas (peso). `more` conta as que passaram do limite. Lista vazia = repositório limpo (dado válido). O mundo guarda por realm e calcula a fachada (`core/facade.py`) |
+| `command.result` | `ok`, `exit_code?`, `activity?` | **0.3, sinal de sessão** (leva o Alter Ego): como terminou um comando de shell. `ok` é verdadeiro/falso; `exit_code` só quando o provider informa (Codex, Hermes e opencode sim; o Claude só `is_error`/`interrupted`); `activity` é a do comando pelo classificador (`TESTING` para pytest, jest, `npm test`…). Não muda o estado do personagem. O mundo guarda o último `TESTING` de cada realm como o **Weather** (R42) |
 | `session.started` | `cwd?`, `model?`, `title?` | O Alter Ego aparece no Rooftop Room |
 | `session.ended` | `reason?` | A sessão terminou; o Alter Ego **não é excluído**: fica na sala enquanto for recente e depois no Histórico do realm (R28) |
 | `session.updated` | `title?`, `model?`, `cwd?` | A identidade da sessão mudou (título, modelo); o estado não muda |
@@ -254,7 +255,7 @@ No canal do mundo (`/world`), o cliente pode pedir o histórico de uma sessão:
 
   | `type` | Campos (proposta para o ticket) | Efeito |
   |---|---|---|
-  | `command.result` | `ok`, `exit_code?`, `activity?` | Resultado de um comando (base do Weather e da XP). `exit_code` só quando o provider informa: Codex, Hermes e opencode sim; Claude não (só `is_error`/`interrupted`) |
+  | `command.result` | `ok`, `exit_code?`, `activity?` | Resultado de um comando (base do Weather e da XP). `exit_code` só quando o provider informa: Codex, Hermes e opencode sim; Claude não (só `is_error`/`interrupted`). **Entregue no ticket 19** |
   | `realm.metrics` | `loc`, `files?`, `root?`, `folders?` | Linhas de código e a divisão por pasta; a classe e os andares o mundo deriva (R19). **Entregue nos tickets 09 e 10** |
   | `realm.changes` | `changes[]` (caminho, tipo, linhas), `more?` | Alterações locais do git (Probe, R20b). **Entregue no ticket 11** |
   | `account.limits` | `provider`, `limits` | Limites de uso da conta, quando o provider informa (Energy, R43) |

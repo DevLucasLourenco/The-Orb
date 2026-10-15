@@ -152,7 +152,7 @@ class AppServerTranslator:
             if started:
                 return ({"role": "tool", "text": mapping.item_text(item)},
                         {"type": "activity", "activity": mapping.command_activity(item), "target": item.get("command")})
-            return {"role": "result", "text": mapping.result_text(item)}, None
+            return {"role": "result", "text": mapping.result_text(item)}, mapping.command_result(item)
         if started and itype in mapping.ITEM_ACTIVITY:
             return ({"role": "tool", "text": mapping.item_text(item)},
                     {"type": "activity", "activity": mapping.ITEM_ACTIVITY[itype]})

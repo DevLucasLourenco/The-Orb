@@ -21,12 +21,14 @@ from .._shared import (
     RealmOf,
     iso_from_seconds,
     realm_id_for,
+    result_signal,
     single_realm,
 )
 from . import mapping
 
 SOURCE = "claude/transcript"
 _SEEN_MESSAGES = 2048     # ids de mensagem lembrados para não contar `usage` repetido
+_SHELL_CALLS = 512        # comandos de shell sem resultado ainda, lembrados para dar o resultado a eles (Weather)
 _PEEK_BYTES = 256 * 1024  # fim do arquivo lido na descoberta, para achar título e modelo
 _RESCAN_DIRS = 5.0        # segundos entre varreduras das pastas de projeto (subpastas/worktrees)
 DISCOVER_EVERY = 2.0      # modo cidade: segundos entre varreduras de pastas e sessões novas (D-087)
@@ -63,6 +65,7 @@ class _Session:
     subagents: dict[str, _Subagent] = field(default_factory=dict)
     foreground_tools: dict[str, str] = field(default_factory=dict)   # toolUseId -> agentId
     usage_seen: "OrderedDict[str, None]" = field(default_factory=OrderedDict)
+    shell_calls: "OrderedDict[str, str]" = field(default_factory=OrderedDict)    # toolUseId -> comando de shell, até o resultado
     announced: bool = False
     title: str | None = None
     model: str | None = None
@@ -309,7 +312,8 @@ class TranscriptReader:
                 if block.get("type") == "tool_result":
                     out.append(make(f"{key}#{index}", ts, "user/tool_result", block, agent=agent,
                                     inner={"role": "result",
-                                           "text": _result_text(block)}))
+                                           "text": _result_text(block)},
+                                    signal=self._command_result(session, block, entry)))
                     ended = session.foreground_tools.pop(block.get("tool_use_id"), None)
                     if ended:
                         out.append(make(f"{key}#{index}#ended", ts, "user/tool_result", {"tool_use_id": block.get("tool_use_id")},
@@ -342,6 +346,10 @@ class TranscriptReader:
                 name = str(block.get("name") or "?")
                 tool_input = block.get("input")
                 activity = mapping.activity_for_tool(name, tool_input)
+                if name in mapping.SHELL_TOOLS and isinstance(tool_input, dict) and isinstance(block.get("id"), str):
+                    session.shell_calls[block["id"]] = str(tool_input.get("command") or "")
+                    if len(session.shell_calls) > _SHELL_CALLS:
+                        session.shell_calls.popitem(last=False)
                 out.append(make(ekey, ts, "assistant/tool_use", block, agent=agent,
                                 inner={"role": "tool", "text": mapping.tool_text(name, tool_input)},
                                 signal={"type": "activity", "activity": activity, "target": mapping.tool_target(tool_input)}))
@@ -364,6 +372,18 @@ class TranscriptReader:
         if message.get("stop_reason") == "end_turn" and agent is None:
             out.append(make(f"{key}#stop", ts, "assistant/stop", {"stop_reason": "end_turn"}, signal={"type": "idle"}))
         return out
+
+    @staticmethod
+    def _command_result(session: _Session, block: dict[str, Any], entry: dict[str, Any]) -> dict[str, Any] | None:
+        """O resultado de um comando de shell: falhou se o bloco é `is_error` ou o comando foi interrompido. O Claude não grava o
+        código de saída (D-084). Resultado de ferramenta que não é shell, ou sem a chamada vista, não afirma nada."""
+        tool_use = block.get("tool_use_id")
+        command = session.shell_calls.pop(tool_use, None) if isinstance(tool_use, str) else None
+        if command is None:
+            return None
+        extra = entry.get("toolUseResult")
+        interrupted = isinstance(extra, dict) and extra.get("interrupted") is True
+        return result_signal(command, ok=not block.get("is_error") and not interrupted)
 
     @staticmethod
     def _prompt(session: _Session, entry: dict[str, Any], text: str, key: str, ts: str | None,
