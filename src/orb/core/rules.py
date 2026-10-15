@@ -62,6 +62,12 @@ SKYSCRAPER_LEVELS_PER_DOUBLING = 4
 BUILDING_TRIM: dict[str, int] = {"Casa": 0, "Sobrado": 1, "Prédio": 2, "Edifício": 3, "Torre": 4, "Arranha-céu": 5}
 ANTENNA_CLASSES: frozenset[str] = frozenset({"Arranha-céu"})
 
+# A fachada (R20, R20d, VISUAL.md §6): quantas posições de janela tem cada andar (por nível: `FACADE_FACES` lados de `FACADE_COLS`
+# colunas) e quanto vale uma janela acesa (x% das linhas alteradas, configurável nas preferências, D-042).
+FACADE_FACES = 4
+FACADE_COLS = 8
+WINDOW_PERCENT = 5.0
+
 # O traçado da cidade (R32, D-047, VISUAL.md §7), em unidades do mundo. Mudar o desenho da cidade é mudar esta tabela.
 CITY_LOT = 46            # lado de um lote: o prédio (a maior base, `CITY_MAX_BASE`) cabe mesmo no maior deslocamento e giro
 CITY_MAX_BASE = 30       # a maior largura de uma forma de prédio (o pódio da Torre e do Arranha-céu, VISUAL.md §8)

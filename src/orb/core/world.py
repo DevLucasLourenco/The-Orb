@@ -10,14 +10,22 @@ from collections import deque
 from collections.abc import Iterable
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Any
+from typing import Any, NamedTuple
 
 from ..protocol import Event, validate
-from . import building, city, rules
+from . import building, city, facade, rules
 from .names import NameSource
 
 _TOKEN_FIELDS = ("input_tokens", "output_tokens", "cache_read_tokens", "reasoning_tokens")
 _ACTION_CHARS = 240     # tamanho do "fazendo agora" no overview
+
+
+class _FacadeCache(NamedTuple):
+    """A fachada de um realm e de que leituras (e x) ela saiu: só se refaz quando uma delas muda."""
+    read: dict[str, Any]
+    counted: dict[str, Any]
+    percent: float
+    built: dict[str, Any]
 
 
 def _require_aware(now: datetime | None) -> None:
@@ -146,19 +154,27 @@ class World:
 
     `names` dá o nome histórico de cada sessão que aparece (R37); sem ele os Alter Egos ficam sem nome."""
 
-    def __init__(self, names: NameSource | None = None, *, recent_seconds: float = rules.RECENT_SESSION_SECONDS) -> None:
+    def __init__(self, names: NameSource | None = None, *, recent_seconds: float = rules.RECENT_SESSION_SECONDS,
+                 window_percent: float = rules.WINDOW_PERCENT) -> None:
         self.realms: dict[str, dict[str, AlterEgo]] = {}
         self.rejected = 0
         self.names = names
         self._recent_seconds = recent_seconds       # o prazo da sala (R28a): quem sai dele vai para o Histórico do realm
         self.hidden: frozenset[str] = frozenset()   # realms que o Lucas escondeu (R3c): saem do estado da cidade
         self.metrics: dict[str, dict[str, Any]] = {}          # estado por realm (D-085): última contagem de linhas
+        self.changes: dict[str, dict[str, Any]] = {}          # estado por realm (D-085): última leitura das alterações locais (git)
+        self.window_percent = window_percent                  # quanto vale uma janela acesa (R20d); o Hub o muda pelas preferências
+        self._facades: dict[str, _FacadeCache] = {}           # fachada por realm, até algo mudar
         self._realm_seen: deque[str] = deque(maxlen=256)      # ids recentes de eventos de realm (dedupe)
         self._city: tuple[tuple[str, ...], dict[str, Any]] = ((), city.plan(()))     # o traçado da última lista de realms
 
     def set_recent_seconds(self, seconds: float) -> None:
         """O prazo da sala mudou na tela de configurações (R28a, R29)."""
         self._recent_seconds = seconds
+
+    def set_window_percent(self, percent: float) -> None:
+        """O x das janelas mudou na tela de configurações (R20d, R29): as fachadas se refazem na próxima leitura."""
+        self.window_percent = percent
 
     def set_hidden(self, realm_ids: Iterable[str]) -> None:
         """Esconde estes realms da cidade (R3c). Eles continuam detectados e recebendo eventos: nada é apagado."""
@@ -220,18 +236,39 @@ class World:
         return self.names.name_for(ego_id, frozenset(ego.name for ego in room.values() if ego.name))
 
     def _apply_to_realm(self, event: Event) -> bool:
-        """Evento de realm (`alter_ego` nulo, protocolo 0.3): só os Probes os emitem. A contagem mais nova vence;
+        """Evento de realm (`alter_ego` nulo, protocolo 0.3): só os Probes os emitem. A leitura mais nova vence;
         uma que chega atrasada não volta no tempo."""
         signal = event.get("signal") or {}
-        if signal.get("type") != "realm.metrics" or event["id"] in self._realm_seen:
+        kind = signal.get("type")
+        if kind not in ("realm.metrics", "realm.changes") or event["id"] in self._realm_seen:
             return False
         self._realm_seen.append(event["id"])
         self.realms.setdefault(event["realm"], {})
-        current = self.metrics.get(event["realm"])
-        if current is None or event["ts"] >= current["counted_at"]:
-            self.metrics[event["realm"]] = {"loc": signal["loc"], "files": signal.get("files"), "counted_at": event["ts"],
-                                            "root": signal.get("root"), "folders": signal.get("folders")}
+        if kind == "realm.metrics":
+            current = self.metrics.get(event["realm"])
+            if current is None or event["ts"] >= current["counted_at"]:
+                self.metrics[event["realm"]] = {"loc": signal["loc"], "files": signal.get("files"), "counted_at": event["ts"],
+                                                "root": signal.get("root"), "folders": signal.get("folders")}
+        else:
+            current = self.changes.get(event["realm"])
+            if current is None or event["ts"] >= current["counted_at"]:
+                self.changes[event["realm"]] = {"items": [facade.Change(c["path"], c["type"], c["lines"]) for c in signal["changes"]],
+                                                "more": signal.get("more") or 0, "counted_at": event["ts"]}
         return True
+
+    def _realm_facade(self, realm_id: str, metrics: dict[str, Any] | None) -> dict[str, Any] | None:
+        """As janelas acesas do prédio (R20): dos andares que a contagem de linhas deu e das alterações locais que o git deu.
+        Sem uma das duas leituras não há onde nem o que acender, e o prédio fica sem janelas (nunca janelas apagadas inventadas)."""
+        read = self.changes.get(realm_id)
+        if read is None or metrics is None or metrics["floors"] is None:
+            return None
+        cached = self._facades.get(realm_id)
+        if cached is not None and cached.read is read and cached.counted is self.metrics[realm_id] and cached.percent == self.window_percent:
+            return cached.built
+        built = {"windows": facade.windows(metrics["floors"], read["items"], self.window_percent),
+                 "changes": len(read["items"]), "more": read["more"], "cols": rules.FACADE_COLS, "faces": rules.FACADE_FACES}
+        self._facades[realm_id] = _FacadeCache(read, self.metrics[realm_id], self.window_percent, built)
+        return built
 
     def _realm_metrics(self, realm_id: str) -> dict[str, Any] | None:
         """As linhas reais do projeto e a classe que as faixas fixas dão; sem contagem, nada (R12)."""
@@ -341,9 +378,10 @@ class World:
             if realm_id in self.hidden:
                 continue
             egos = [ego.snapshot(now, self._recent_seconds) for ego in self.realms[realm_id].values()]
+            metrics = self._realm_metrics(realm_id)
             # "Noite" (D-059, R47): nenhuma sessão na sala. O cliente só desenha a sala do teto apagada.
             realms.append({"id": realm_id, "alter_egos": egos, "night": not any(ego["in_room"] for ego in egos),
-                           "metrics": self._realm_metrics(realm_id), "place": plan["places"][realm_id]})
+                           "metrics": metrics, "facade": self._realm_facade(realm_id, metrics), "place": plan["places"][realm_id]})
             for ego in (e for e in egos if e["in_room"]):          # Mankind conta a sala; o Histórico não entra
                 total_egos += 1
                 active_subs += ego["active_subagents"]

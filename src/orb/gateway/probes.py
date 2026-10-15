@@ -1,28 +1,36 @@
-"""Quando rodar o Probe de linhas em cada realm (R19, D-055): ao abrir e quando algo muda, no máximo 1 vez por minuto por realm.
+"""Quando rodar os Probes de cada realm: o das linhas de código (R19, D-055) e o das alterações locais do git (R20b).
 
-Contar lê arquivos do projeto e pode levar segundos num projeto grande; por isso roda numa thread própria, **um realm por
-vez**, e nunca na thread que lê os providers. O resultado volta como um evento de realm (`realm.metrics`, protocolo 0.3)
-que o Hub aplica no mundo. A decisão de "mudou?" é a impressão digital do Probe (arquivos que contam e filtro); o `stat`
-de cada arquivo é barato perto de ler todos.
+Ler um projeto pode levar segundos num projeto grande; por isso cada Probe roda numa thread própria, **um realm por vez**, e
+nunca na thread que lê os providers. O resultado volta como um evento de realm (`realm.metrics`, `realm.changes`; protocolo
+0.3) que o Hub aplica no mundo. Só se publica quando algo mudou: a decisão é a impressão digital de cada Probe.
 """
 from __future__ import annotations
 
 import queue
 import threading
 import time
+from abc import ABC, abstractmethod
 from collections.abc import Callable
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
 from ..core.rules import LineFilter
-from ..probes import count_lines, fingerprint, git_tracked_files, list_countable
+from ..probes import (
+    changes_fingerprint,
+    count_lines,
+    fingerprint,
+    git_changes,
+    git_tracked_files,
+    list_countable,
+)
 from ..protocol import MAX_FOLDERS, Event, make_event
 from .realms import Realm
 
-__all__ = ["LineScheduler", "Realm"]
+__all__ = ["ChangeScheduler", "LineScheduler", "Realm", "RealmScheduler"]
 
 MIN_INTERVAL_SECONDS = 60.0      # D-055: no máximo uma contagem por minuto por realm
+CHANGES_INTERVAL_SECONDS = 15.0  # as alterações locais mudam mais depressa que as linhas: uma olhada a cada 15 s por realm
 IDLE_SECONDS = 1.0               # a thread olha de novo depois disto quando nada estava na hora
 
 
@@ -33,18 +41,17 @@ def _biggest(folders: dict[str, int]) -> dict[str, int]:
     return dict(ranked[:MAX_FOLDERS])
 
 
-class LineScheduler:
-    """Decide qual realm contar e quando. `run_once` trata no máximo um realm por chamada e devolve quantos eventos produziu."""
+class RealmScheduler(ABC):
+    """Decide qual realm olhar e quando. `run_once` trata no máximo um realm por chamada e devolve quantos eventos produziu.
+    Cada Probe define `_measure` (o evento do realm, ou `None` se nada mudou ou não há resposta)."""
 
-    def __init__(self, realms: Callable[[], dict[str, Realm]], filter_for: Callable[[Realm], LineFilter],
-                 hidden: Callable[[], frozenset[str] | set[str]], *,
-                 tracked: Callable[[Any], list[str] | None] = git_tracked_files,
+    thread_name = "orb-probe"
+
+    def __init__(self, realms: Callable[[], dict[str, Realm]], hidden: Callable[[], frozenset[str] | set[str]], *,
                  clock: Callable[[], float] = time.monotonic, wall: Callable[[], datetime] | None = None,
                  interval: float = MIN_INTERVAL_SECONDS) -> None:
         self._realms = realms
-        self._filter_for = filter_for
         self._hidden = hidden
-        self._tracked = tracked
         self._clock = clock
         self._wall = wall or (lambda: datetime.now(UTC))        # a hora do mundo (o Hub informa a dele, R47)
         self._interval = interval
@@ -105,27 +112,9 @@ class LineScheduler:
         self._events.put(event)
         return 1
 
+    @abstractmethod
     def _measure(self, realm: Realm) -> Event | None:
-        root, flt = Path(realm.cwd), self._filter_for(realm)
-        entries = list_countable(root, flt, self._tracked)
-        if entries is None:
-            self.notes[realm.id] = "o git não listou os arquivos (sem repositório, git ausente, tempo esgotado ou pasta que o git não aceita)"
-            return None                                   # sem repositório: sem número, nunca um zero inventado
-        self.notes.pop(realm.id, None)
-        print_now = fingerprint(entries, flt)
-        if self._last_print.get(realm.id) == print_now:
-            return None                                   # nada que conta mudou desde a última contagem
-        result = count_lines(root, entries)
-        self._last_print[realm.id] = print_now
-        self._seq += 1
-        ts = self._wall().isoformat(timespec="milliseconds")
-        # O id leva a hora: a impressão digital pode voltar a um valor antigo (ligar e desligar o .md) e a contagem nova
-        # não pode ser descartada como repetida pela janela de dedupe do Core.
-        return make_event(id=f"{realm.id}:lines:{ts}", ts=ts,
-                          provider=None, source="probe/lines", realm=realm.id, alter_ego=None, agent=None, seq=self._seq,
-                          kind="realm/lines", body={"loc": result.loc, "files": result.files},
-                          signal={"type": "realm.metrics", "loc": result.loc, "files": result.files,
-                                  "root": result.root, "folders": _biggest(result.folders)})
+        """O evento deste realm, ou `None` se nada mudou ou não há resposta."""
 
     def drain(self) -> list[Event]:
         """Os eventos prontos desde a última chamada."""
@@ -150,16 +139,84 @@ class LineScheduler:
             while not self._stop.is_set():
                 try:
                     produced = self.run_once()
-                except Exception as exc:  # noqa: BLE001 - nada derruba a thread: a contagem segue na próxima volta
+                except Exception as exc:  # noqa: BLE001 - nada derruba a thread: a leitura segue na próxima volta
                     self.errors["*"] = f"{type(exc).__name__}: {exc}"
                     produced = 0
                 if not produced:
                     self._stop.wait(idle_seconds)
 
-        self._thread = threading.Thread(target=loop, name="orb-lines", daemon=True)
+        self._thread = threading.Thread(target=loop, name=self.thread_name, daemon=True)
         self._thread.start()
 
     def stop(self) -> None:
         self._stop.set()
         if self._thread is not None:
             self._thread.join(timeout=5)
+
+
+class LineScheduler(RealmScheduler):
+    """O Probe de linhas (R19): conta de novo quando a impressão digital dos arquivos que contam muda."""
+
+    thread_name = "orb-lines"
+
+    def __init__(self, realms: Callable[[], dict[str, Realm]], filter_for: Callable[[Realm], LineFilter],
+                 hidden: Callable[[], frozenset[str] | set[str]], *,
+                 tracked: Callable[[Any], list[str] | None] = git_tracked_files,
+                 clock: Callable[[], float] = time.monotonic, wall: Callable[[], datetime] | None = None,
+                 interval: float = MIN_INTERVAL_SECONDS) -> None:
+        super().__init__(realms, hidden, clock=clock, wall=wall, interval=interval)
+        self._filter_for = filter_for
+        self._tracked = tracked
+
+    def _measure(self, realm: Realm) -> Event | None:
+        root, flt = Path(realm.cwd), self._filter_for(realm)
+        entries = list_countable(root, flt, self._tracked)
+        if entries is None:
+            self.notes[realm.id] = "o git não listou os arquivos (sem repositório, git ausente, tempo esgotado ou pasta que o git não aceita)"
+            return None                                   # sem repositório: sem número, nunca um zero inventado
+        self.notes.pop(realm.id, None)
+        print_now = fingerprint(entries, flt)
+        if self._last_print.get(realm.id) == print_now:
+            return None                                   # nada que conta mudou desde a última contagem
+        result = count_lines(root, entries)
+        self._last_print[realm.id] = print_now
+        self._seq += 1
+        ts = self._wall().isoformat(timespec="milliseconds")
+        # O id leva a hora: a impressão digital pode voltar a um valor antigo (ligar e desligar o .md) e a contagem nova
+        # não pode ser descartada como repetida pela janela de dedupe do Core.
+        return make_event(id=f"{realm.id}:lines:{ts}", ts=ts,
+                          provider=None, source="probe/lines", realm=realm.id, alter_ego=None, agent=None, seq=self._seq,
+                          kind="realm/lines", body={"loc": result.loc, "files": result.files},
+                          signal={"type": "realm.metrics", "loc": result.loc, "files": result.files,
+                                  "root": result.root, "folders": _biggest(result.folders)})
+
+
+class ChangeScheduler(RealmScheduler):
+    """O Probe das alterações locais (R20b): lê o git de cada realm a cada poucos segundos e só publica quando algo mudou."""
+
+    thread_name = "orb-changes"
+
+    def __init__(self, realms: Callable[[], dict[str, Realm]], hidden: Callable[[], frozenset[str] | set[str]], *,
+                 reader: Callable[[Path], Any] = git_changes,
+                 clock: Callable[[], float] = time.monotonic, wall: Callable[[], datetime] | None = None,
+                 interval: float = CHANGES_INTERVAL_SECONDS) -> None:
+        super().__init__(realms, hidden, clock=clock, wall=wall, interval=interval)
+        self._reader = reader
+
+    def _measure(self, realm: Realm) -> Event | None:
+        result = self._reader(Path(realm.cwd))
+        if result is None:
+            self.notes[realm.id] = "o git não respondeu sobre as alterações (sem repositório, git ausente ou tempo esgotado)"
+            self._last_print.pop(realm.id, None)
+            return None                                   # sem repositório: sem dado, nunca "tudo limpo"
+        self.notes.pop(realm.id, None)
+        print_now = changes_fingerprint(result.items, result.more)
+        if self._last_print.get(realm.id) == print_now:
+            return None                                   # nada mudou desde a última leitura
+        self._last_print[realm.id] = print_now
+        self._seq += 1
+        ts = self._wall().isoformat(timespec="milliseconds")
+        items = [{"path": c.path, "type": c.type, "lines": c.lines} for c in result.items]
+        return make_event(id=f"{realm.id}:changes:{ts}", ts=ts, provider=None, source="probe/changes", realm=realm.id,
+                          alter_ego=None, agent=None, seq=self._seq, kind="realm/changes", body={"changes": len(items), "more": result.more},
+                          signal={"type": "realm.changes", "changes": items, "more": result.more})

@@ -480,7 +480,8 @@ def test_an_id_that_is_not_a_known_realm_is_ignored_when_hiding(machine, tmp_pat
 
 def test_the_settings_screen_is_built_from_a_table_of_options_so_new_tickets_only_add_rows(machine, tmp_path):
     options = hub_with_prefs(machine, tmp_path / "orb").settings()["options"]
-    assert [(o["key"], o["unit"], o["minimum"], o["maximum"], o["value"]) for o in options] == [("recent_days", "dias", 1, 365, 10)]
+    assert [(o["key"], o["unit"], o["minimum"], o["maximum"], o["value"]) for o in options] == [
+        ("recent_days", "dias", 1, 365, 10), ("window_percent", "%", 1, 50, 5.0)]           # o ticket 11 acrescentou o x das janelas
 
 
 def test_without_a_folder_the_choices_apply_but_nothing_is_written(machine):

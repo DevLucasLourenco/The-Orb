@@ -10,6 +10,7 @@ from typing import Any
 
 from .vocab import (
     ACTIVITIES,
+    CHANGE_TYPES,
     FIDELITIES,
     INNER_ROLES,
     PROTOCOL_VERSION,
@@ -22,6 +23,8 @@ MAX_STRING = 4 * 1024         # cada string dentro de native.body
 MAX_INNER_TEXT = 4000         # inner.text, em caracteres
 MAX_FOLDERS = 64              # realm.metrics: pastas de primeiro nível listadas (as maiores; o resto fica no total)
 MAX_FOLDER_NAME = 255         # realm.metrics: tamanho do nome de uma pasta
+MAX_CHANGES = 5000            # realm.changes: alterações listadas (o resto vira `more`)
+MAX_CHANGE_PATH = 1024        # realm.changes: tamanho do caminho de uma alteração
 _ELLIPSIS = "…"
 
 Event = dict[str, Any]
@@ -153,6 +156,39 @@ def _validate_signal(signal: Any, event: dict[str, Any]) -> str | None:
         if files is not None and (isinstance(files, bool) or not isinstance(files, int) or files < 0):
             return "realm.metrics: files deve ser um inteiro >= 0"
         return _validate_split(signal, loc)
+    if kind == "realm.changes":
+        return _validate_changes(signal)
+    return None
+
+
+def valid_change_path(path: Any) -> bool:
+    """Um caminho de alteração: texto relativo à raiz do projeto, com `/`, sem segmentos vazios, `.` ou `..`, sem NUL, sem letra de
+    unidade (`C:`) e de até `MAX_CHANGE_PATH` caracteres. Quem monta o evento descarta o que não passa aqui."""
+    if not isinstance(path, str) or not path or len(path) > MAX_CHANGE_PATH or "\0" in path or "\\" in path:
+        return False
+    if len(path) > 1 and path[1] == ":":
+        return False
+    return all(part not in ("", ".", "..") for part in path.split("/"))
+
+
+def _validate_changes(signal: dict[str, Any]) -> str | None:
+    """`realm.changes`: a lista de alterações locais (caminho relativo, tipo do vocabulário, linhas) e quantas ficaram de fora."""
+    changes = signal["changes"]
+    if not isinstance(changes, list) or len(changes) > MAX_CHANGES:
+        return f"realm.changes: changes deve ser uma lista de até {MAX_CHANGES} alterações"
+    for change in changes:
+        if not isinstance(change, dict):
+            return "realm.changes: cada alteração é um objeto"
+        path, kind, lines = change.get("path"), change.get("type"), change.get("lines")
+        if not valid_change_path(path):
+            return "realm.changes: path deve ser um caminho relativo com barras normais, sem segmentos vazios, `.` ou `..`"
+        if kind not in CHANGE_TYPES:
+            return f"realm.changes: tipo desconhecido {kind!r}"
+        if isinstance(lines, bool) or not isinstance(lines, int) or lines < 0:
+            return "realm.changes: lines deve ser um inteiro >= 0"
+    more = signal.get("more")
+    if more is not None and (isinstance(more, bool) or not isinstance(more, int) or more < 0):
+        return "realm.changes: more deve ser um inteiro >= 0"
     return None
 
 

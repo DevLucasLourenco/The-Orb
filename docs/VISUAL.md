@@ -30,12 +30,12 @@ Situação: ✅ como está · ❌ precisa mudar · ❓ precisa de decisão.
 |---|---|---|---|---|
 | V-REALM-1 | Existir um prédio | Dado | Todo projeto que algum provider já registrou (R3, R3a), menos os escondidos pelo Lucas na lista (R3c) e as sessões fora de projeto (R3b) | ✅ Detectado pelo índice de sessões (ticket 03); falta esconder pela lista (R3c) |
 | V-REALM-2 | **Altura** | Dado | Linhas de código do projeto, ignorando o `.gitignore` (R19), em **escala absoluta por classes** (Casa a Arranha-céu), com saltos entre as classes (§8). Não depende dos outros prédios | ✅ Ticket 10: o mundo calcula a **altura em níveis** (`building.levels`) e o cliente a desenha; o número de linhas e a classe aparecem no rótulo e no overview (ticket 09). Realm **sem contagem** vira só uma laje lisa, sem janelas, classe nem marcas (nada inventado) |
-| V-REALM-12 | **Altura de cada andar** | Dado | Parcela das linhas do projeto que está naquela pasta de 1º nível; pastas pequenas demais se juntam em "demais pastas" (§8) | ⚠️ Ticket 10: o **mundo** calcula os andares por pasta (`building.floors`, no snapshot em `metrics.floors`); o cliente ainda **não os desenha**: eles passam a valer nas janelas (ticket 11) |
+| V-REALM-12 | **Altura de cada andar** | Dado | Parcela das linhas do projeto que está naquela pasta de 1º nível; pastas pequenas demais se juntam em "demais pastas" (§8) | ✅ Ticket 11: o **mundo** calcula os andares (`building.floors`, em `metrics.floors`) e as janelas acendem no andar da pasta; o cliente não desenha divisória entre andares: eles aparecem pelas janelas |
 | V-REALM-13 | **Cintas de luz neutra no topo** (e antena no Arranha-céu) | Legenda | A classe do prédio por faixa de linhas: uma cinta a mais por classe (§8) | ✅ Ticket 10: faixas finas de luz branca sob a laje do teto; o Arranha-céu também tem a coroa e a antena |
 | V-REALM-15 | **Forma arquitetônica** do prédio | Legenda | A classe do prédio (Casa a Arranha-céu), cada uma com a sua forma (§8, R41) | ✅ Ticket 10: as 6 formas, neutras, com o Rooftop Room sempre do mesmo tamanho no topo |
 | V-REALM-16 | **Céu sobre o prédio (Weather)**: limpo, chuva ou nada | Dado | Resultado dos últimos testes rodados nas sessões do realm: passaram = céu limpo; falharam = chuva; sem dado = nada (R42). Cores neutras (cinza, branco), fora do orçamento de cores | ⏳ |
-| V-REALM-3 | **Janelas: quais acendem e de que cor** | Dado | **Hoje: padrão aleatório**, sorteado pelo nome do realm, com cores quentes/frias sem significado. **Decidido:** andares = pastas de 1º nível (R20); as janelas mostram as **alterações locais** (R20b); **cada janela acesa = x% das alterações, e nenhuma alteração é dividida** (R20d, §6); **a cor é a do tipo de alteração no git**, paleta do VS Code (R20a, §5). A janela é só **acesa ou apagada**, sem esmaecer (D-043) | ❌ Viola R12 |
-| V-REALM-4 | ~~Brilho geral das janelas~~ | — | ~~Quantidade de sessões ativas no realm~~ **Revisto (D-115):** a janela acesa tem brilho fixo; a atividade aparece na sala e no rótulo | ❌ Retirar |
+| V-REALM-3 | **Janelas: quais acendem e de que cor** | Dado | **Antes: padrão aleatório** (saiu no ticket 11), sorteado pelo nome do realm, com cores quentes/frias sem significado. **Decidido:** andares = pastas de 1º nível (R20); as janelas mostram as **alterações locais** (R20b); **cada janela acesa = x% das alterações, e nenhuma alteração é dividida** (R20d, §6); **a cor é a do tipo de alteração no git**, paleta do VS Code (R20a, §5). A janela é só **acesa ou apagada**, sem esmaecer (D-043) | ✅ Ticket 11: o padrão aleatório saiu; o mundo calcula as janelas acesas (`facade.windows`, no snapshot em `facade`) e o cliente as desenha na cor do tipo (§5), com o vidro apagado nas outras posições |
+| V-REALM-4 | ~~Brilho geral das janelas~~ | — | ~~Quantidade de sessões ativas no realm~~ **Revisto (D-115):** a janela acesa tem brilho fixo; a atividade aparece na sala e no rótulo | ✅ Retirado no ticket 11: a janela acesa tem brilho fixo |
 | V-REALM-5 | Arestas de luz do Rooftop Room: azul / âmbar | Dado | Âmbar quando alguma sessão do realm espera o Lucas | ⚠️ A cor do "esperando" muda (R20c, V-PEND-7b) |
 | V-REALM-6 | Feixe âmbar subindo do prédio, anel âmbar pulsando | Dado | Alguma sessão do realm espera o Lucas (aprovação/pergunta); visível de toda a cidade | ⚠️ A cor do "esperando" muda (R20c, V-PEND-7b) |
 | V-REALM-7 | Rótulo: nome, "N sessões · M ativas · K esperando" e, quando houver dado, o **Weather** e as **tarefas abertas** (D-097) | Dado | Snapshot do Core; sem dado, a parte não aparece | ⚠️ Faltam Weather e tarefas |
@@ -133,6 +133,8 @@ Tons neutros, fora do orçamento de cores: corpo e cabeça em cinza `#8a909c` (a
 para a câmera) com barras `#c9d0dc` e um traço branco `#ffffff` com contorno `#0b1020`. Os valores
 estão em `clients/web/js/avatar.js`; mudá-los exige mudar esta seção.
 
+**Vidro da fachada (neutros, sem significado de cor):** a parede `#0c1322` e o vidro apagado das janelas `#22345a`; a janela acesa usa a cor do tipo (tabela acima).
+
 **Orçamento de cores do mundo:** janelas = paleta do git · personagens = cor do provider ·
 "esperando o Lucas" = magenta. Nenhuma outra cor carrega significado; o cenário é neutro (R12a).
 
@@ -146,7 +148,7 @@ estão em `clients/web/js/avatar.js`; mudá-los exige mudar esta seção.
 - A cor da janela é a cor do **tipo de alteração** no git (§5), e o andar é a **pasta de 1º nível**
   onde a alteração está (R20).
 
-**Como as alterações viram janelas (proposta para validar):**
+**Como as alterações viram janelas (implementado no ticket 11; as escolhas que a spec não cobria estão nas Q-T11):**
 
 1. **Alteração** = um arquivo com alteração local, com um único tipo (modificado, adicionado, não
    rastreado, renomeado, apagado, em conflito). Arquivos ignorados pelo `.gitignore` não contam.
@@ -166,6 +168,23 @@ estão em `clients/web/js/avatar.js`; mudá-los exige mudar esta seção.
    esses dois estados, **acesa ou apagada**; não esmaece com o tempo (D-043).
 8. **Andar pequeno com muitos pacotes:** se um andar precisar de mais janelas do que tem, os pacotes
    dele se juntam mais (o x daquele andar sobe) até caber, ainda sem dividir nenhuma alteração.
+
+**Como ficou (ticket 11; `core/facade.py`, `probes/changes.py`):**
+
+- **Leitura (só leitura, R16):** `git status --porcelain=v2` e `git diff <HEAD> --numstat`, com `--no-optional-locks`, sem executar nada do
+  projeto e sem tocar no `.git`. Entram os arquivos com alteração local; ficam de fora os ignorados e os **submódulos** (R20e). O tipo vem das duas
+  letras do `status`: renomeado, adicionado (mesmo se editado depois), apagado, modificado, não rastreado e em conflito, nessa precedência.
+- **Peso:** inseridas mais removidas; arquivo novo (não rastreado) = todas as linhas dele (como o `numstat` conta as de um adicionado); binário, grande demais ou ilegível = 1; no mínimo 1.
+  O evento leva até **5.000 alterações** (as primeiras pelo caminho) e conta as que passaram (`more`, que também recebe as de caminho que o protocolo recusaria);
+  com o corte, o x% é das alterações que vieram, não do total.
+- **Andar:** arquivo da raiz no térreo; pasta de primeiro nível no andar dela. Uma pasta que não é andar (só tem arquivos que a contagem de linhas
+  não conta, como `.md`) cai em "demais pastas" e, sem esse andar, no térreo. Sem andares calculados, ou sem leitura do git, o prédio fica **sem
+  janelas** (nada inventado); com a leitura feita e nenhuma alteração, o vidro fica **todo apagado** (isso é dado: nada mudou).
+- **Pacotes:** em cada andar e tipo, na ordem do caminho, até somar x% do total das linhas alteradas do realm (padrão **5%**, de 1 a 50, nas
+  configurações, e vale na hora); uma alteração que passa de x% fica numa janela só dela.
+- **Onde:** cada nível tem 4 lados de 8 colunas; as janelas de um andar se espalham por igual pelas posições dele, e, se faltam posições, os pacotes
+  se juntam mais até caber. A janela é só acesa (na cor do tipo, §5) ou apagada (vidro escuro); o brilho é fixo.
+- **Quando:** a cada 15 s por realm, um por vez, numa thread própria; só se publica quando algo mudou. O realm escondido não é lido.
 
 | Id | Pergunta | Proposta |
 |---|---|---|
@@ -275,8 +294,8 @@ Fontes: [Wettel e Lanza, VISSOFT 2007 (PDF)](https://www.si.usi.ch/assets/public
 
    A altura dentro da classe vem do logaritmo das linhas, arredondado; o Arranha-céu sobe **4 níveis a cada vez que as linhas dobram**, até
    **48** (o teto). Cada bloco tem pelo menos um nível. Um prédio sem contagem de linhas é só uma **laje lisa** de 18 de lado e 1 unidade de altura, sem
-   janelas nem cintas (não tem classe para mostrar e não se parece com uma Casa). A maior largura (30) cabe no lote (§7). A fachada ainda usa a textura decorativa de antes, com uma
-   fileira por nível; as janelas de verdade chegam no ticket 11.
+   janelas nem cintas (não tem classe para mostrar e não se parece com uma Casa). A maior largura (30) cabe no lote (§7). As janelas da fachada vêm das alterações locais do git (§6); a textura
+   decorativa de antes saiu no ticket 11.
 
 2. **Delimitação visível.** As faixas de altura **não se encostam**: entre uma classe e a próxima há
    um salto (3 → 5, 8 → 11, 16 → 20, 28 → 34 níveis). Dois prédios de classes vizinhas nunca ficam
