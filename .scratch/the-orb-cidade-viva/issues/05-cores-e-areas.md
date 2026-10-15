@@ -1,6 +1,6 @@
 # 05: Cores e áreas
 
-Status: ready-for-agent
+Status: concluído (2026-10-15)
 Blocked by: None (can start immediately)
 Origem: R20c, R30; D-036, D-037, D-040; V-PEND-7d
 Spec: [../spec.md](../spec.md)
@@ -48,4 +48,4 @@ Tem um ponto de parada com o Lucas (aprovação da prévia) antes de concluir.
 - **Ruff:** `ruff check src tests` aponta 47 avisos, todos em arquivos que este ticket não tocou (nenhum arquivo Python mudou).
 
 **Revisões (`/code-review`, padrões e spec):** nenhuma violação dura. Tratado: o marcador sobre a cabeça e as arestas da sala só trocavam de cor e agora pulsam, como o feixe e o anel (R20c pede magenta *pulsante*); os valores de neutros, do magenta e do texto do selo entraram na VISUAL §5; o azul de repouso virou a constante `ROOM_REST` e o magenta uma só `WAIT` no `realm3d.js`; `areaDecal` falha com mensagem clara se a área não está em `AREA_MARKS`; a coluna Situação da R20c passou a ⚠️ (falta confirmar Q-T05-2 e Q-T05-3) e a data do IDEAS foi atualizada. **Não corrigido, com motivo:** os hex repetidos em `styles.css` e `providers.js` (o CSS não importa módulos; já era assim); `AREAS` e `AREA_MARKS` com as mesmas cinco chaves (juntar acoplaria o traçado ao desenho); o `--err` do chip de erro e o azul de repouso, que já existiam (Q-T05-2); o painel em magenta e os ajustes do piso, que o spec não pedia e estão em Q-T05-3 e Q-T05-4; o ticket continua `ready-for-agent` até o merge.
-- **Decisões:** o Lucas confirmou Q-T05-2, Q-T05-3 e Q-T05-4 em 2026-10-15 (D-189 a D-191 em `docs/DECISIONS.md`), além da prévia (D-187) e do cinza do opencode (D-188). **Aguarda:** o merge do PR.
+- **Decisões:** o Lucas confirmou Q-T05-2, Q-T05-3 e Q-T05-4 em 2026-10-15 (D-189 a D-191 em `docs/DECISIONS.md`), além da prévia (D-187) e do cinza do opencode (D-188). PR 12 mesclado.
