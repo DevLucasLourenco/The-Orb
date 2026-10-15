@@ -368,7 +368,9 @@ class World:
         kind = signal["type"]
         if kind == "subagent.started":
             sub.kind = signal.get("kind") or sub.kind
-            sub.parent = signal.get("parent") or sub.parent
+            parent = signal.get("parent")
+            if isinstance(parent, str) and parent:          # o protocolo não valida o tipo de `parent`: só um id de verdade entra na árvore
+                sub.parent = parent
             sub.active, sub.base = True, "THINKING"
         elif kind == "subagent.ended":
             sub.active, sub.outcome = False, signal.get("outcome") or "completed"

@@ -22,8 +22,13 @@ def started(agent, *, parent=None, kind="Explore", ego="claude:s1"):
     signal = {"type": "subagent.started", "kind": kind}
     if parent is not None:
         signal["parent"] = parent
-    return make_event(id=f"{ego}:{agent}:{n}", ts=f"2026-10-07T10:00:{n % 60:02d}Z", provider="claude", source="claude/transcript",
+    return make_event(id=f"{ego}:{agent}:{n}", ts=f"2026-10-07T10:{n // 60 % 60:02d}:{n % 60:02d}Z", provider="claude", source="claude/transcript",
                       realm="the-orb", alter_ego=ego, agent=agent, seq=n, kind="x", body={}, signal=signal)
+
+
+def session_started(ego="claude:s1"):
+    return make_event(id=f"{ego}:start", ts="2026-10-07T10:00:00Z", provider="claude", source="claude/transcript", realm="the-orb",
+                      alter_ego=ego, agent=None, seq=next(_n), kind="x", body={}, signal={"type": "session.started"})
 
 
 def ego_of(world, ego="claude:s1"):
@@ -77,8 +82,7 @@ def test_a_tie_has_no_role_but_the_attributes_still_show():
 
 def test_a_session_that_did_nothing_countable_has_neither_role_nor_attributes():
     world = World()
-    world.apply(make_event(id="claude:s1:start", ts="2026-10-07T10:00:00Z", provider="claude", source="claude/transcript", realm="the-orb",
-                           alter_ego="claude:s1", agent=None, seq=1, kind="x", body={}, signal={"type": "session.started"}))
+    world.apply(session_started())
     snap = ego_of(world)
     assert snap["role"] is None and snap["attributes"] is None
 
@@ -86,7 +90,7 @@ def test_a_session_that_did_nothing_countable_has_neither_role_nor_attributes():
 def test_only_the_leaders_own_activities_in_an_area_count():
     world = World()
     world.apply(started("a1"))
-    for activity in ("THINKING", "DELEGATING", "BLOCKED", "COMPLETED"):      # sem área: não entram na contagem
+    for activity in ("THINKING", "DELEGATING", "BLOCKED", "COMPLETED"):      # não são área de trabalho (COMPLETED cai na Task Board)
         world.apply(act(activity))
     for _ in range(5):
         world.apply(act("REVIEWING", agent="a1"))                          # a Team não conta para o líder
@@ -151,7 +155,14 @@ def test_a_loop_of_parents_does_not_hang_and_keeps_everyone_listed():
     world.apply(started("a", parent="b"))
     world.apply(started("b", parent="a"))
     world.apply(started("c", parent="b"))
-    assert sorted(i for i, _ in team_of(world)) == ["a", "b", "c"]
+    assert team_of(world) == [("a", 0), ("b", 1), ("c", 2)]              # o primeiro do laço vira raiz; ninguém some
+
+
+def test_a_parent_that_is_not_an_id_is_ignored():
+    world = World()
+    world.apply(started("a", parent=["x"]))                              # o protocolo não valida o tipo do pai
+    world.apply(started("b", parent=7))
+    assert team_of(world) == [("a", 0), ("b", 0)]
 
 
 def test_the_team_keeps_its_type_state_and_parent_for_the_overview():
@@ -162,4 +173,3 @@ def test_the_team_keeps_its_type_state_and_parent_for_the_overview():
     team = {s["id"]: s for s in ego_of(world)["team"]}
     assert (team["b"]["kind"], team["b"]["state"], team["b"]["parent"], team["b"]["depth"]) == ("Plan", "READING", "a", 1)
     assert team["a"]["parent"] is None
-

@@ -74,13 +74,16 @@ function attributeBars(attributes) {
   box.title = `${attributes.total} atividades contadas`;
   for (const a of attributes.areas) {
     const pct = Math.round(a.share * 100);
+    const fill = el("i");
+    fill.style.width = `${pct}%`;
     const bar = el("span", "bar");
-    bar.append(el("i"));
-    bar.firstChild.style.width = `${pct}%`;
+    bar.append(fill);
     box.append(el("span", "attr-name", a.area), bar, el("span", "attr-pct", `${pct}%`));
   }
   return box;
 }
+
+const MAX_INDENT = 6;       // uma Team muito funda não empurra o cartão para fora do painel
 
 // A Team em árvore (R57, D-116, V-HUD-17): o mundo manda a lista na ordem da árvore, com a profundidade de cada um. Ficam os
 // ativos (os "sem sinal" também, em cinza) e os pais deles, para a árvore não perder o fio.
@@ -93,7 +96,7 @@ function teamTree(team) {
   team.forEach((sub, i) => {
     if (!shown[i]) return;
     const row = el("span", `sub${sub.active ? "" : " done"}`, `${sub.depth ? "└ " : ""}${sub.kind || "subagente"} · ${sub.active ? STATE_LABEL[sub.state] || sub.state : "concluído"}`);
-    row.style.marginLeft = `${sub.depth * 14}px`;
+    row.style.marginLeft = `${Math.min(sub.depth, MAX_INDENT) * 14}px`;
     box.append(row);
   });
   return box.children.length ? box : null;

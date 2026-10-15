@@ -30,11 +30,9 @@ def attributes(counts: Mapping[str, int]) -> dict[str, Any] | None:
 
 def role(counts: Mapping[str, int]) -> str | None:
     """O papel é o da área onde a sessão mais fez (R40). Com empate no topo, ou sem nada contado, não se afirma papel nenhum (R12)."""
-    ranked = sorted(((counts.get(area, 0), area) for area in rules.ATTRIBUTE_AREAS), reverse=True)
-    top, area = ranked[0]
-    if not top or ranked[1][0] == top:
-        return None
-    return rules.ROLE_BY_AREA[area]
+    ranked = sorted(rules.ATTRIBUTE_AREAS, key=lambda area: counts.get(area, 0), reverse=True)
+    first, second = counts.get(ranked[0], 0), counts.get(ranked[1], 0)
+    return rules.ROLE_BY_AREA[ranked[0]] if first > second else None
 
 
 def team_order(parents: Mapping[str, str | None]) -> list[tuple[str, int]]:
