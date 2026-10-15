@@ -567,3 +567,19 @@ escolhidos de forma provisória (regra P2). O cliente só desenha: a conferênci
 | ~~Q-T05-2~~ D-189 | As arestas e o anel de repouso da sala, hoje azuis (`#7cc4ff`), entram no orçamento de cores? | **Ficam como estão**: são o tema azul da cidade (céu, chão e sala) e o azul só muda para magenta quando alguém espera. O orçamento da R20c vale para o que tem significado; tornar o resto neutro é mudar o tema inteiro |
 | ~~Q-T05-3~~ D-190 | Como as áreas aparecem no piso do prédio? | Piso cinza-azulado igual nas cinco (`#2a3550`, 55% opaco), aresta neutra (`#aebbd4`, 50%), o padrão bem fraco (16%) no piso todo e o ícone (traço claro) no fundo da área, longe do nome e de onde o personagem para. Valores em VISUAL §5 |
 | ~~Q-T05-4~~ D-191 | O magenta também vale no painel e nos rótulos? | **Sim**: o contador "esperando você", o selo, o cartão, o chip, o aviso, a linha de pedido da linha do tempo e o rótulo do personagem e do prédio usam o mesmo `#ff2bd6`; o texto sobre o selo é escuro |
+
+
+### Rodada: o que a implementação do ticket 12 decidiu por conta própria (aberta em 2026-10-15)
+
+Ao implementar o ticket 12 ([.scratch/the-orb-cidade-viva/issues/12-papel-atributos-e-arvore-da-team.md](../.scratch/the-orb-cidade-viva/issues/12-papel-atributos-e-arvore-da-team.md)),
+seis pontos **não estavam escritos** e foram escolhidos de forma provisória (regra P2). Todos estão cobertos por teste no mundo
+(`tests/test_profile.py`); o overview foi conferido na tela com um snapshot real do mundo feito de eventos sintéticos. O Lucas responde por número.
+
+| Id | Pergunta | Proposta (já aplicada, provisória) |
+|---|---|---|
+| Q-T12-1 | Que nome tem o papel de cada área? | Desenvolvimento = **desenvolvedor**, Testes = **testador**, Pesquisa = **pesquisador**, Revisão = **revisor** (os dois últimos são os exemplos da D-069). Tabela em `rules.py` (`ROLE_BY_AREA`) |
+| Q-T12-2 | O que entra na contagem? | As atividades **do líder** que caem numa das quatro áreas (CODING e EXECUTING = Development; TESTING = Testing; READING e RESEARCHING = Research; REVIEWING = Review). Pensar, delegar, bloquear e concluir não têm área; **o trabalho dos subagentes não entra** (cada um aparece na árvore com o próprio tipo e estado) |
+| Q-T12-3 | E se duas áreas empatam no topo? | **Nenhum papel** (a regra diz "o que mais fez" e com empate nada é "o mais"); as barras continuam aparecendo. Sem nenhuma atividade contada: sem papel e sem barras |
+| Q-T12-4 | Como são os atributos? | A **parcela** de cada área no total contado (contagem ÷ total), em quatro barras neutras na ordem Development, Testing, Research, Review, com a porcentagem; o total aparece ao passar o mouse |
+| Q-T12-5 | Como se monta a árvore da Team? | O `parent` de um subagente é outro subagente da mesma sessão; sem pai, com pai que não existe, ou que é ele mesmo, o subagente é filho do líder; um laço de pais não trava (quem sobra vira raiz). O mundo manda a lista `team` em **ordem de árvore** com `depth`; o overview mostra os ativos e os pais deles, e concluídos sem filho ativo saem como antes |
+| Q-T12-6 | O papel e as barras contam o passado? | **Só o que o Orb viu chegar**: os leitores começam do fim dos arquivos que já existiam (D-087), então uma sessão aberta antes do Orb começa a contar quando ele a vê, e o papel nasce depois de algumas atividades. Ler o passado fica fora deste ticket |
