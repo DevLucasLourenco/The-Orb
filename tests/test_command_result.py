@@ -46,6 +46,8 @@ def test_the_shared_builder_classifies_the_command_and_keeps_the_code_only_when_
         "type": "command.result", "ok": False, "exit_code": 1, "activity": "TESTING"}
     assert _shared.result_signal("git status", ok=True) == {"type": "command.result", "ok": True, "activity": "READING"}
     assert _shared.result_signal(None, ok=True)["activity"] == "EXECUTING"
+    assert _shared.result_signal("pytest", ok=True, activity="READING")["activity"] == "READING"             # a atividade do provider vale
+    assert [_shared.exit_code_of(v) for v in (0, 3, True, 1.5, "1", None)] == [0, 3, None, None, None, None]
 
 
 # --- Claude: `is_error` e `interrupted`, sem código -----------------------------------------------------------------
@@ -166,7 +168,7 @@ def test_opencode_bash_result_carries_the_exit_code(tmp_path):
     db.put("msg_a", "ses_root1", "assistant", {"content": [
         tool("t1", "bash", "completed", "pytest -q", {"exit": 1}),
         tool("t2", "bash", "completed", "pytest -q", {"exit": 0}),
-        tool("t3", "bash", "error", "pytest -q"),                       # sem código: vale o estado
+        tool("t3", "bash", "error", "pytest -q"),                       # sem código: nada se afirma
         tool("t4", "read", "completed", "x", {"exit": 0}),              # não é shell
         tool("t5", "bash", "running", "pytest -q", {})],                # ainda não terminou
         "time": {"created": 3}}, seq=1)
@@ -174,8 +176,7 @@ def test_opencode_bash_result_carries_the_exit_code(tmp_path):
     assert all(validate(e) is None for e in events)
     assert [e["signal"] for e in result_events(events)] == [
         {"type": "command.result", "ok": False, "exit_code": 1, "activity": "TESTING"},
-        {"type": "command.result", "ok": True, "exit_code": 0, "activity": "TESTING"},
-        {"type": "command.result", "ok": False, "activity": "TESTING"}]
+        {"type": "command.result", "ok": True, "exit_code": 0, "activity": "TESTING"}]
 
 
 # --- o mundo: o último teste de cada realm vira o Weather -------------------------------------------------------------------------

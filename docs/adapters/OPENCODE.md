@@ -123,4 +123,4 @@ de eventos e confirmar que nada muda na configuração do Lucas.
 
 ## command.result (ticket 19, D-084)
 
-Quando um bloco `bash` termina (`state.status` `completed` ou `error`), o evento `:tool_result` ganha `command.result`: `ok` = `state.metadata.exit` igual a 0; sem esse campo vale o estado da ferramenta (`completed`), sem `exit_code`. Outras ferramentas não geram o sinal.
+Quando um bloco `bash` termina (`state.status` `completed` ou `error`), o evento `:tool_result` ganha `command.result`: `ok` = `state.metadata.exit` igual a 0 (com `exit_code`); **sem esse campo, nada se afirma** (o estado da ferramenta sozinho não diz se o comando passou). Outras ferramentas não geram o sinal. Esta fonte vem da D-084 (44 de 44 `bash` com `metadata.exit`) e não foi reconferida ao vivo no ticket 19.

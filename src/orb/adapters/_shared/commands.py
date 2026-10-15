@@ -56,11 +56,16 @@ def first_command(command: str) -> str:
     return ""
 
 
-def result_signal(command: str | None, *, ok: bool, exit_code: int | None = None) -> dict[str, object]:
-    """O sinal `command.result` de um comando de shell: passou ou falhou, a atividade dele (pelo classificador) e o código de
-    saída só quando o provider o informa (o Claude não informa: R42, D-084)."""
-    signal: dict[str, object] = {"type": "command.result", "ok": ok, "activity": classify_command(command)}
-    if isinstance(exit_code, int) and not isinstance(exit_code, bool):
+def exit_code_of(value: object) -> int | None:
+    """O código de saída que um provider gravou: só um inteiro de verdade (`bool` não é código). Nada mais afirma resultado."""
+    return value if isinstance(value, int) and not isinstance(value, bool) else None
+
+
+def result_signal(command: str | None, *, ok: bool, exit_code: int | None = None, activity: str | None = None) -> dict[str, object]:
+    """O sinal `command.result` de um comando de shell: passou ou falhou, a atividade dele (a que o provider deu ou, senão, a do
+    classificador) e o código de saída só quando o provider o informa (o Claude não informa: R42, D-084)."""
+    signal: dict[str, object] = {"type": "command.result", "ok": ok, "activity": activity or classify_command(command)}
+    if exit_code_of(exit_code) is not None:
         signal["exit_code"] = exit_code
     return signal
 

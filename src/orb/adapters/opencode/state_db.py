@@ -19,7 +19,7 @@ from pathlib import Path
 from typing import Any
 
 from ...protocol import Event
-from .._shared import EventFactory, RealmOf, connect_readonly, result_signal, single_realm, table_columns
+from .._shared import EventFactory, RealmOf, connect_readonly, exit_code_of, result_signal, single_realm, table_columns
 from . import mapping
 
 SOURCE = "opencode/db"
@@ -52,16 +52,15 @@ def select(conn: sqlite3.Connection, table: str, columns: list[str], where: str,
 
 
 def _command_result(name: str, state: dict[str, Any]) -> dict[str, Any] | None:
-    """O resultado de um `bash` que terminou: o código de saída está em `state.metadata.exit`; sem ele vale o estado da ferramenta."""
+    """O resultado de um `bash` que terminou: o código de saída está em `state.metadata.exit` (D-084). Sem ele não se afirma nada
+    (o estado da ferramenta sozinho não diz se o comando passou)."""
     if name.lower() not in mapping.SHELL_TOOLS:
         return None
     tool_input = state.get("input")
     command = tool_input.get("command") if isinstance(tool_input, dict) and isinstance(tool_input.get("command"), str) else None
     metadata = state.get("metadata") if isinstance(state.get("metadata"), dict) else {}
-    code = metadata.get("exit")
-    if isinstance(code, int) and not isinstance(code, bool):
-        return result_signal(command, ok=code == 0, exit_code=code)
-    return result_signal(command, ok=state.get("status") == "completed")
+    code = exit_code_of(metadata.get("exit"))
+    return None if code is None else result_signal(command, ok=code == 0, exit_code=code)
 
 
 class OpencodeDbReader:

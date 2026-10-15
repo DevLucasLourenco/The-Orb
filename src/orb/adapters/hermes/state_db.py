@@ -18,7 +18,7 @@ from pathlib import Path
 from typing import Any
 
 from ...protocol import Event
-from .._shared import EventFactory, RealmOf, result_signal, single_realm
+from .._shared import EventFactory, RealmOf, exit_code_of, result_signal, single_realm
 from .._shared.sqlite import connect_readonly, table_columns
 from . import mapping
 
@@ -186,8 +186,9 @@ class StateDbReader:
                 parsed = json.loads(arguments) if isinstance(arguments, str) else arguments
             except json.JSONDecodeError:
                 parsed = arguments
-            if name.lower() in mapping.SHELL_TOOLS and isinstance(parsed, dict) and isinstance(call.get("id"), str):
-                self._shell_calls[call["id"]] = str(parsed.get("command") or "")
+            command = parsed.get("command") if isinstance(parsed, dict) else None
+            if name.lower() in mapping.SHELL_TOOLS and isinstance(command, str) and command and isinstance(call.get("id"), str):
+                self._shell_calls[call["id"]] = command         # só chamada com um comando de verdade (execute_code não é shell)
                 if len(self._shell_calls) > _SHELL_CALLS:
                     self._shell_calls.popitem(last=False)
             out.append(factory.make(f"{key}#tool{index}", ts, "messages/assistant.tool_call", call, agent=agent,
@@ -206,8 +207,7 @@ def _exit_code(content: str) -> int | None:
         data = json.loads(content)
     except (json.JSONDecodeError, TypeError):
         return None
-    code = data.get("exit_code") if isinstance(data, dict) else None
-    return code if isinstance(code, int) and not isinstance(code, bool) else None
+    return exit_code_of(data.get("exit_code")) if isinstance(data, dict) else None
 
 
 def _json_items(raw: Any) -> list[dict[str, Any]]:

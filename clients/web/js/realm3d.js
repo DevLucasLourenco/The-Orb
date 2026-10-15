@@ -380,8 +380,7 @@ export class RealmBuilding {
       const { points, speeds, geometry } = this.rain;
       for (let i = 0; i < speeds.length; i++) {
         const drop = i * 6 + 1;
-        let y = points[drop] - speeds[i] * dt;
-        if (y < -RAIN_DEPTH) y += RAIN_DEPTH;
+        const y = -((-(points[drop] - speeds[i] * dt)) % RAIN_DEPTH);          // fica entre -RAIN_DEPTH e 0, qualquer que seja o quadro
         points[drop] = y;
         points[drop + 3] = y - 1.4;
       }
