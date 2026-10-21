@@ -14,7 +14,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-from ...protocol import Event
+from ...protocol import Event, valid_sha
 from .._shared import (
     EventFactory,
     JsonlFollower,
@@ -383,7 +383,11 @@ class TranscriptReader:
             return None
         extra = entry.get("toolUseResult")
         interrupted = isinstance(extra, dict) and extra.get("interrupted") is True
-        return result_signal(command, ok=not block.get("is_error") and not interrupted)
+        # O commit vem do `gitOperation.commit` do resultado (D-090), com o hash; o texto do comando não é interpretado.
+        git = extra.get("gitOperation") if isinstance(extra, dict) else None
+        made = git.get("commit") if isinstance(git, dict) else None
+        sha = made.get("sha") if isinstance(made, dict) and valid_sha(made.get("sha")) else None
+        return result_signal(command, ok=not block.get("is_error") and not interrupted, commit=isinstance(made, dict), sha=sha)
 
     @staticmethod
     def _prompt(session: _Session, entry: dict[str, Any], text: str, key: str, ts: str | None,

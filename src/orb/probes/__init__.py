@@ -7,6 +7,7 @@ from .changes import (
     parse_numstat,
     parse_status,
 )
+from .commits import CommitQuery, commits_fingerprint, git_commits, main_branch
 from .lines import (
     MAX_FILE_BYTES,
     Count,
@@ -18,4 +19,4 @@ from .lines import (
     list_countable,
 )
 
-__all__ = ["MAX_FILE_BYTES", "Change", "ChangeSet", "Count", "Entry", "Filter", "changes_fingerprint", "count_lines", "fingerprint", "git_changes", "git_tracked_files", "list_countable", "parse_numstat", "parse_status"]
+__all__ = ["MAX_FILE_BYTES", "Change", "ChangeSet", "CommitQuery", "Count", "Entry", "Filter", "changes_fingerprint", "commits_fingerprint", "count_lines", "fingerprint", "git_changes", "git_commits", "git_tracked_files", "list_countable", "main_branch", "parse_numstat", "parse_status"]

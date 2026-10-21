@@ -19,9 +19,20 @@
 <header id="topbar">
   <div class="brand"><span class="orb-dot"></span>THE ORB</div>
   <div id="mankind" class="stats"></div>
+  <button id="open-progress" class="level-btn" title="Progressão: nível de Mankind, placar por provider e extrato de XP" aria-label="Progressão"></button>
   <div id="conn" class="conn">conectando…</div>
   <button class="icon-btn" id="open-settings" title="Configurações" aria-label="Configurações">⚙</button>
 </header>
+
+<section id="progress" class="modal hidden" role="dialog" aria-modal="true" aria-label="Progressão">
+  <div class="modal-card wide">
+    <div class="panel-head">
+      <div><div class="eyebrow">Orb</div><h2>Progressão</h2></div>
+      <button class="icon-btn" id="progress-close" title="Fechar (Esc)" aria-label="Fechar">✕</button>
+    </div>
+    <div id="progress-body" class="settings-body"></div>
+  </div>
+</section>
 
 <section id="settings" class="modal hidden" role="dialog" aria-modal="true" aria-label="Configurações do Orb">
   <div class="modal-card">

@@ -48,7 +48,7 @@ from ..terminal_host import (
     winpty_factory,
 )
 from .messages import handle_client_message
-from .probes import ChangeScheduler, LineScheduler
+from .probes import ChangeScheduler, CommitScheduler, LineScheduler
 from .realms import Feed, Observatory, Realm
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
@@ -59,6 +59,7 @@ HISTORY_LIMIT = 1000           # sessões do Histórico enviadas por pedido; o t
 IDLE_POLL_SECONDS = 2.0        # sem sessão ativa: só a varredura de sessões novas, a cada 2 s (D-087)
 CLIENT_QUEUE = 2000            # mensagens pendentes por cliente do mundo; além disso, só o snapshot
 FEED_ON_CONNECT = 80           # linhas de Inner World por sessão enviadas a quem acabou de conectar
+XP_EXTRACT_LIMIT = 200          # entradas do extrato de XP enviadas por pedido (as mais novas; o painel Progressão)
 TIME_TICK_SECONDS = 15.0       # de quanto em quanto tempo se reavalia o que só o tempo muda (dormindo, sem sinal)
 
 
@@ -103,6 +104,8 @@ class Hub:
                                    wall=self.clock, tracked=tracked or git_tracked_files)
         # O Probe das alterações locais (R20b): lê o git de cada realm a cada poucos segundos, só leitura, numa thread própria.
         self.changes = ChangeScheduler(lambda: self.observatory.realms, lambda: self.world.hidden, wall=self.clock)
+        # O Probe dos commits (R53): pergunta ao git pelos commits que as sessões disseram ter feito; o mundo diz quais conferir.
+        self.commits = CommitScheduler(lambda: self.observatory.realms, lambda: self.world.hidden, self.world.pending_commits, wall=self.clock)
         self.feed = Feed()
         self.clients: set[asyncio.Queue[dict[str, Any]]] = set()
         self._published_time_key: tuple | None = None      # o que os clientes viram da última vez
@@ -132,7 +135,7 @@ class Hub:
         """Lê todos os realms (chamado fora do loop). Devolve (eventos aplicados, mudou?)."""
         applied: list[dict[str, Any]] = []
         known = len(self.observatory.realms)
-        events = self.observatory.poll() + self.lines.drain() + self.changes.drain()
+        events = self.observatory.poll() + self.lines.drain() + self.changes.drain() + self.commits.drain()
         for realm_id in self.observatory.realms:
             self.world.add_realm(realm_id)           # todo realm detectado existe, mesmo "de noite" (D-059)
         self._sync_hidden()                          # antes de aplicar: um realm escondido recém-detectado nunca aparece, nem por um instante
@@ -205,6 +208,10 @@ class Hub:
                           "default_exclude": list(GENERATED_FILE_PATTERNS)},
                 "preferences": {**self.preferences.options, "hidden_realms": sorted(self.world.hidden)}}
 
+    def xp_extract(self) -> list[dict[str, Any]]:
+        """O extrato de XP para o painel Progressão (as `XP_EXTRACT_LIMIT` entradas mais novas)."""
+        return self.world.xp_extract(XP_EXTRACT_LIMIT)
+
     def history(self, realm_id: str) -> list[dict[str, Any]]:
         """O Histórico do realm: as sessões mais antigas que a sala, com o nome histórico quando já foi sorteado."""
         metas = self._history_metas(realm_id)[:HISTORY_LIMIT]
@@ -248,6 +255,7 @@ class Hub:
     async def run(self, poll_seconds: float, idle_poll_seconds: float | None = None) -> None:
         self.lines.start()
         self.changes.start()
+        self.commits.start()
         last_tick = time.monotonic()
         while True:
             try:
@@ -286,6 +294,7 @@ def create_app(config: GatewayConfig, *, pty_factory: Callable = winpty_factory,
             task.cancel()
             hub.lines.stop()
             hub.changes.stop()
+            hub.commits.stop()
 
     app = FastAPI(title="The Orb", lifespan=lifespan)
     app.state.hub = hub
@@ -352,6 +361,8 @@ def create_app(config: GatewayConfig, *, pty_factory: Callable = winpty_factory,
                     sessions = await asyncio.to_thread(hub.history, msg["realm"])    # nomes vêm do disco: fora do loop
                     await queue.put({"channel": "history", "realm": msg["realm"], "sessions": sessions,
                                      "total": max(len(sessions), hub.history_total(msg["realm"]))})
+                elif isinstance(msg, dict) and msg.get("type") == "xp":
+                    await queue.put({"channel": "xp", "entries": hub.xp_extract(), "limit": XP_EXTRACT_LIMIT})
                 elif isinstance(msg, dict) and msg.get("type") == "feed" and isinstance(msg.get("alter_ego"), str):
                     await queue.put({"channel": "feed", "alter_ego": msg["alter_ego"],
                                      "events": hub.feed.history(msg["alter_ego"])})

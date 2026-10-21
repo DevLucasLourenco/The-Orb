@@ -18,7 +18,10 @@ from typing import Any, Protocol
 from ..protocol import Event
 from . import rules
 
-X_TEST, X_FIX, X_DELEG, X_CRAFT = "X-TEST", "X-FIX", "X-DELEG", "X-CRAFT"
+X_TEST, X_FIX, X_DELEG, X_CRAFT, X_COMMIT = "X-TEST", "X-FIX", "X-DELEG", "X-CRAFT", "X-COMMIT"
+# Os estados de uma entrada (PROGRESSION.md §1 e §3): só a confirmada conta para o nível. Anulada (commit revertido) e expirada
+# (30 dias sem chegar à principal) são finais.
+CONFIRMED, PROVISIONAL, ANNULLED, EXPIRED = "confirmed", "provisional", "annulled", "expired"
 
 
 @dataclass(frozen=True)
@@ -31,11 +34,13 @@ class Entry:
     ref: str
     evidence: dict[str, Any]
     version: int
+    state: str = CONFIRMED
 
 
 class XpSource(Protocol):
     """O que o mundo pede do registro local (R36): o extrato guardado de um Alter Ego (só o da versão da tabela em uso) e onde
-    gravar uma entrada nova. `error` diz por que não está guardando (disco com falha), ou é None."""
+    gravar uma entrada (nova, ou a mesma com o estado e a XP que o git mudou). `error` diz por que não está guardando (disco com
+    falha), ou é None."""
 
     error: str | None
 
@@ -55,6 +60,12 @@ def level_of(xp: int, k: int) -> dict[str, int]:
     return {"level": n, "xp": xp, "floor": k * n * (n - 1), "next": k * (n + 1) * n}
 
 
+def scale(xp: int, k: int) -> dict[str, int]:
+    """O nível de uma escala (Alter Ego, Realm ou Mankind) para a XP confirmada `xp`: o total e a barra do nível."""
+    info = level_of(xp, k)
+    return {"total": info["xp"], "level": info["level"], "floor": info["floor"], "next": info["next"]}
+
+
 def _when(ts: str) -> datetime | None:
     """A hora do evento em UTC; sem hora legível ou sem fuso não se afirma nada (R12): sem XP."""
     try:
@@ -72,7 +83,9 @@ class Ledger:
         self.table = table
         self.entries: list[Entry] = [e for e in entries if e.version == table.version]
         self._seen = {(e.rule, e.ref) for e in self.entries}
-        self.total = sum(e.xp for e in self.entries)            # a soma corrente: o snapshot a pede a cada leitura
+        self.total = 0                                          # a XP confirmada (a que conta para o nível) e a provisória:
+        self.provisional = 0                                    # somas correntes, o snapshot as pede a cada leitura
+        self._recount()
         self._open_failure: str | None = None                   # o primeiro teste vermelho que ainda não foi consertado
         self._last_test: datetime | None = None
         self._day_xp: dict[tuple[str, Any], int] = {}
@@ -85,10 +98,13 @@ class Ledger:
             if entry.rule == X_TEST and (self._last_test is None or when > self._last_test):
                 self._last_test = when
 
+    def _recount(self) -> None:
+        self.total = sum(e.xp for e in self.entries if e.state == CONFIRMED)
+        self.provisional = sum(e.xp for e in self.entries if e.state == PROVISIONAL)
+
     def snapshot(self) -> dict[str, int]:
-        """O que os clientes veem: o total, o nível e onde a barra começa e termina."""
-        info = level_of(self.total, self.table.k)
-        return {"total": info["xp"], "level": info["level"], "floor": info["floor"], "next": info["next"]}
+        """O que os clientes veem: a XP confirmada, a provisória (a barra tracejada), o nível e onde a barra começa e termina."""
+        return {**scale(self.total, self.table.k), "provisional": self.provisional}
 
     def observe(self, event: Event) -> list[Entry]:
         """Olha um evento e devolve as entradas novas do extrato (já acrescentadas a ele)."""
@@ -97,8 +113,9 @@ class Ledger:
         if not signal or when is None:
             return []
         kind = signal["type"]
-        if kind == "command.result" and signal.get("activity") == "TESTING":
-            return self._tests(event, signal, when)
+        if kind == "command.result":
+            earned = self._commit(event, signal, when) if signal.get("ok") and isinstance(signal.get("commit"), dict) else []
+            return earned + (self._tests(event, signal, when) if signal.get("activity") == "TESTING" else [])
         if kind == "subagent.ended" and event.get("agent") and signal.get("outcome") in (None, "completed"):
             return self._award(event, when, X_DELEG, str(event["agent"]), self.table.deleg_xp, {"agent": event["agent"]},
                                cap=self.table.deleg_cap)
@@ -108,6 +125,61 @@ class Ledger:
             return self._award(event, when, X_CRAFT, str(window), self.table.craft_xp, {"window": start, "event": event["id"]},
                                cap=self.table.craft_cap)
         return []
+
+    def _commit(self, event: Event, signal: dict[str, Any], when: datetime) -> list[Entry]:
+        """Um commit feito pela sessão (X-COMMIT): a evidência é do provider (Claude: o `gitOperation`, com o hash; os outros: o `git commit`
+        que deu certo). Começa **provisório**: o que o git disser depois (`settle`) o confirma, anula ou expira. O recibo é o hash,
+        ou o evento quando não veio hash."""
+        sha = signal["commit"].get("sha")
+        evidence: dict[str, Any] = {"event": event["id"], "at": event["ts"], **({"sha": sha} if sha else {})}
+        return self._award(event, when, X_COMMIT, sha or event["id"], self.table.commit_xp, evidence, state=PROVISIONAL)
+
+    def commit_queries(self, now: datetime) -> list[dict[str, Any]]:
+        """O que perguntar ao git: os commits provisórios e os confirmados que ainda estão na janela em que uma reversão os anula."""
+        window = self.table.commit_expire_days * 86400
+        asked = []
+        for entry in self.entries:
+            if entry.rule != X_COMMIT or entry.state not in (PROVISIONAL, CONFIRMED):
+                continue
+            at = entry.evidence.get("at", entry.ts)
+            moment = _when(at)
+            if entry.state == CONFIRMED and (moment is None or (now - moment).total_seconds() > window):
+                continue
+            asked.append({"key": entry.ref, "sha": entry.evidence.get("sha"), "at": at})
+        return asked
+
+    def settle(self, commits: Iterable[dict[str, Any]], ts: str) -> list[Entry]:
+        """Aplica o que o git disse dos commits (`realm.commits`) e o tempo (`ts` é a hora da leitura): o commit que existe e chegou à
+        principal é confirmado, o revertido é anulado, o que não chegou em `commit_expire_days` expira. As linhas dão a XP (10 + 1 a cada 20,
+        com teto). Anulada e expirada são finais; um commit confirmado só cai por reversão. Devolve as entradas que mudaram."""
+        now = _when(ts)
+        if now is None:
+            return []
+        facts = {fact["key"]: fact for fact in commits}
+        table, changed = self.table, []
+        for index, entry in enumerate(self.entries):
+            if entry.rule != X_COMMIT or entry.state in (ANNULLED, EXPIRED):
+                continue
+            fact = facts.get(entry.ref)
+            xp, state, evidence = entry.xp, entry.state, entry.evidence
+            if fact is not None and fact["exists"]:
+                if fact["lines"] is not None:
+                    xp = min(table.commit_cap, table.commit_xp + fact["lines"] // table.commit_lines_per_xp)
+                if fact["sha"] and evidence.get("sha") != fact["sha"]:
+                    evidence = {**evidence, "sha": fact["sha"]}
+                if fact["reverted"]:
+                    state = ANNULLED
+                elif fact["on_main"]:
+                    state = CONFIRMED
+            at = _when(evidence.get("at", entry.ts))
+            if state == PROVISIONAL and at is not None and (now - at).total_seconds() > table.commit_expire_days * 86400:
+                state = EXPIRED
+            if (xp, state, evidence) != (entry.xp, entry.state, entry.evidence):
+                self.entries[index] = Entry(entry.ts, entry.rule, xp, entry.ref, evidence, entry.version, state)
+                changed.append(self.entries[index])
+        if changed:
+            self._recount()
+        return changed
 
     def _tests(self, event: Event, signal: dict[str, Any], when: datetime) -> list[Entry]:
         """Um teste que falha abre uma falha; um que passa rende X-TEST (no máximo um a cada `test_gap_seconds`) e, se havia uma falha
@@ -131,16 +203,19 @@ class Ledger:
         return earned
 
     def _award(self, event: Event, when: datetime, rule: str, ref: str, xp: int, evidence: dict[str, Any], *,
-               cap: int | None = None) -> list[Entry]:
+               cap: int | None = None, state: str = CONFIRMED) -> list[Entry]:
         """Acrescenta uma entrada, a menos que o recibo já esteja no extrato ou que o teto do dia já tenha sido atingido."""
         if (rule, ref) in self._seen:
             return []
         day = (rule, when.date())
         if cap is not None and self._day_xp.get(day, 0) + xp > cap:
             return []
-        entry = Entry(ts=event["ts"], rule=rule, xp=xp, ref=ref, evidence=evidence, version=self.table.version)
+        entry = Entry(ts=event["ts"], rule=rule, xp=xp, ref=ref, evidence=evidence, version=self.table.version, state=state)
         self.entries.append(entry)
-        self.total += xp
+        if state == CONFIRMED:
+            self.total += xp
+        elif state == PROVISIONAL:
+            self.provisional += xp
         self._seen.add((rule, ref))
         self._day_xp[day] = self._day_xp.get(day, 0) + xp
         return [entry]

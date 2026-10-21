@@ -38,13 +38,14 @@ SIGNAL_FIELDS: dict[str, frozenset[str]] = {
     # (`account.limits`, `tasks.updated`) entram nos tickets deles; `command.result` é de sessão (ticket 19).
     "realm.metrics": frozenset({"loc"}),
     "realm.changes": frozenset({"changes"}),
+    "realm.commits": frozenset({"commits"}),          # ticket 23: o que o git diz dos commits que as sessões fizeram (R53)
 }
 
 # Sinais que só o sistema emite (nunca um adapter).
 SYSTEM_SIGNALS: frozenset[str] = frozenset({"signal.lost", "signal.restored"})
 
 # Sinais de realm: só Probes os emitem, e o evento tem `alter_ego: null`.
-REALM_SIGNALS: frozenset[str] = frozenset({"realm.metrics", "realm.changes"})
+REALM_SIGNALS: frozenset[str] = frozenset({"realm.metrics", "realm.changes", "realm.commits"})
 
 # Os tipos de alteração local do git (R20a): a ordem é a da fachada (VISUAL.md §6) e a das cores (VISUAL.md §5).
 CHANGE_TYPES: tuple[str, ...] = ("modified", "added", "untracked", "renamed", "deleted", "conflict")
