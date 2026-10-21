@@ -61,19 +61,31 @@ def exit_code_of(value: object) -> int | None:
     return value if isinstance(value, int) and not isinstance(value, bool) else None
 
 
-# `git commit` em qualquer ponto de uma linha de comando (depois de `&&`, `;`, `|`, de um invólucro de shell ou de opções do git como
-# `-C pasta` e `-c chave=valor`). `commit-tree` e afins não são: depois de `commit` vem espaço ou o fim.
-_GIT_COMMIT = re.compile(r"(?:^|[\s;&|\"'(])git(?:\s+-[Cc]\s+\S+|\s+--[\w-]+(?:=\S+)?)*\s+commit(?=\s|$|[\"'])", re.IGNORECASE)
+# `git commit` no COMEÇO de um comando (depois de `&&`, `;`, `|`, de um invólucro de shell, de variáveis de ambiente como `A=1` e de opções
+# do git como `-C pasta` e `-c chave=valor`, com ou sem aspas). Quando `git commit` aparece como argumento de outro comando (`grep git commit`,
+# `rg "git commit"`, `echo git commit`) não é um commit. `commit-tree` e afins também não: depois de `commit` vem espaço ou o fim.
+_WORD = r"""(?:[^\s"']+|"[^"]*"|'[^']*')+"""
+_GIT_COMMIT = re.compile(
+    rf"""^\s*\(?\s*(?:\w+={_WORD}\s+)*git(?:\s+-[Cc]\s+{_WORD}|\s+--[\w-]+(?:={_WORD})?)*\s+commit(?=\s|$)(?P<rest>.*)$""",
+    re.IGNORECASE | re.DOTALL,
+)
 _DRY_RUN = re.compile(r"\s--dry-run\b")
-_ECHO = re.compile(r"^\s*(echo|write-host|write-output|printf)\b", re.IGNORECASE)
 
 
 def is_git_commit(command: str | None) -> bool:
-    """O comando faz um `git commit` de verdade? Usado só pelos providers que não dizem isso (Claude diz: `gitOperation`, D-090). Não
-    conta `--dry-run`, nem um `echo` que cita o comando."""
-    if not command or not isinstance(command, str) or _ECHO.match(unwrap(command)):
+    """O comando faz um `git commit` de verdade? Usado só pelos providers que não dizem isso (Claude diz: `gitOperation`, D-090). Não conta
+    `--dry-run` (só como opção, não dentro da mensagem), nem `git commit` citado como argumento, nem uma linha com `||` (o `ok` dela pode
+    vir de um `|| true` que esconde a falha do commit)."""
+    if not command or not isinstance(command, str):
         return False
-    return any(_GIT_COMMIT.search(part) and not _DRY_RUN.search(part) for part in _SEPARATORS.split(unwrap(command)))
+    inner = unwrap(command)
+    if "||" in inner:
+        return False
+    for part in _SEPARATORS.split(inner):
+        match = _GIT_COMMIT.match(part)
+        if match and not _DRY_RUN.search(re.split(r"[\"']", match.group("rest"), maxsplit=1)[0]):
+            return True
+    return False
 
 
 def result_signal(command: str | None, *, ok: bool, exit_code: int | None = None, activity: str | None = None,

@@ -183,7 +183,7 @@ def test_the_realm_level_sums_the_confirmed_xp_of_all_its_sessions_even_the_ones
                 seen(5, fact("a" * 40, sha="a" * 40, lines=600, on_main=True), fact("b" * 40, sha="b" * 40, lines=600, on_main=True)), table=table)
     realm = world.snapshot(T0 + timedelta(days=30))["realms"][0]                    # 30 dias depois as duas já saíram da sala (10 dias)
     assert all(not e["in_room"] for e in realm["alter_egos"])
-    assert realm["xp"] == {"total": 80, "level": 3, "floor": 60, "next": 120}
+    assert realm["xp"] == {"total": 80, "provisional": 0, "level": 3, "floor": 60, "next": 120}
 
 
 def test_mankind_sums_the_realms_and_keeps_a_scoreboard_by_provider():
@@ -208,7 +208,7 @@ def test_a_hidden_realm_leaves_the_mankind_total_like_it_leaves_the_city():
 def test_every_realm_and_the_world_have_a_level_even_with_no_xp_yet():
     world = run(made(0))
     snap = world.snapshot()
-    assert snap["realms"][0]["xp"] == {"total": 0, "level": 1, "floor": 0, "next": 1000}
+    assert snap["realms"][0]["xp"] == {"total": 0, "provisional": 10, "level": 1, "floor": 0, "next": 1000}
     assert snap["mankind"]["xp"]["next"] == 5000 and snap["mankind"]["xp"]["by_provider"]["claude"] == 0
 
 
@@ -278,3 +278,33 @@ def test_the_extract_is_limited_and_leaves_out_the_realms_the_city_hides():
     assert len(world.xp_extract(limit=5)) == 5
     world.set_hidden(["escondido"])
     assert all(r["realm"] != "escondido" for r in world.xp_extract())
+
+
+def test_the_provisional_xp_shows_in_the_realm_and_in_mankind_too_without_counting_for_their_levels():
+    world = run(made(0, "a" * 40), made(1, "b" * 40, ego="codex:s2", provider="codex"), seen(5, fact("a" * 40, sha="a" * 40, lines=600, on_main=True)))
+    snap = world.snapshot()
+    assert snap["realms"][0]["xp"]["provisional"] == 10 and snap["realms"][0]["xp"]["total"] == 40
+    assert snap["mankind"]["xp"]["provisional"] == 10 and snap["mankind"]["xp"]["total"] == 40
+
+
+def test_a_commit_that_never_reached_main_expires_with_the_time_even_if_the_git_never_answers():
+    registry_free = run(made(0))
+    registry_free.expire_commits(T0 + timedelta(days=29))
+    assert entries(registry_free)[0].state == "provisional"
+    registry_free.expire_commits(T0 + timedelta(days=31))
+    assert entries(registry_free)[0].state == "expired" and xp(registry_free)["provisional"] == 0
+
+
+def test_the_expiry_by_time_is_kept_in_the_registry(tmp_path):
+    first = run(made(0), source=LocalRegistry(tmp_path))
+    first.expire_commits(T0 + timedelta(days=31))
+    again = World(xp=LocalRegistry(tmp_path))
+    again.apply(made(100, "9" * 40))
+    assert [e.state for e in entries(again)] == ["expired", "provisional"]
+
+
+def test_a_receipt_from_a_very_long_event_id_still_fits_the_probe_event():
+    world = run(made(0, None, key="x" * 400))
+    (entry,) = entries(world)
+    assert len(entry.ref) <= 60 and entry.ref.startswith("ev-")
+    assert world.pending_commits("the-orb", T0)[0]["key"] == entry.ref

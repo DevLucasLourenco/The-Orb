@@ -245,7 +245,7 @@ class CommitScheduler(RealmScheduler):
 
     def _measure(self, realm: Realm) -> Event | None:
         now = self._wall()
-        asked = self._pending(realm.id, now)[:MAX_COMMITS]
+        asked = sorted(self._pending(realm.id, now), key=lambda q: q["at"], reverse=True)[:MAX_COMMITS]      # se passar do limite, os mais novos ficam
         if not asked:
             self._last_print.pop(realm.id, None)
             return None                                   # nenhum commit a conferir: o git nem é aberto

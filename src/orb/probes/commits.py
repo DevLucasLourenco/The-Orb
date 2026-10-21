@@ -11,9 +11,11 @@ A **branch principal** é a padrão do remoto (`origin/HEAD`); sem ela, a local 
 from __future__ import annotations
 
 import hashlib
+import re
 from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import datetime
+from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
@@ -24,6 +26,8 @@ __all__ = ["CommitQuery", "commits_fingerprint", "git_commits", "main_branch"]
 
 MATCH_WINDOW_SECONDS = 120.0       # sem hash, o commit é o do repositório mais perto da hora da evidência, dentro desta janela
 RECENT_COMMITS = 300               # quantos commits recentes olhar ao procurar por hora
+REVERT_SCAN = 2000                 # quantos commits da principal olhar atrás de reversões (uma varredura por leitura, não uma por commit)
+_REVERTS = re.compile(r"This reverts commit ([0-9a-fA-F]{40,64})")
 
 
 @dataclass(frozen=True)
@@ -37,19 +41,27 @@ def _text(raw: bytes | None) -> str:
     return raw.decode("utf-8", errors="replace").strip() if raw else ""
 
 
-def main_branch(root: Path) -> str | None:
-    """A branch principal do projeto: a padrão do remoto (`origin/HEAD`), senão `main`, senão `master`; `None` se não há nenhuma."""
-    remote = _text(run_git(root, "symbolic-ref", "--short", "refs/remotes/origin/HEAD"))
-    if remote and run_git(root, "rev-parse", "--verify", "--quiet", f"refs/remotes/{remote}") is not None:
+def _main_ref(root: Path) -> str | None:
+    """O ref completo da branch principal (sempre `refs/...`: um nome que vem do repositório nunca vira opção do git)."""
+    remote = _text(run_git(root, "symbolic-ref", "refs/remotes/origin/HEAD"))
+    if remote.startswith("refs/remotes/") and run_git(root, "rev-parse", "--verify", "--quiet", remote) is not None:
         return remote
     for name in ("main", "master"):
         if run_git(root, "rev-parse", "--verify", "--quiet", f"refs/heads/{name}") is not None:
-            return name
+            return f"refs/heads/{name}"
     return None
 
 
+def main_branch(root: Path) -> str | None:
+    """A branch principal do projeto: a padrão do remoto (`origin/HEAD`), senão `main`, senão `master`; `None` se não há nenhuma."""
+    ref = _main_ref(root)
+    return None if ref is None else ref.removeprefix("refs/remotes/").removeprefix("refs/heads/")
+
+
+@lru_cache(maxsize=4096)
 def _lines_of(root: Path, sha: str) -> int | None:
-    """As linhas que o commit alterou (inseridas mais removidas; binário vale 1, como nas alterações locais)."""
+    """As linhas que o commit alterou (inseridas mais removidas; binário vale 1, como nas alterações locais). Um commit nunca muda: o
+    resultado fica guardado, e a leitura de cada minuto não o pede ao git de novo."""
     raw = run_git(root, "show", "--numstat", "--format=", "--no-ext-diff", "-M", sha)
     if raw is None:
         return None
@@ -81,31 +93,51 @@ def _seconds(at: str) -> float | None:
     return moment.timestamp() if moment.utcoffset() is not None else None
 
 
+def _reverted(root: Path, main: str) -> set[str]:
+    """Os commits que a principal já reverteu: uma só varredura das mensagens de `git revert` (\"This reverts commit <hash>\")."""
+    raw = _text(run_git(root, "log", main, "--fixed-strings", "--grep=This reverts commit", f"-n{REVERT_SCAN}", "--format=%B%x00"))
+    return {m.group(1).lower() for m in _REVERTS.finditer(raw)}
+
+
+def _link_by_time(queries: Sequence[CommitQuery], recent: list[tuple[str, float]], claimed: set[str]) -> dict[str, str]:
+    """Liga cada evidência sem hash ao commit do repositório mais perto da hora dela (até `MATCH_WINDOW_SECONDS`). Se na janela há **mais**
+    commits do que evidências, alguém além da sessão commitou (o Lucas): não se adivinha, e a evidência fica sem ligação (D-106)."""
+    stamps = {q.key: _seconds(q.at) for q in queries}
+    known = [t for t in stamps.values() if t is not None]
+    linked: dict[str, str] = {}
+    for query in sorted((q for q in queries if stamps[q.key] is not None), key=lambda q: stamps[q.key]):
+        when = stamps[query.key]
+        near = sorted((abs(ts - when), sha) for sha, ts in recent if abs(ts - when) <= MATCH_WINDOW_SECONDS and sha not in claimed)
+        witnesses = sum(1 for t in known if abs(t - when) <= MATCH_WINDOW_SECONDS)
+        if near and len(near) <= witnesses:
+            linked[query.key] = near[0][1]
+            claimed.add(near[0][1])
+    return linked
+
+
 def git_commits(root: Path, queries: Sequence[CommitQuery]) -> list[dict[str, Any]] | None:
     """O que o git sabe de cada commit pedido, na mesma ordem. `None` se `root` não é um repositório (ou o git não respondeu)."""
     if run_git(root, "rev-parse", "--git-dir") is None:
         return None
     if not queries:
         return []
-    main = main_branch(root)
-    recent: list[tuple[str, float]] | None = None
-    claimed: set[str] = set()
+    main = _main_ref(root)
+    reverted = _reverted(root, main) if main is not None else set()
+    resolved: dict[str, str] = {}
+    for query in queries:                                       # primeiro quem trouxe o hash: ele vale e ninguém mais o leva
+        if query.sha and valid_sha(query.sha):
+            full = _text(run_git(root, "rev-parse", "--verify", "--quiet", f"{query.sha}^{{commit}}"))
+            if full:
+                resolved[query.key] = full
+    blind = [q for q in queries if not q.sha]
+    if blind:
+        resolved.update(_link_by_time(blind, _recent(root), set(resolved.values())))
     facts: list[dict[str, Any]] = []
     for query in queries:
-        full = _text(run_git(root, "rev-parse", "--verify", "--quiet", f"{query.sha}^{{commit}}")) if query.sha and valid_sha(query.sha) else ""
-        if not full and not query.sha:
-            if recent is None:
-                recent = _recent(root)
-            when = _seconds(query.at)
-            near = sorted(((abs(ts - when), sha) for sha, ts in recent if sha not in claimed), key=lambda item: item[0]) if when is not None else []
-            full = near[0][1] if near and near[0][0] <= MATCH_WINDOW_SECONDS else ""
-        if full:
-            claimed.add(full)
+        full = resolved.get(query.key, "")
         on_main = bool(full) and main is not None and run_git(root, "rev-list", "-n", "1", full, "--not", main) == b""
-        reverted = bool(full) and main is not None and bool(_text(run_git(
-            root, "log", main, "--fixed-strings", f"--grep=This reverts commit {full}", "-n", "1", "--format=%H")))
         facts.append({"key": query.key, "sha": full or None, "exists": bool(full), "lines": _lines_of(root, full) if full else None,
-                      "on_main": on_main, "reverted": reverted})
+                      "on_main": on_main, "reverted": full.lower() in reverted})
     return facts
 
 

@@ -1,18 +1,29 @@
 """A evidência de commit (ticket 23, R53, D-084, D-090, PROGRESSION.md X-COMMIT): o sinal `command.result` leva `commit` quando o comando
 fez um commit. Claude: o `gitOperation.commit` do resultado, com o hash; os outros: um `git commit` que deu certo, sem hash."""
+import json
+import time
+
 import pytest
 
 from orb.adapters import _shared
+from orb.adapters.codex import RolloutReader
 from orb.adapters.codex.mapping import command_result
+from orb.adapters.hermes import StateDbReader
+from orb.adapters.opencode import OpencodeDbReader
 from orb.protocol import make_event, validate
 
 from . import test_adapter_claude as claude
+from . import test_adapter_codex as codex
+from . import test_adapter_hermes as hermes
+from . import test_adapter_opencode as opencode
+from .test_command_result import result_events
 
 
 @pytest.mark.parametrize("command", [
     "git commit -m 'ajusta'", "git add -A && git commit -m x", "git add . ; git commit -am x", "git -C repo commit -m x",
     "git commit --amend --no-edit", 'powershell.exe -NoProfile -Command "git add .; git commit -m x"', "bash -lc 'git commit -m x'",
     "cd proj && git -c user.name=x commit -m y", "GIT_AUTHOR_NAME=x git commit -m y", "git commit",
+    'git -c user.name="A B" commit -m y', 'git -C "my dir" commit -m y', 'git commit -m "isto não é --dry-run"', "(git commit -m x)",
 ])
 def test_a_git_commit_command_is_recognised(command):
     assert _shared.is_git_commit(command) is True
@@ -21,6 +32,8 @@ def test_a_git_commit_command_is_recognised(command):
 @pytest.mark.parametrize("command", [
     None, "", "git status", "git log --grep commit", "echo git commit", "git commit --dry-run -m x", "git commit-tree abc",
     "git show HEAD~1", "pytest -q", "git push origin main", "gh pr create", "git config commit.gpgsign false",
+    'rg "git commit" docs', "grep -r 'git commit' docs/", 'git status && echo "git commit"', "cat README | grep git commit",
+    "git commit -m x || true", "git commit --dry-run",
 ])
 def test_what_is_not_a_commit_is_not_recognised(command):
     assert _shared.is_git_commit(command) is False
@@ -84,3 +97,39 @@ def test_codex_app_server_sees_a_commit_command_with_its_text():
     item = {"type": "commandExecution", "id": "c1", "command": "git commit -m x", "exitCode": 0, "status": "completed"}
     assert command_result(item)["commit"] == {}
     assert "commit" not in command_result({**item, "exitCode": 1})
+
+
+def test_codex_rollout_hermes_and_opencode_also_report_a_commit_from_the_command_they_ran(tmp_path, jsonl):
+    cwd = r"C:\proj\demo"
+    done = {"type": "CommandExecution", "id": "x1", "command": ["powershell.exe", "-Command", "git add -A; git commit -m x"], "exit_code": 0,
+            "status": "completed", "aggregated_output": "", "stdout": "", "stderr": ""}
+    codex.rollout(tmp_path, codex.TID, [
+        codex.meta(codex.TID, cwd),
+        codex.line(1, "event_msg", {"type": "item_completed", "item": done, "thread_id": codex.TID, "turn_id": "t1"}),
+        codex.line(2, "event_msg", {"type": "item_completed", "item": {**done, "id": "x2", "exit_code": 1}}),
+    ], jsonl)
+    [ok, failed] = [e["signal"] for e in result_events(RolloutReader(cwd, realm="demo", since=time.time() - 5, home=tmp_path).poll())]
+    assert ok["commit"] == {} and "commit" not in failed
+
+    home = tmp_path / "hermes"
+    conn = hermes.make_db(home)
+    conn.execute("INSERT INTO sessions VALUES ('S1', 'cli', 'm', NULL, ?, 't', 0, NULL)", (hermes.CWD,))
+    reader = StateDbReader(hermes.CWD, realm="demo", home=home)
+    assert reader.poll() == []
+    call = [{"id": "c1", "type": "function", "function": {"name": "terminal", "arguments": json.dumps({"command": "git add -A && git commit -m x"})}}]
+    hermes.add(conn, "S1", "assistant", "commitando", tool_calls=call)
+    conn.execute("INSERT INTO messages (session_id, role, content, tool_call_id, timestamp, active) VALUES ('S1', 'tool', ?, 'c1', 1760000000.0, 1)",
+                 (json.dumps({"output": "", "exit_code": 0}),))
+    conn.commit()
+    [signal] = [e["signal"] for e in result_events(reader.poll())]
+    assert signal["commit"] == {}
+
+    db = opencode.Db(opencode.make_db(tmp_path / "opencode"))
+    db.session("ses_root1")
+    reader = OpencodeDbReader(opencode.CWD, realm="demo", data_dir=tmp_path / "opencode")
+    assert reader.poll() == []
+    state = {"status": "completed", "input": {"command": "git commit -m x"}, "content": "saída", "metadata": {"exit": 0}}
+    db.put("msg_a", "ses_root1", "assistant", {"content": [{"type": "tool", "id": "t1", "name": "bash", "time": {}, "state": state}],
+                                               "time": {"created": 3}}, seq=1)
+    [signal] = [e["signal"] for e in result_events(reader.poll())]
+    assert signal["commit"] == {}

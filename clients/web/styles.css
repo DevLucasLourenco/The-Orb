@@ -103,9 +103,8 @@ button, select { font: inherit; color: inherit; }
 .xp .bar { height: 5px; border-radius: 3px; background: rgba(140, 170, 220, .14); overflow: hidden; }
 .xp .bar i { display: block; height: 100%; background: #e6ecf5; }
 .xp .xp-n { font-family: var(--mono); }
-.bar { position: relative; display: block; }
-.bar i.ghost { background: repeating-linear-gradient(135deg, rgba(230, 236, 245, .55) 0 3px, transparent 3px 6px); }
-.bar > i { float: left; }
+.xp .bar i, .level-btn .bar i { float: left; }                  /* a parte confirmada e a provisória (tracejada) lado a lado */
+.xp .bar i.ghost { background: repeating-linear-gradient(135deg, rgba(230, 236, 245, .55) 0 3px, transparent 3px 6px); }
 .level-btn { display: flex; align-items: center; gap: 8px; margin-left: auto; padding: 4px 10px; background: transparent; border: 1px solid var(--line); border-radius: 8px;
   color: var(--fg); font-size: 12px; cursor: pointer; }
 .level-btn:hover { border-color: var(--line-strong); }

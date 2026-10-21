@@ -4,7 +4,7 @@
 > [PROTOCOL.md](../PROTOCOL.md): o evento nativo intacto + sinal de mundo + entrada de Inner World.
 > Código: `src/orb/adapters/claude/` · Vocabulário: [CONTEXT.md](../../CONTEXT.md).
 
-Última atualização: 2026-10-13
+Última atualização: 2026-10-21
 
 ## Como isto foi verificado
 

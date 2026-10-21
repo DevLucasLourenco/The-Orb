@@ -9,6 +9,7 @@ chegar à branch principal) e as escalas de Realm e Mankind vêm no ticket 23.
 """
 from __future__ import annotations
 
+import hashlib
 import math
 from collections.abc import Iterable
 from dataclasses import dataclass
@@ -132,7 +133,10 @@ class Ledger:
         ou o evento quando não veio hash."""
         sha = signal["commit"].get("sha")
         evidence: dict[str, Any] = {"event": event["id"], "at": event["ts"], **({"sha": sha} if sha else {})}
-        return self._award(event, when, X_COMMIT, sha or event["id"], self.table.commit_xp, evidence, state=PROVISIONAL)
+        # O recibo sem hash é o id do evento; o protocolo não limita o tamanho do id, e o recibo vai num evento de realm (200 caracteres):
+        # um id comprido vira um resumo dele.
+        ref = sha or (event["id"] if len(event["id"]) <= 120 else "ev-" + hashlib.sha256(event["id"].encode()).hexdigest()[:40])
+        return self._award(event, when, X_COMMIT, ref, self.table.commit_xp, evidence, state=PROVISIONAL)
 
     def commit_queries(self, now: datetime) -> list[dict[str, Any]]:
         """O que perguntar ao git: os commits provisórios e os confirmados que ainda estão na janela em que uma reversão os anula."""

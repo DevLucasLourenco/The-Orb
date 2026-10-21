@@ -115,7 +115,6 @@ def test_a_commit_that_main_later_reverted_is_reported_as_reverted(tmp_path):
 
 def test_without_a_hash_the_commit_is_found_by_the_time_of_the_evidence(tmp_path):
     repo = Repo(tmp_path / "p")
-    repo.commit("antes.py")
     sha = repo.commit("meu.py", lines=7)
     now = datetime.now(UTC).isoformat()
     assert facts(repo.root, q("k", None, now))["k"]["sha"] == sha
@@ -159,3 +158,41 @@ def test_the_fingerprint_changes_only_when_something_the_world_cares_about_chang
     assert commits_fingerprint(first) == commits_fingerprint(git_commits(repo.root, [q("k", sha)]))
     repo("revert", "--no-edit", sha)
     assert commits_fingerprint(git_commits(repo.root, [q("k", sha)])) != commits_fingerprint(first)
+
+
+def test_a_second_commit_in_the_same_window_that_no_session_reported_is_not_guessed(tmp_path):
+    repo = Repo(tmp_path / "p")
+    repo.commit("meu.py")
+    repo.commit("do-lucas.py")                                     # outro commit dentro da janela, sem sessão por trás (D-106)
+    now = datetime.now(UTC).isoformat()
+    fact = facts(repo.root, q("k", None, now))["k"]
+    assert fact["exists"] is False and fact["sha"] is None
+
+
+def test_two_commits_and_two_pieces_of_evidence_in_the_same_window_each_find_their_own(tmp_path):
+    repo = Repo(tmp_path / "p")
+    first = repo.commit("um.py")
+    second = repo.commit("dois.py")
+    now = datetime.now(UTC).isoformat()
+    found = facts(repo.root, q("a", None, now), q("b", None, now))
+    assert sorted(f["sha"] for f in found.values()) == sorted([first, second])
+
+
+def test_a_commit_with_a_hash_is_never_taken_by_evidence_without_one(tmp_path):
+    repo = Repo(tmp_path / "p")
+    sha = repo.commit("meu.py")
+    now = datetime.now(UTC).isoformat()
+    found = facts(repo.root, q("sem", None, now), q("com", sha, now))
+    assert found["com"]["sha"] == sha and found["sem"]["sha"] is None
+
+
+def test_a_remote_default_branch_whose_name_looks_like_an_option_never_reaches_git_as_one(tmp_path):
+    repo = Repo(tmp_path / "p")
+    sha = repo.commit("meu.py")
+    repo("update-ref", "refs/remotes/origin/main", "HEAD")
+    repo("symbolic-ref", "refs/remotes/origin/HEAD", "refs/remotes/origin/main")
+    repo("update-ref", "refs/remotes/--output=x", "HEAD")
+    repo("symbolic-ref", "refs/remotes/origin/HEAD", "refs/remotes/--output=x")
+    assert main_branch(repo.root) == "--output=x"                                                       # o nome é só um nome: o git recebe o ref completo
+    facts(repo.root, q("k", sha))
+    assert not (repo.root / "x").exists() and not (repo.root / ".git" / "x").exists()               # e nada foi gravado

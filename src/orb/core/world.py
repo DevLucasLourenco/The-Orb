@@ -303,6 +303,16 @@ class World:
                 if self.xp is not None:
                     self.xp.record(ego.id, entry)
 
+    def expire_commits(self, now: datetime) -> None:
+        """O prazo de 30 dias dos commits que não chegaram à principal vale com o git respondendo ou não (sem repositório, realm escondido,
+        Probe parado): quem avança o mundo chama isto com a hora dele. O que expira é guardado no extrato como qualquer mudança."""
+        _require_aware(now)
+        for egos in self.realms.values():
+            for ego in egos.values():
+                for entry in ego.xp.settle([], now.isoformat()):
+                    if self.xp is not None:
+                        self.xp.record(ego.id, entry)
+
     def pending_commits(self, realm_id: str, now: datetime) -> list[dict[str, Any]]:
         """O que perguntar ao git sobre os commits deste realm (quem lê o git é o Probe, na borda): os provisórios e os confirmados
         ainda na janela de reversão. O mesmo recibo de duas sessões é perguntado uma vez."""
@@ -327,13 +337,16 @@ class World:
         """Os níveis do Realm e de Mankind (R54): a XP confirmada de todos os Alter Egos do realm, também os do Histórico, e a soma dos
         realms que a cidade mostra, com o placar por provider."""
         by_realm, by_provider = {}, {provider: 0 for provider in rules.PROVIDERS}
+        provisional = 0
         for realm in realms:
             egos = self.realms[realm["id"]].values()
-            by_realm[realm["id"]] = scale(sum(ego.xp.total for ego in egos), self.xp_table.k_realm)
+            pending = sum(ego.xp.provisional for ego in egos)
+            by_realm[realm["id"]] = {**scale(sum(ego.xp.total for ego in egos), self.xp_table.k_realm), "provisional": pending}
+            provisional += pending
             for ego in egos:
                 if ego.provider is not None:
                     by_provider[ego.provider] = by_provider.get(ego.provider, 0) + ego.xp.total
-        mankind = {**scale(sum(by_provider.values()), self.xp_table.k_mankind), "by_provider": by_provider}
+        mankind = {**scale(sum(by_provider.values()), self.xp_table.k_mankind), "provisional": provisional, "by_provider": by_provider}
         return by_realm, mankind
 
     def _realm_facade(self, realm_id: str, metrics: dict[str, Any] | None) -> dict[str, Any] | None:

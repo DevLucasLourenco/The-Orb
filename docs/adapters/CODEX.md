@@ -4,9 +4,11 @@
 > [PROTOCOL.md](../PROTOCOL.md). Código: `src/orb/adapters/codex/` · Equivalente:
 > [CLAUDE.md](CLAUDE.md).
 
-Última atualização: 2026-10-13 · Levantado com Codex `0.149.0` (Spike 4, 2026-10-06), revisto com
+Última atualização: 2026-10-21 · Levantado com Codex `0.149.0` (Spike 4, 2026-10-06), revisto com
 `0.160.1` (esta máquina, 2026-10-07) e reconferido em 2026-10-13 (CLI `0.160.1` instalado; rollouts
 locais de `0.142.5` a `0.162.0`)
+
+> **Commit (ticket 23):** o texto do comando de um `commandExecution` (app-server) ou `CommandExecution` (rollout) que terminou com código 0 alimenta o `command.result.commit` (um `git commit` de verdade, sem hash); o Orb não grava nada.
 
 ## Como isto foi verificado
 

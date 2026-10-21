@@ -105,7 +105,10 @@ class Hub:
         # O Probe das alterações locais (R20b): lê o git de cada realm a cada poucos segundos, só leitura, numa thread própria.
         self.changes = ChangeScheduler(lambda: self.observatory.realms, lambda: self.world.hidden, wall=self.clock)
         # O Probe dos commits (R53): pergunta ao git pelos commits que as sessões disseram ter feito; o mundo diz quais conferir.
-        self.commits = CommitScheduler(lambda: self.observatory.realms, lambda: self.world.hidden, self.world.pending_commits, wall=self.clock)
+        # A thread do Probe não toca no mundo: lê esta cópia, que a thread de leitura refaz a cada volta (troca atômica de um dicionário).
+        self._commit_asks: dict[str, list[dict[str, Any]]] = {}
+        self.commits = CommitScheduler(lambda: self.observatory.realms, lambda: self.world.hidden,
+                                       lambda realm_id, now: self._commit_asks.get(realm_id, []), wall=self.clock)
         self.feed = Feed()
         self.clients: set[asyncio.Queue[dict[str, Any]]] = set()
         self._published_time_key: tuple | None = None      # o que os clientes viram da última vez
@@ -143,6 +146,9 @@ class Hub:
             if validate(event) is None and self.world.apply(event):
                 applied.append(event)
                 self.feed.add(event)
+        now = self.clock()
+        self.world.expire_commits(now)                # o prazo dos commits vale mesmo sem o git responder
+        self._commit_asks = {rid: self.world.pending_commits(rid, now) for rid in list(self.world.realms)}
         shown = [e for e in applied if e["realm"] not in self.world.hidden]       # o que o Lucas escondeu não é distribuído
         return shown, bool(shown) or len(self.observatory.realms) != known
 

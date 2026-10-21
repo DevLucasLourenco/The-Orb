@@ -134,7 +134,7 @@ const net = connectWorld({
   onEvent: (event) => inner.push(event),
   onFeed: (egoId, events) => inner.setFeed(egoId, events),
   onSettings: (settings) => renderSettings(settings, (changes) => net.savePreferences(changes)),
-  onXp: (extract) => renderProgress(extract, world),
+  onXp: (extract) => renderProgress(extract, world),         // `world` é lido na hora: o placar e o nível são os do último mundo recebido
   onHistory: (realm, sessions, total) => {
     realmHistory.set(realm, { sessions, total });
     if (realm === selectedRealm) renderHistory({ sessions, total });
@@ -196,10 +196,13 @@ settingsBox.addEventListener("pointerdown", (e) => { if (e.target === settingsBo
 // Progressão (V-HUD-12): o nível de Mankind na barra de cima abre o painel com o placar por provider e o extrato de XP.
 const progressBox = document.getElementById("progress");
 const progressButton = document.getElementById("open-progress");
+let progressTimer = null;
 function toggleProgress(open) {
   progressBox.classList.toggle("hidden", !open);
+  clearInterval(progressTimer);
   if (open) {
     net.requestXp();
+    progressTimer = setInterval(() => net.requestXp(), 5000);          // aberto, o painel se atualiza sozinho (o extrato não vem no mundo)
     document.getElementById("progress-close").focus();
   } else {
     progressButton.focus();

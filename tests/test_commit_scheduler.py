@@ -130,3 +130,22 @@ def test_the_answer_confirms_the_commit_in_the_world_end_to_end():
     (entry,) = [e for e in ego.xp.entries if e.rule == "X-COMMIT"]
     assert (entry.state, entry.xp) == ("confirmed", 12) and ego.xp.total == 12
     assert world.pending_commits("proj", T0 + timedelta(hours=1)) == [{"key": SHA, "sha": SHA, "at": evidence().get("ts")}]    # ainda na janela de reversão
+
+
+def test_the_hub_has_the_commit_probe_wired_to_what_the_world_wants_to_know():
+    from orb.gateway import Hub, Observatory
+    hub = Hub(Observatory([], home=None))
+    assert isinstance(hub.commits, CommitScheduler)
+    hub.world.apply(evidence())
+    assert hub.commits._pending("proj", T0) == []                                       # a cópia ainda não foi refeita
+    hub.poll_once()                                                                      # a thread de leitura refaz a cópia que o Probe lê
+    assert hub.commits._pending("proj", T0) == [{"key": SHA, "sha": SHA, "at": evidence()["ts"]}]
+    assert hub.commits._hidden() == hub.world.hidden
+
+
+def test_the_hub_expires_old_commits_on_every_round_with_the_time_it_knows():
+    from orb.gateway import Hub, Observatory
+    hub = Hub(Observatory([], home=None), clock=lambda: T0 + timedelta(days=31))
+    hub.world.apply(evidence())
+    hub.poll_once()
+    assert [e.state for e in hub.world.alter_ego("claude:s1").xp.entries if e.rule == "X-COMMIT"] == ["expired"]
