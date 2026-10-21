@@ -58,7 +58,7 @@ _Evite_: agente principal, persona do provider, bot
 **Perfil** *(em construção)*:
 O que dá identidade a um Alter Ego além da sessão. Começa pelo **nome histórico** e pelo
 **papel**; a aparência (hoje só a cor do provider) e o que se compartilha entre sessões seguem em
-aberto ([docs/VISION.md](docs/VISION.md)). XP e níveis estão em proposta ([docs/PROGRESSION.md](docs/PROGRESSION.md)).
+aberto ([docs/VISION.md](docs/VISION.md)). XP e níveis: o Alter Ego já tem os dele (ticket 22); Realm, Mankind e conquistas seguem em proposta ([docs/PROGRESSION.md](docs/PROGRESSION.md)).
 
 **Papel**:
 O que um Alter Ego mais faz na sua sessão (ex.: revisor, pesquisador), contado a partir das

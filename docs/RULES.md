@@ -6,7 +6,7 @@
 > · O que cada elemento visual significa: [VISUAL.md](VISUAL.md) · Todas as decisões, em ordem:
 > [DECISIONS.md](DECISIONS.md).
 
-Última atualização: 2026-10-15
+Última atualização: 2026-10-21
 
 ## Como usar este documento
 
@@ -100,8 +100,8 @@ Situação: ✅ cumprida · ⚠️ parcial ou com heurística não decidida · �
 | R51 | **Subagente que termina caminha até o líder** antes de se desmobilizar; sem sinal de fim, vale R7. | Lucas, 2026-10-09 (D-094) | ⏳ Hoje ele some depois de 5 min |
 | R52 | **Erro, bloqueio e "sem sinal" do líder** aparecem por ícones neutros sobre a cabeça, nunca em vermelho. | Lucas, 2026-10-09 (D-095) | ❌ Hoje esses estados não têm forma própria |
 | R57 | **Árvore da Team no overview:** os subagentes aparecem em árvore (quem criou quem), com tipo e estado; no mundo, todos na sala. | Lucas, 2026-10-09 (D-116) | ✅ Ticket 12: o mundo manda a Team em ordem de árvore, com a profundidade de cada um (`depth`); o overview mostra a árvore com tipo e estado; no mundo 3D nada muda. Árvore vista só com um snapshot sintético |
-| R53 | **XP é recibo de trabalho confirmado:** cada ponto tem evidência no extrato; provisória até o mundo real confirmar (commit na branch principal); nada por tokens, custo, mensagens ou espera; nunca negativa; os agentes nunca a veem. Tabela versionada e recalculável. | Delegada, 2026-10-09 (D-101 a D-103, D-105, D-106) | ⏳ |
-| R54 | **Níveis em três escalas** (Alter Ego, Realm, Mankind) pela curva k·n·(n−1), calibrada com o histórico real; o nível usa só a XP confirmada. | Delegada, 2026-10-09 (D-104, D-107) | ⏳ |
+| R53 | **XP é recibo de trabalho confirmado:** cada ponto tem evidência no extrato; provisória até o mundo real confirmar (commit na branch principal); nada por tokens, custo, mensagens ou espera; nunca negativa; os agentes nunca a veem. Tabela versionada e recalculável. | Delegada, 2026-10-09 (D-101 a D-103, D-105, D-106) | ⚠️ Ticket 22: X-TEST, X-FIX, X-DELEG e X-CRAFT, confirmadas na hora, pela tabela v1 versionada (`rules.XP_TABLE`), com o extrato (data, regra, recibo e versão) no registro local; só ids e números como recibo. Falta o X-COMMIT, provisório até a branch principal (ticket 23), e recalcular o passado (ticket 25) |
+| R54 | **Níveis em três escalas** (Alter Ego, Realm, Mankind) pela curva k·n·(n−1), calibrada com o histórico real; o nível usa só a XP confirmada. | Delegada, 2026-10-09 (D-104, D-107) | ⚠️ Ticket 22: só a escala do Alter Ego, com k = 50 (provisório até o ticket 25); Realm e Mankind vêm no ticket 23 |
 | R55 | **Conquistas** de uma vez só, cada uma com recibo, sem XP; lista inicial em PROGRESSION.md §5. | Delegada, 2026-10-09 (D-109) | ⏳ |
 | R56 | **Guia dos agentes:** `CLAUDE.md` na raiz é o guia de trabalho; `AGENTS.md` aponta para ele; na implementação, uma branch e um PR por ticket. | Delegada, 2026-10-09 (D-112 a D-114) | ✅ `CLAUDE.md` e `AGENTS.md` existem |
 | R41 | **Prédios no mesmo estilo** (sem tema por realm), mas **cada classe de tamanho tem uma forma arquitetônica própria** (Casa a Arranha-céu), como o CodeCity mapeia métricas no tipo do prédio. Um tema por realm, se vier, é cenário escolhido pelo Lucas. | Lucas, 2026-10-08 (D-071, D-072) | ✅ Ticket 10: as 6 formas, neutras, com o Rooftop Room do mesmo tamanho no topo; vistas na tela com dados reais (as seis classes existem nesta máquina) e numa página com métricas sintéticas |

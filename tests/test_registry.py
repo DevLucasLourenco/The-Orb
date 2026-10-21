@@ -25,7 +25,8 @@ def test_the_registry_creates_its_file_in_the_folder_it_was_given(tmp_path):
 def test_it_stores_only_what_the_orb_derived_never_session_content(tmp_path):
     registry = LocalRegistry(tmp_path)
     registry.name_for("claude:s1", frozenset())
-    assert tables(tmp_path / REGISTRY_FILE) == {"names": ["key", "name"], "bag": ["position", "name"]}
+    assert tables(tmp_path / REGISTRY_FILE) == {"names": ["key", "name"], "bag": ["position", "name"],
+                                                 "xp_ledger": ["ego", "ts", "rule", "xp", "ref", "evidence", "version"]}      # o extrato de XP (R53): só recibos, ids e números
 
 
 def test_a_session_keeps_its_name_after_the_orb_restarts(tmp_path):

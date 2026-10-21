@@ -99,6 +99,10 @@ button, select { font: inherit; color: inherit; }
 .attrs .bar { height: 4px; border-radius: 2px; background: rgba(140, 170, 220, .14); overflow: hidden; }
 .attrs .bar i { display: block; height: 100%; background: rgba(200, 220, 255, .55); }
 .attrs .attr-pct { text-align: right; font-family: var(--mono); }
+.xp { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 8px; margin-top: 6px; font-size: 10px; color: var(--muted); }
+.xp .bar { height: 5px; border-radius: 3px; background: rgba(140, 170, 220, .14); overflow: hidden; }
+.xp .bar i { display: block; height: 100%; background: #e6ecf5; }
+.xp .xp-n { font-family: var(--mono); }
 .sub { font-size: 10.5px; padding: 1px 6px; border-radius: 6px; border: 1px solid var(--line); color: #c7d2e3; }
 .sub.done { opacity: .5; }
 .history { max-height: 34%; overflow: auto; padding: 8px 12px; border-top: 1px solid var(--line); }

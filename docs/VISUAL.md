@@ -64,7 +64,7 @@ Situação: ✅ como está · ❌ precisa mudar · ❓ precisa de decisão.
 | V-EGO-10 | Subagente **cinza ("sem sinal")** | Heurística | **Decidido (R7, D-045, D-050):** depois de **5 min sem atividade** e sem sinal do fim, o subagente fica **cinza translúcido, sem halo, com um ícone de sinal cortado** sobre a cabeça, em vez de sumir. O opencode continua cinza **sólido, com halo**. O mundo informa `no_signal` (R47); o subagente fica no lugar em que estava | ✅ Feito e conferido ao vivo (ticket 01). Com R30 (ticket 05) o opencode fica cinza: o que o separa do "sem sinal" é a translucidez, o halo e o ícone |
 | V-EGO-15 | **Líder em erro, bloqueado ou sem sinal**: ícone neutro sobre a cabeça (erro = triângulo branco com "!" e corpo apagado; bloqueado = cadeado; sem sinal = o ícone de sinal cortado de V-EGO-10) | Dado | Estados `ERROR`, `BLOCKED`, `NO_SIGNAL` do Core (R52, D-095); sem vermelho | ⏳ |
 | V-EGO-16 | **Subagente que termina caminha até o líder** e então sai de cena | Dado | Sinal `subagent.ended` (R51, D-094); sem o sinal, vale V-EGO-10 | ⏳ |
-| V-EGO-13 | **Nível** ao lado do nome histórico no rótulo ("Einstein · 7") | Dado | Nível do Alter Ego pela XP confirmada (R54, D-110) | ⏳ |
+| V-EGO-13 | **Nível** ao lado do nome histórico no rótulo ("Einstein · 7") | Dado | Nível do Alter Ego pela XP confirmada (R54, D-110) | ✅ Ticket 22: o nível aparece no rótulo do personagem e no cartão da sessão, ao lado do nome histórico; sem nome, sem nível no rótulo |
 | V-EGO-14 | **Subir de nível**: um anel de luz branca neutra sobe pelo personagem uma vez | Dado | O evento real de subir de nível (D-110) | ⏳ |
 
 ## 4. Painéis
@@ -86,7 +86,7 @@ Situação: ✅ como está · ❌ precisa mudar · ❓ precisa de decisão.
 | V-HUD-16 | **Atributos por área** no overview: barras com a parcela do trabalho em cada área | Dado | A mesma contagem do Papel (R40, D-096); não é pontuação | ✅ Ticket 12: quatro barras neutras (Development Center, Testing Lab, Research Center, Code Review) com a porcentagem; sem contagem, sem barras |
 | V-HUD-17 | **Árvore da Team** no overview: subagentes em árvore (quem criou quem), com tipo e estado | Dado | Campo `parent` dos subagentes (R57, D-116) | ✅ Ticket 12: a lista com recuo por profundidade (└), mostrando os ativos e os pais deles; concluídos sem filho ativo saem da lista, como antes |
 | V-HUD-12 | **Nível de Mankind** e a barra de progresso na barra de cima; clicar abre o painel **Progressão** (extrato, conquistas, placar por provider) | Dado | Soma da XP confirmada (R54, D-110) | ⏳ |
-| V-HUD-13 | No overview do realm: o **nível do realm** e, por Alter Ego, a **barra de XP** (confirmada cheia, provisória tracejada) | Dado | Extrato (R53) | ⏳ |
+| V-HUD-13 | No overview do realm: o **nível do realm** e, por Alter Ego, a **barra de XP** (confirmada cheia, provisória tracejada) | Dado | Extrato (R53) | ⚠️ Ticket 22: no cartão de cada Alter Ego, uma barra com o total dentro do nível atual e "XP / próximo nível", em branco neutro. O nível do realm e a barra tracejada da XP provisória vêm no ticket 23 |
 | V-HUD-14 | **Conquista nova**: um aviso curto no HUD com o nome e o recibo | Dado | Conquista (R55) | ⏳ |
 
 ---

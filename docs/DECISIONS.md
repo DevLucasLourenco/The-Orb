@@ -589,3 +589,20 @@ seis pontos **não estavam escritos** e foram escolhidos de forma provisória (r
 | ~~Q-T12-4~~ D-195 | Como são os atributos? | A **parcela** de cada área no total contado (contagem ÷ total), em quatro barras neutras na ordem Development, Testing, Research, Review, com a porcentagem; o total aparece ao passar o mouse |
 | ~~Q-T12-5~~ D-196 | Como se monta a árvore da Team? | O `parent` de um subagente é outro subagente da mesma sessão; sem pai, com pai que não existe, ou que é ele mesmo, o subagente é filho do líder; um laço de pais não trava (quem sobra vira raiz). O mundo manda a lista `team` em **ordem de árvore** com `depth`; o overview mostra os ativos e os pais deles, e concluídos sem filho ativo saem como antes |
 | ~~Q-T12-6~~ D-197 | O papel e as barras contam o passado? | **Só o que o Orb viu chegar**: os leitores começam do fim dos arquivos que já existiam (D-087), então uma sessão aberta antes do Orb começa a contar quando ele a vê, e o papel nasce depois de algumas atividades. Ler o passado fica fora deste ticket |
+
+
+### Rodada: o que a implementação do ticket 22 decidiu por conta própria (aberta em 2026-10-21)
+
+Ao implementar o ticket 22 ([.scratch/the-orb-cidade-viva/issues/22-xp-basica.md](../.scratch/the-orb-cidade-viva/issues/22-xp-basica.md)),
+sete pontos **não estavam escritos** e foram escolhidos de forma provisória (regra P2). Todos estão cobertos por teste no mundo
+(`tests/test_progression.py`); o cartão da sessão foi conferido na tela com um snapshot real do mundo feito de eventos sintéticos. O Lucas responde por número.
+
+| Id | Pergunta | Proposta (já aplicada, provisória) |
+|---|---|---|
+| Q-T22-1 | Onde mora o módulo de progressão? | **Dentro do Core**: `core/progression.py`, com a tabela v1 em `rules.py` (`XP_TABLE`), e não num pacote `src/orb/progression/` à parte (PROGRESSION §8). O Core só depende do Protocol e o mundo é o ponto de teste (D-099); um pacote separado teria de ser importado pelo Core |
+| Q-T22-2 | Como se mede o ofício (X-CRAFT)? | **1 XP por janela de 5 minutos** (alinhada ao relógio) em que houve alguma atividade de trabalho: CODING, TESTING, READING, RESEARCHING ou REVIEWING (EXECUTING, THINKING e DELEGATING não contam); a atividade dos subagentes conta para o líder; teto de 30 por sessão por dia. Uma só chamada de ferramenta paga a janela inteira |
+| Q-T22-3 | Que dia vale para os tetos por dia? | O **dia UTC** da hora do evento: o mundo não tem fuso (R47). Perto da meia-noite UTC (21h em Brasília) o dia vira |
+| Q-T22-4 | Que subagente rende X-DELEG? | O que termina com `outcome` ausente ou `completed`; um que falhou não rende. **Um por subagente** (o mesmo id terminando duas vezes paga uma vez); teto de 30 por sessão por dia |
+| Q-T22-5 | O que o recibo guarda? | **Só ids e números**: o id do evento, o código de saída quando o provider o dá, os dois eventos de um conserto, o id do subagente, o início da janela. Nunca o texto do comando nem da sessão (privacidade, R36) |
+| Q-T22-6 | O que acontece ao trocar a versão da tabela, e com o passado? | O extrato guardado é **de uma versão só**: ao trocar, o do outro fica de lado, intacto, e a versão nova recomeça vazia e se refaz com os eventos que o Orb lê (a função `replay` recalcula de uma lista de eventos). **O passado completo** (as sessões antigas) vem com o ticket 25. Uma falha ainda não consertada não sobrevive ao reinício do Orb (o conserto só conta se o vermelho e o verde acontecerem com o Orb aberto) |
+| Q-T22-7 | Como o nível aparece? | Sempre: toda sessão tem nível (**1 com 0 XP**), mostrado ao lado do nome histórico ("Fermi · 3") no rótulo do personagem e no cartão; sem nome, sem nível no rótulo. A barra do cartão mostra o total dentro do nível atual e "XP / próximo nível", em branco neutro |

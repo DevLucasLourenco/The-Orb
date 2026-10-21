@@ -293,6 +293,15 @@ def test_the_app_keeps_the_local_registry_in_the_state_folder(tmp_path):
     assert (tmp_path / "orb" / REGISTRY_FILE).is_file()
 
 
+def test_the_xp_extract_lives_in_the_same_local_registry_as_the_names(tmp_path):
+    from orb.gateway import GatewayConfig, create_app
+    from orb.registry import LocalRegistry
+    with_state = create_app(GatewayConfig(token="tok", home=tmp_path, state_dir=tmp_path / "orb"), check_installed=False)
+    assert isinstance(with_state.state.hub.world.xp, LocalRegistry) and with_state.state.hub.world.xp is with_state.state.hub.world.names
+    without = create_app(GatewayConfig(token="tok", home=tmp_path), check_installed=False)
+    assert without.state.hub.world.xp is None                             # sem pasta do Orb, a XP vale só enquanto ele está aberto
+
+
 def test_the_app_without_a_state_folder_writes_nothing_and_still_names_in_memory(tmp_path):
     from orb.gateway import GatewayConfig, create_app
     app = create_app(GatewayConfig(token="tok", home=tmp_path), check_installed=False)

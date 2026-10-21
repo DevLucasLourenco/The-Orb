@@ -97,6 +97,31 @@ GENERATED_FILE_PATTERNS: tuple[str, ...] = (
 
 
 @dataclass(frozen=True)
+class XpTable:
+    """A tabela de XP (R53, R54, D-101 a D-105, PROGRESSION.md §3 e §4): versionada, porque o extrato guardado é de uma versão só e
+    trocar a versão recalcula tudo a partir das fontes. Mudar um valor é uma versão nova; o extrato antigo fica de lado, intacto."""
+    version: int
+    k: int                              # a curva dos níveis do Alter Ego: a XP para chegar ao nível n é k·n·(n−1)
+    test_xp: int                        # X-TEST: teste que passou
+    test_gap_seconds: int               #   ... no máximo um a cada tanto tempo por sessão (rodar em laço não rende)
+    fix_xp: int                         # X-FIX: vermelho → verde, um por falha consertada
+    deleg_xp: int                       # X-DELEG: subagente concluído, para o líder
+    deleg_cap: int                      #   ... teto por sessão por dia
+    craft_xp: int                       # X-CRAFT: ofício, por janela de tempo com atividade de trabalho
+    craft_window_seconds: int
+    craft_cap: int                      #   ... teto por sessão por dia
+    craft_activities: frozenset[str]    #   ... as atividades que contam como trabalho
+
+
+# A tabela v1 (PROGRESSION.md §3). k = 50 é provisório até o ticket 25 calibrar com o histórico real (§4).
+XP_TABLE = XpTable(
+    version=1, k=50, test_xp=5, test_gap_seconds=10 * 60, fix_xp=25, deleg_xp=3, deleg_cap=30,
+    craft_xp=1, craft_window_seconds=5 * 60, craft_cap=30,
+    craft_activities=frozenset({"CODING", "TESTING", "READING", "RESEARCHING", "REVIEWING"}),
+)
+
+
+@dataclass(frozen=True)
 class LineFilter:
     """O que entra na contagem de linhas (D-054, D-056): padrão só código, sem `.md`, sem a lista de gerados."""
     include_markdown: bool = False
