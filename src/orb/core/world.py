@@ -15,6 +15,7 @@ from typing import Any, NamedTuple
 from ..protocol import Event, validate
 from . import building, city, facade, profile, rules
 from .names import NameSource
+from .progression import Ledger, XpSource
 
 _TOKEN_FIELDS = ("input_tokens", "output_tokens", "cache_read_tokens", "reasoning_tokens")
 _ACTION_CHARS = 240     # tamanho do "fazendo agora" no overview
@@ -96,6 +97,7 @@ class AlterEgo:
     subagents: dict[str, Subagent] = field(default_factory=dict)
     usage: dict[str, float] = field(default_factory=dict)
     work: dict[str, int] = field(default_factory=dict)       # atividades do líder por área (R40): o papel e os atributos saem daqui
+    xp: Ledger = field(default_factory=Ledger)               # o extrato e a conta de XP (R53): os subagentes rendem para o líder
     events: int = 0
     seq_gaps: int = 0
     last_action: str | None = None   # a última ferramenta/ação, com o texto do provider
@@ -146,7 +148,7 @@ class AlterEgo:
             "waiting": [{"request": r, "action": a} for r, a in self.waiting.items()],
             "events": self.events, "seq_gaps": self.seq_gaps,
             "usage": dict(self.usage), "last_ts": self.last_ts,
-            "role": profile.role(self.work), "attributes": profile.attributes(self.work),
+            "role": profile.role(self.work), "attributes": profile.attributes(self.work), "xp": self.xp.snapshot(),
             "team": [{**self.subagents[agent].snapshot(now), "depth": depth}
                      for agent, depth in profile.team_order({a: sub.parent for a, sub in self.subagents.items()})],
         }
@@ -155,13 +157,17 @@ class AlterEgo:
 class World:
     """Estado de todo o Orb. `apply` é idempotente por `id` de evento.
 
-    `names` dá o nome histórico de cada sessão que aparece (R37); sem ele os Alter Egos ficam sem nome."""
+    `names` dá o nome histórico de cada sessão que aparece (R37); sem ele os Alter Egos ficam sem nome. `xp` guarda o extrato de XP
+    de cada sessão (R53): sem ele a XP vale só enquanto o Orb está aberto. `xp_table` é a tabela de XP em uso (R53, versionada)."""
 
     def __init__(self, names: NameSource | None = None, *, recent_seconds: float = rules.RECENT_SESSION_SECONDS,
-                 window_percent: float = rules.WINDOW_PERCENT) -> None:
+                 window_percent: float = rules.WINDOW_PERCENT, xp: XpSource | None = None,
+                 xp_table: rules.XpTable = rules.XP_TABLE) -> None:
         self.realms: dict[str, dict[str, AlterEgo]] = {}
         self.rejected = 0
         self.names = names
+        self.xp = xp
+        self.xp_table = xp_table
         self._recent_seconds = recent_seconds       # o prazo da sala (R28a): quem sai dele vai para o Histórico do realm
         self.hidden: frozenset[str] = frozenset()   # realms que o Lucas escondeu (R3c): saem do estado da cidade
         self.metrics: dict[str, dict[str, Any]] = {}          # estado por realm (D-085): última contagem de linhas
@@ -206,8 +212,9 @@ class World:
         egos = self.realms.setdefault(event["realm"], {})
         ego = egos.get(ego_id)
         if ego is None:
+            stored = self.xp.entries_of(ego_id, self.xp_table.version) if self.xp is not None else ()
             ego = egos[ego_id] = AlterEgo(id=ego_id, realm=event["realm"], provider=event["provider"],
-                                          name=self._name_for(ego_id, egos))
+                                          name=self._name_for(ego_id, egos), xp=Ledger(self.xp_table, stored))
         if not ego.remember(event["id"]):
             return False
         ego.events += 1
@@ -222,6 +229,9 @@ class World:
             else:
                 self._subagent(ego, event["agent"]).last_action = action
         signal = event.get("signal")
+        for entry in ego.xp.observe(event):          # os subagentes rendem para o líder: o evento é da sessão, com ou sem `agent`
+            if self.xp is not None:
+                self.xp.record(ego_id, entry)
         if signal and signal["type"] == "command.result":
             self._record_test(event, signal)
         if signal:

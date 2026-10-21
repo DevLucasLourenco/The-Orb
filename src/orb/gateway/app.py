@@ -32,7 +32,7 @@ from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from ..adapters._shared import alter_ego_id, norm_path
-from ..core import NameBook, NameSource, World, rules
+from ..core import NameBook, NameSource, World, XpSource, rules
 from ..core.rules import GENERATED_FILE_PATTERNS, LineFilter
 from ..probes import git_tracked_files
 from ..protocol import validate
@@ -89,14 +89,14 @@ class Hub:
 
     def __init__(self, observatory: Observatory, *, clock: Callable[[], datetime] | None = None,
                  names: NameSource | None = None, preferences: PreferencesFile | None = None,
-                 tracked: Callable[[Any], list[str] | None] | None = None) -> None:
+                 tracked: Callable[[Any], list[str] | None] | None = None, xp: XpSource | None = None) -> None:
         self.observatory = observatory
         self.clock = clock or (lambda: datetime.now(UTC))
         self.preferences_file = preferences
         self.preferences = preferences.load() if preferences is not None else Preferences()
         if preferences is not None:
             observatory.set_recent_seconds(self.preferences.recent_seconds)     # o que o Lucas escolheu vale desde a subida
-        self.world = World(names=names, recent_seconds=observatory.recent_seconds, window_percent=self.preferences.window_percent)
+        self.world = World(names=names, recent_seconds=observatory.recent_seconds, window_percent=self.preferences.window_percent, xp=xp)
         self._sync_hidden()
         # O Probe de linhas (R19) roda numa thread própria, um realm por vez; aqui só se liga e se recebem os eventos.
         self.lines = LineScheduler(lambda: self.observatory.realms, self._line_filter, lambda: self.world.hidden,
@@ -275,7 +275,7 @@ def create_app(config: GatewayConfig, *, pty_factory: Callable = winpty_factory,
     hub = Hub(observatory if observatory is not None else
               Observatory(config.realms, roots=config.roots, lookback_minutes=config.lookback_minutes,
                           recent_seconds=config.recent_seconds, home=config.home),
-              names=names, preferences=preferences)
+              names=names, preferences=preferences, xp=names if isinstance(names, LocalRegistry) else None)       # o extrato de XP mora no mesmo registro
 
     @contextlib.asynccontextmanager
     async def lifespan(_app: FastAPI):

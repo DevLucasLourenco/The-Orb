@@ -4,7 +4,7 @@
 > âmbito. Vocabulário: [CONTEXT.md](../CONTEXT.md) · Contrato de eventos: [PROTOCOL.md](PROTOCOL.md)
 > · Decisões: [adr/](adr/).
 
-Última atualização: 2026-10-15
+Última atualização: 2026-10-21
 
 ---
 
@@ -49,11 +49,11 @@
 | Módulo | Pasta | Responsabilidade | Conhece | **Não** conhece |
 |---|---|---|---|---|
 | **Protocol** | `src/orb/protocol/` | Envelope, vocabulário fechado (atividades, sinais), limites de tamanho, validação | nada | todos os outros |
-| **Core** | `src/orb/core/` | O mundo: aplica eventos, deriva a atividade de cada personagem, Teams, pendências, Energy; snapshot; a sacola e o livro de nomes históricos (`names.py`); o traçado da cidade (`city.py`), a altura e os andares dos prédios (`building.py`), as janelas acesas da fachada (`facade.py`) e o perfil de trabalho (`profile.py`: papel, atributos por área e a Team em árvore) | Protocol | Adapters, Gateway, disco, rede, relógio |
+| **Core** | `src/orb/core/` | O mundo: aplica eventos, deriva a atividade de cada personagem, Teams, pendências, Energy; snapshot; a sacola e o livro de nomes históricos (`names.py`); o traçado da cidade (`city.py`), a altura e os andares dos prédios (`building.py`), as janelas acesas da fachada (`facade.py`) e o perfil de trabalho (`profile.py`: papel, atributos por área e a Team em árvore) e a XP e os níveis do Alter Ego (`progression.py`, tabela v1 em `rules.py`) | Protocol | Adapters, Gateway, disco, rede, relógio |
 | **Adapters** (claude, codex, hermes, opencode) | `src/orb/adapters/<provider>/` | Ler a fonte nativa do provider e produzir eventos (nativo + sinal + inner) pelo Mapa do provider | Protocol | Core, Gateway, outros adapters |
 | **Terminal Host** | `src/orb/terminal_host/` | Abrir o terminal real (ConPTY), chamar o CLI (lista fixa), transportar bytes, limpar o ambiente herdado | nada do domínio | Core, adapters |
 | **Gateway** | `src/orb/gateway/` | Autenticar, ligar terminal + adapter + Core por sessão, validar mensagens do cliente, distribuir por WebSocket; detectar os realms (`realms.py`) e decidir pasta → projeto (`projects.py`, a borda que conhece o disco) | todos, por interfaces | internals de adapters |
-| **Registro local** | `src/orb/registry/` | O arquivo SQLite do próprio Orb (R36): hoje a associação sessão → nome e a sacola de nomes; implementa a interface `NameSource` do Core; a pasta do Orb (`paths.py`) | Core (só a sacola e a interface) | Adapters, Gateway, providers |
+| **Registro local** | `src/orb/registry/` | O arquivo SQLite do próprio Orb (R36): hoje a associação sessão → nome, a sacola de nomes e o extrato de XP (`xp_ledger`); implementa as interfaces `NameSource` e `XpSource` do Core; a pasta do Orb (`paths.py`) | Core (a sacola, as interfaces `NameSource` e `XpSource` e o `Entry` do extrato) | Adapters, Gateway, providers |
 | **Clients** | `clients/` | Renderizar o mundo e o Inner World, enviar teclas | só as mensagens do Gateway | adapters, providers |
 | **Probes** | `src/orb/probes/` | Fatos do mundo real, só leitura. **Feito:** o contador de linhas (`lines.py`, ticket 09) e as alterações locais do git (`changes.py`, ticket 11); o `git.py` é o jeito único de falar com o git (só leitura). Depois: CI | só o que o chamador passa (o filtro é `orb.core.rules.LineFilter`) | adapters, Gateway |
 
@@ -328,6 +328,7 @@ ticket existir.
 | Cidade | Lista de realms → bairros, lotes, deslocamento e giro; estável ao incluir e ao esconder; no mundo e no Hub | `tests/test_city.py`, `tests/test_realms.py` |
 | Alterações locais e fachada | Repositório git falso (com git real) → alterações com tipo e linhas; leitura sem gravar no `.git`; quando ler (relógio falso); alterações → janelas por andar, tipo e x% | `tests/test_changes.py`, `tests/test_change_scheduler.py`, `tests/test_facade.py` |
 | Resultado de comando e Weather | Amostras dos quatro CLIs → `command.result` (código de saída, falha, comando que não é shell); resultados → Weather do realm (último vence, prazo da sala) | `tests/test_command_result.py` |
+| XP e níveis | Eventos de teste, conserto, subagente e ofício → extrato (regra, recibo, versão da tabela) e nível pela curva k·n·(n−1); limites; tabela nova recalcula; o extrato no registro local, que sobrevive ao reinício sem pagar duas vezes | `tests/test_progression.py` |
 | Papel, atributos e árvore da Team | Eventos de atividade → papel (o que mais fez; sem empate), parcela do trabalho por área, Team em ordem de árvore (pai antes dos filhos, pai desconhecido, laço de pais) | `tests/test_profile.py` |
 | Altura e andares | Linhas e pastas → níveis por classe, cintas, antena e andares (térreo, pastas, "demais pastas"); evento do Probe com a divisão por pasta | `tests/test_building.py`, `tests/test_realm_metrics.py`, `tests/test_probes.py` |
 | Nomes e registro local | Sacola e livro de nomes sem disco; registro numa pasta temporária (reabrir, falhas de disco) | `tests/test_names.py`, `tests/test_registry.py` |

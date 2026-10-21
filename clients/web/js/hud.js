@@ -85,6 +85,18 @@ function attributeBars(attributes) {
 
 const MAX_INDENT = 6;       // uma Team muito funda não empurra o cartão para fora do painel
 
+// A barra de XP da sessão (R53, V-HUD-13): o total dentro do nível atual, em branco neutro (a progressão não usa cor de significado).
+function xpBar(xp) {
+  const box = el("div", "xp");
+  const fill = el("i");
+  fill.style.width = `${Math.round(((xp.total - xp.floor) / (xp.next - xp.floor)) * 100)}%`;
+  const bar = el("span", "bar");
+  bar.append(fill);
+  box.title = `${xp.total} XP; o nível ${xp.level + 1} começa em ${xp.next}`;
+  box.append(el("span", null, `nível ${xp.level}`), bar, el("span", "xp-n", `${xp.total} / ${xp.next} XP`));
+  return box;
+}
+
 // A Team em árvore (R57, D-116, V-HUD-17): o mundo manda a lista na ordem da árvore, com a profundidade de cada um. Ficam os
 // ativos (os "sem sinal" também, em cinza) e os pais deles, para a árvore não perder o fio.
 function teamTree(team) {
@@ -109,7 +121,7 @@ function sessionCard(ego, onOpen) {
   const card = el("div", `card${waiting ? " waiting" : ""}${asleep ? " asleep" : ""}`);
   card.style.setProperty("--pc", p.color);
   const top = el("div", "card-top");
-  if (ego.name) top.append(el("span", "ego-name", ego.name));
+  if (ego.name) top.append(el("span", "ego-name", `${ego.name} · ${ego.xp.level}`));
   top.append(el("span", "prov", p.label), ...(ego.role ? [el("span", "role", ego.role)] : []), el("span", "title", sessionTitle(ego)),
              el("span", `chip ${ego.state}`, asleep ? "dormindo" : STATE_LABEL[ego.state] || ego.state));
   card.append(top);
@@ -121,6 +133,7 @@ function sessionCard(ego, onOpen) {
   now.append(ego.last_action || (asleep ? "sem atividade recente" : "—"));
   now.title = ego.last_action || "";
   card.append(now);
+  card.append(xpBar(ego.xp));
   if (ego.attributes) card.append(attributeBars(ego.attributes));
   const tree = teamTree(ego.team);
   if (tree) card.append(tree);

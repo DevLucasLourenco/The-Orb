@@ -118,7 +118,7 @@ export class Avatar {
       : `${STATE_LABEL[ego.state] || ego.state}${ego.last_action ? " · " + ego.last_action : ""}`;
     // Nome histórico em destaque (identidade, V-EGO-11); embaixo "provider · título"; depois atividade e última ação (V-EGO-8).
     const lines = [el("div", "t", `${provider(ego.provider).label} · ${sessionTitle(ego)}`), el("div", "s", status)];
-    if (ego.name) lines.unshift(el("div", "n", ego.name));
+    if (ego.name) lines.unshift(el("div", "n", `${ego.name} · ${ego.xp.level}`));       // o nível ao lado do nome (V-EGO-13)
     this.labelEl.replaceChildren(...lines);
   }
 

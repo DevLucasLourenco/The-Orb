@@ -4,7 +4,7 @@
 > R55. Nada é implementado antes dos tickets (P1, P5).
 > Vocabulário: [CONTEXT.md](../CONTEXT.md) · Regras: [RULES.md](RULES.md) · Visual: [VISUAL.md](VISUAL.md).
 
-Última atualização: 2026-10-09
+Última atualização: 2026-10-21
 
 ---
 
@@ -136,6 +136,10 @@ centenas de MB ([ARCHITECTURE.md](ARCHITECTURE.md) §5). O cálculo retroativo l
 é começar do zero no dia em que o Orb passa a registrar, como o Chronicle (D-078).
 
 ## 8. Onde mora no código
+
+**Feito (ticket 22, D-198 a D-205):** o módulo mora dentro do Core, em `src/orb/core/progression.py`, com a tabela v1 em
+`rules.py` (`XP_TABLE`), e não num pacote `src/orb/progression/` à parte: o Core só depende do Protocol, e o mundo (ponto de teste, D-099) é quem
+aplica os eventos. O extrato fica no registro local (`xp_ledger`). O resto do desenho abaixo (X-COMMIT, Probe do git, Realm e Mankind) segue para o ticket 23.
 
 - **`src/orb/progression/`**: domínio puro, como o Core. Entra: eventos do Protocol e fatos do git
   (dos Probes). Sai: entradas do extrato e conquistas. Tabelas em `rules.py` (a tabela v1 da §3, a
