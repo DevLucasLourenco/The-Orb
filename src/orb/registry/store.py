@@ -20,16 +20,22 @@ from pathlib import Path
 from ..core import NAMES, Entry, NameBag, NameBook
 
 REGISTRY_FILE = "registry.db"
-SCHEMA_VERSION = 2
+SCHEMA_VERSION = 3
 _QUERY_CHUNK = 500        # chaves por consulta (o SQLite limita as variáveis de uma consulta)
 _BUSY_SECONDS = 5.0       # o sorteio roda na thread de leitura (to_thread): esperar mais que isso travaria a observação
 _SCHEMA = (
     "CREATE TABLE IF NOT EXISTS names (key TEXT PRIMARY KEY, name TEXT NOT NULL)",       # id do Alter Ego -> nome
     "CREATE TABLE IF NOT EXISTS bag (position INTEGER PRIMARY KEY, name TEXT NOT NULL)",  # nomes que ainda restam, na ordem
-    # O extrato de XP (R53): uma linha por recibo, com a versão da tabela que a gerou. A chave impede pagar duas vezes o mesmo recibo.
+    # O extrato de XP (R53): uma linha por recibo, com a versão da tabela que a gerou e o estado (confirmada, provisória, anulada ou
+    # expirada). A chave impede pagar duas vezes o mesmo recibo; o estado e a XP de um commit mudam quando o git responde.
     ("CREATE TABLE IF NOT EXISTS xp_ledger (ego TEXT NOT NULL, ts TEXT NOT NULL, rule TEXT NOT NULL, xp INTEGER NOT NULL, "
-     "ref TEXT NOT NULL, evidence TEXT NOT NULL, version INTEGER NOT NULL, PRIMARY KEY (ego, rule, ref, version))"),
+     "ref TEXT NOT NULL, evidence TEXT NOT NULL, version INTEGER NOT NULL, state TEXT NOT NULL DEFAULT 'confirmed', "
+     "PRIMARY KEY (ego, rule, ref, version))"),
 )
+# O que cada versão anterior do esquema precisa para chegar à atual (o que `CREATE IF NOT EXISTS` não faz): de uma tabela que já existe.
+_MIGRATIONS: dict[int, tuple[str, ...]] = {
+    2: ("ALTER TABLE xp_ledger ADD COLUMN state TEXT NOT NULL DEFAULT 'confirmed'",),      # ticket 23: o estado do extrato
+}
 
 
 class NewerRegistry(Exception):
@@ -91,27 +97,30 @@ class LocalRegistry:
         """O extrato de XP guardado da sessão `ego_id`, só o da versão `version` da tabela (a outra fica de lado, intacta)."""
         try:
             with closing(sqlite3.connect(self.path, timeout=self._busy_seconds)) as conn:
-                rows = conn.execute("SELECT ts, rule, xp, ref, evidence, version FROM xp_ledger WHERE ego = ? AND version = ? ORDER BY rowid",
+                rows = conn.execute("SELECT ts, rule, xp, ref, evidence, version, state FROM xp_ledger WHERE ego = ? AND version = ? ORDER BY rowid",
                                     (ego_id, version)).fetchall()
         except _DISK_ERRORS:
             return [e for e in self._xp_memory.get(ego_id, {}).values() if e.version == version]
         found: list[Entry] = []
-        for ts, rule, xp, ref, evidence, v in rows:
+        for ts, rule, xp, ref, evidence, v, state in rows:
             try:
-                found.append(Entry(ts=ts, rule=rule, xp=xp, ref=ref, evidence=json.loads(evidence), version=v))
+                found.append(Entry(ts=ts, rule=rule, xp=xp, ref=ref, evidence=json.loads(evidence), version=v, state=state))
             except ValueError:                  # uma linha estragada não derruba as outras: fica de fora e o resto do extrato vale
                 continue
         return found
 
     def record(self, ego_id: str, entry: Entry) -> None:
-        """Guarda uma entrada do extrato de XP; o mesmo recibo na mesma versão nunca entra duas vezes."""
-        self._xp_memory.setdefault(ego_id, {}).setdefault((entry.rule, entry.ref, entry.version), entry)
+        """Guarda uma entrada do extrato de XP; o mesmo recibo na mesma versão nunca entra duas vezes (se já existe, o estado, a XP e a
+        evidência dele são os da entrada nova: o git respondeu sobre o commit)."""
+        self._xp_memory.setdefault(ego_id, {})[(entry.rule, entry.ref, entry.version)] = entry
         try:
             if not self._ready:
                 self._prepare()
             with self._transaction() as conn:
-                conn.execute("INSERT OR IGNORE INTO xp_ledger (ego, ts, rule, xp, ref, evidence, version) VALUES (?, ?, ?, ?, ?, ?, ?)",
-                             (ego_id, entry.ts, entry.rule, entry.xp, entry.ref, json.dumps(entry.evidence, ensure_ascii=False), entry.version))
+                conn.execute("INSERT INTO xp_ledger (ego, ts, rule, xp, ref, evidence, version, state) VALUES (?, ?, ?, ?, ?, ?, ?, ?) "
+                             "ON CONFLICT (ego, rule, ref, version) DO UPDATE SET xp = excluded.xp, evidence = excluded.evidence, state = excluded.state",
+                             (ego_id, entry.ts, entry.rule, entry.xp, entry.ref, json.dumps(entry.evidence, ensure_ascii=False), entry.version,
+                              entry.state))
         except _DISK_ERRORS as exc:
             self._fail(exc)
         else:
@@ -141,6 +150,8 @@ class LocalRegistry:
                 raise NewerRegistry(f"o registro é de um Orb mais novo (versão {version}); ele não será alterado")
             if version < SCHEMA_VERSION:
                 for statement in _SCHEMA:
+                    conn.execute(statement)
+                for statement in _MIGRATIONS.get(version, ()):
                     conn.execute(statement)
                 conn.execute(f"PRAGMA user_version = {SCHEMA_VERSION}")
         self._ready = True

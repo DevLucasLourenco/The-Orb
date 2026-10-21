@@ -139,7 +139,7 @@ centenas de MB ([ARCHITECTURE.md](ARCHITECTURE.md) §5). O cálculo retroativo l
 
 **Feito (ticket 22, D-198 a D-205):** o módulo mora dentro do Core, em `src/orb/core/progression.py`, com a tabela v1 em
 `rules.py` (`XP_TABLE`), e não num pacote `src/orb/progression/` à parte: o Core só depende do Protocol, e o mundo (ponto de teste, D-099) é quem
-aplica os eventos. O extrato fica no registro local (`xp_ledger`). O resto do desenho abaixo (X-COMMIT, Probe do git, Realm e Mankind) segue para o ticket 23.
+aplica os eventos. O extrato fica no registro local (`xp_ledger`). **Ticket 23 (rodada Q-T23 em DECISIONS.md):** o X-COMMIT (evidência no `command.result.commit`, Probe dos commits em `probes/commits.py`, estados provisória, confirmada, anulada e expirada no extrato), os níveis do Realm e de Mankind (`World.snapshot`) e o painel Progressão. Falta o que o desenho abaixo guarda para o ticket 24 (conquistas) e o 25 (passado e calibração).
 
 - **`src/orb/progression/`**: domínio puro, como o Core. Entra: eventos do Protocol e fatos do git
   (dos Probes). Sai: entradas do extrato e conquistas. Tabelas em `rules.py` (a tabela v1 da §3, a

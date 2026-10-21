@@ -1,7 +1,7 @@
 // Conexão com o mundo (/world): snapshot, deltas e linhas de Inner World. Reconecta sozinha.
 export const TOKEN = new URLSearchParams(location.search).get("token") || "";
 
-export function connectWorld({ onWorld, onEvent, onFeed, onHistory, onSettings, onStatus }) {
+export function connectWorld({ onWorld, onEvent, onFeed, onHistory, onSettings, onXp, onStatus }) {
   let ws = null;
   let delay = 500;
   const api = {
@@ -13,6 +13,9 @@ export function connectWorld({ onWorld, onEvent, onFeed, onHistory, onSettings, 
     },
     savePreferences(changes) {
       if (ws && ws.readyState === 1) ws.send(JSON.stringify({ type: "preferences", ...changes }));
+    },
+    requestXp() {
+      if (ws && ws.readyState === 1) ws.send(JSON.stringify({ type: "xp" }));
     },
     requestHistory(realm) {
       if (ws && ws.readyState === 1) ws.send(JSON.stringify({ type: "history", realm }));
@@ -29,6 +32,7 @@ export function connectWorld({ onWorld, onEvent, onFeed, onHistory, onSettings, 
       else if (msg.channel === "feed") onFeed(msg.alter_ego, msg.events);
       else if (msg.channel === "history") onHistory(msg.realm, msg.sessions, msg.total);
       else if (msg.channel === "settings") onSettings(msg);
+      else if (msg.channel === "xp") onXp(msg);
     };
   }
   open();

@@ -4,7 +4,9 @@
 > Código: `src/orb/adapters/opencode/` · Equivalentes: [CLAUDE.md](CLAUDE.md), [CODEX.md](CODEX.md),
 > [HERMES.md](HERMES.md).
 
-Última atualização: 2026-10-13 · opencode `2.0.23` (instalado nesta máquina via npm; mesma versão em 2026-10-13)
+Última atualização: 2026-10-21 · opencode `2.0.23` (instalado nesta máquina via npm; mesma versão em 2026-10-13)
+
+> **Commit (ticket 23):** o comando do `bash` que terminou com `state.metadata.exit` igual a 0 alimenta o `command.result.commit` quando é um `git commit` (sem hash).
 
 ## Como isto foi verificado
 

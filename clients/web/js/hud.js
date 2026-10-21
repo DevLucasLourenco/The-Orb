@@ -20,7 +20,14 @@ function stat(label, value, cls = "") {
   return s;
 }
 
+// O nível de Mankind e a barra na barra de cima (V-HUD-12): o botão que abre o painel Progressão. Branco neutro, sem cor de significado.
+function topLevel(xp) {
+  const button = document.getElementById("open-progress");
+  button.replaceChildren(el("span", null, `Mankind · nível ${xp.level}`), xpTrack(xp), el("span", "xp-n", `${xp.total} XP`));
+}
+
 export function renderTopbar(world) {
+  topLevel(world.mankind.xp);
   const totals = world.realms.map(summarize).reduce((a, s) => {
     for (const k of Object.keys(s)) a[k] = (a[k] || 0) + s[k];
     return a;
@@ -85,15 +92,26 @@ function attributeBars(attributes) {
 
 const MAX_INDENT = 6;       // uma Team muito funda não empurra o cartão para fora do painel
 
-// A barra de XP da sessão (R53, V-HUD-13): o total dentro do nível atual, em branco neutro (a progressão não usa cor de significado).
+// A trilha de uma barra de XP (V-HUD-13): a parte confirmada cheia e a provisória (commits que ainda não chegaram à principal) tracejada.
+function xpTrack(xp) {
+  const span = xp.next - xp.floor;
+  const pct = Math.round(((xp.total - xp.floor) / span) * 100);
+  const ahead = Math.max(0, Math.min(100 - pct, Math.round(((xp.provisional || 0) / span) * 100)));
+  const fill = el("i");
+  fill.style.width = `${pct}%`;
+  const ghost = el("i", "ghost");
+  ghost.style.width = `${ahead}%`;
+  const bar = el("span", "bar");
+  bar.append(fill, ghost);
+  return bar;
+}
+
+// A barra de XP da sessão (R53, V-HUD-13): o total confirmado dentro do nível atual, em branco neutro (a progressão não usa cor de significado).
 function xpBar(xp) {
   const box = el("div", "xp");
-  const fill = el("i");
-  fill.style.width = `${Math.round(((xp.total - xp.floor) / (xp.next - xp.floor)) * 100)}%`;
-  const bar = el("span", "bar");
-  bar.append(fill);
-  box.title = `${xp.total} XP; o nível ${xp.level + 1} começa em ${xp.next}`;
-  box.append(el("span", null, `nível ${xp.level}`), bar, el("span", "xp-n", `${xp.total} / ${xp.next} XP`));
+  const provisional = xp.provisional ? ` (+${xp.provisional} provisória)` : "";
+  box.title = `${xp.total} XP confirmada${provisional}; o nível ${xp.level + 1} começa em ${xp.next}`;
+  box.append(el("span", null, `nível ${xp.level}`), xpTrack(xp), el("span", "xp-n", `${xp.total} / ${xp.next} XP`));
   return box;
 }
 
@@ -306,7 +324,8 @@ export function renderOverview(realm, onOpen) {
   const summary = document.getElementById("ov-summary");
   const cell = (k, v, cls = "") => { const c = el("div"); c.append(el("div", "k", k), el("div", `v ${cls}`, v)); return c; };
   summary.replaceChildren(cell("Sessões", s.sessions), cell("Ativas", s.active),
-    cell("Esperando", s.waiting, s.waiting ? "wait" : ""), cell("Tokens", tokens({ input_tokens: s.tokens }).replace(" tok", "")));
+    cell("Esperando", s.waiting, s.waiting ? "wait" : ""), cell("Tokens", tokens({ input_tokens: s.tokens }).replace(" tok", "")),
+    cell("Nível", realm.xp.level));                       // o nível do realm: a XP confirmada de todas as sessões dele (R54)
   const list = document.getElementById("ov-sessions");
   const egos = [...realm.alter_egos].sort((a, b) => rank(a) - rank(b) || (b.last_ts || "").localeCompare(a.last_ts || ""));
   if (!egos.length) {
@@ -322,4 +341,47 @@ function rank(ego) {
   if (ego.waiting.length || ego.state === "WAITING") return 0;
   if (isAsleep(ego)) return 3;
   return ["IDLE", "COMPLETED"].includes(ego.state) ? 2 : 1;
+}
+
+// O painel Progressão (V-HUD-12, R53): o nível de Mankind, o placar por provider e o extrato, cada entrada com o recibo.
+const RULE_LABEL = { "X-TEST": "teste passou", "X-FIX": "conserto", "X-DELEG": "subagente", "X-CRAFT": "ofício", "X-COMMIT": "commit" };
+const STATE_NAME = { confirmed: "confirmada", provisional: "provisória", annulled: "anulada", expired: "expirada" };
+
+function receipt(entry) {
+  const e = entry.evidence || {};
+  const id = e.sha || e.event || e.agent || e.window || entry.ref;
+  return String(id).length > 24 ? `${String(id).slice(0, 12)}…` : String(id);
+}
+
+export function renderProgress(extract, world) {
+  const body = document.getElementById("progress-body");
+  const xp = world.mankind.xp;
+  const top = Math.max(1, ...Object.values(xp.by_provider));
+  const board = el("div", "board");
+  for (const [name, total] of Object.entries(xp.by_provider)) {
+    const dot = el("i", "dot");
+    dot.style.background = provider(name).color;
+    const bar = el("span", "bar");
+    const fill = el("i");
+    fill.style.width = `${Math.round((total / top) * 100)}%`;
+    bar.append(fill);
+    board.append(el("span", null, provider(name).label), dot, bar, el("span", "xp-n", `${total} XP`));
+  }
+  const head = el("div", "xp");
+  head.append(el("span", null, `nível ${xp.level}`), xpTrack({ ...xp, provisional: 0 }), el("span", "xp-n", `${xp.total} / ${xp.next} XP`));
+  const rows = extract.entries.map((entry) => {
+    const row = el("div", `xrow ${entry.state}`);
+    const when = new Date(entry.ts);
+    row.append(el("span", "xw", Number.isNaN(when.getTime()) ? "—" : when.toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })),
+               el("span", "xn", `${entry.name || entry.ego} · ${provider(entry.provider).label}`),
+               el("span", "xr", RULE_LABEL[entry.rule] || entry.rule),
+               el("span", "xv", `${entry.state === "confirmed" ? "+" : ""}${entry.xp}`),
+               el("span", "xs", STATE_NAME[entry.state] || entry.state),
+               el("span", "xe", receipt(entry)));
+    row.title = `${entry.rule} · recibo ${JSON.stringify(entry.evidence)} · tabela v${entry.version}`;
+    return row;
+  });
+  body.replaceChildren(el("h3", null, "Mankind"), head, el("h3", null, "Placar por provider"), board,
+                       el("h3", null, `Extrato · ${rows.length}${rows.length >= extract.limit ? " mais novas" : ""}`),
+                       ...(rows.length ? rows : [el("p", "hint", "Ainda sem XP: ela nasce de testes que passam, consertos, subagentes concluídos, ofício e commits que chegam à principal.")]));
 }

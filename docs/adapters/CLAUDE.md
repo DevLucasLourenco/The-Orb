@@ -4,7 +4,7 @@
 > [PROTOCOL.md](../PROTOCOL.md): o evento nativo intacto + sinal de mundo + entrada de Inner World.
 > Código: `src/orb/adapters/claude/` · Vocabulário: [CONTEXT.md](../../CONTEXT.md).
 
-Última atualização: 2026-10-13
+Última atualização: 2026-10-21
 
 ## Como isto foi verificado
 
@@ -65,7 +65,7 @@ camadas futuras (título da sessão, custo).
   ferramentas de shell, `stdout`, `stderr`, `interrupted`, `isImage` e, às vezes, `returnCodeInterpretation`
   (texto), `backgroundTaskId`, `timedOutAfterMs` e **`gitOperation`** (`commit`, `push`, `branch`, `pr`).
   **Não há código de saída**: falha = `is_error` no bloco `tool_result` (D-084). `gitOperation` é a
-  evidência de commit, push, branch e PR (D-090).
+  evidência de commit, push, branch e PR (D-090). **Usado (ticket 23):** o `gitOperation.commit.sha` (estrutura vista em 2026-10-21: `commit` tem `sha`, `kind` e às vezes `branch`) vira o `command.result.commit` do evento do resultado, com o hash; o texto do comando não é interpretado.
 
 ### 1.4 Mensagens com papel `user`
 

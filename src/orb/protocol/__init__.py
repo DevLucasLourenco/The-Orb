@@ -2,6 +2,7 @@
 from .events import (
                      MAX_BODY_BYTES,
                      MAX_CHANGES,
+                     MAX_COMMITS,
                      MAX_FOLDERS,
                      MAX_INNER_TEXT,
                      MAX_STRING,
@@ -10,6 +11,7 @@ from .events import (
                      clip_text,
                      make_event,
                      valid_change_path,
+                     valid_sha,
                      validate,
 )
 from .vocab import (
@@ -29,6 +31,7 @@ __all__ = [
                      "DERIVED_STATES",
                      "MAX_BODY_BYTES",
                      "MAX_CHANGES",
+                     "MAX_COMMITS",
                      "MAX_FOLDERS",
                      "MAX_INNER_TEXT",
                      "MAX_STRING",
@@ -40,5 +43,6 @@ __all__ = [
                      "clip_text",
                      "make_event",
                      "valid_change_path",
+                     "valid_sha",
                      "validate",
 ]

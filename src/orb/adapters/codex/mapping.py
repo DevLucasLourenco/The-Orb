@@ -96,7 +96,7 @@ def command_result(item: dict[str, Any]) -> dict[str, Any] | None:
     code = exit_code_of(item.get("exitCode"))
     if code is None:
         return None
-    return result_signal(None, ok=code == 0, exit_code=code, activity=command_activity(item))
+    return result_signal(item.get("command"), ok=code == 0, exit_code=code, activity=command_activity(item))
 
 
 def usage_signal(token_usage: Any) -> dict[str, Any] | None:

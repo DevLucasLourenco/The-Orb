@@ -4,7 +4,7 @@
 > ([RULES.md](RULES.md)): todo elemento que parece dado **é** dado; o resto é **cenário**, declarado
 > aqui. Um elemento novo só entra no mundo depois de ter uma linha nesta tabela.
 
-Última atualização: 2026-10-15 · Decisões em ordem: [DECISIONS.md](DECISIONS.md)
+Última atualização: 2026-10-21 · Decisões em ordem: [DECISIONS.md](DECISIONS.md)
 
 Tipo: **Dado** (vem da telemetria) · **Legenda** (código fixo de cores/formas, sempre o mesmo
 significado) · **Cenário** (sem significado, só ambiente) · **Heurística** (deduzido pelo Orb;
@@ -85,8 +85,8 @@ Situação: ✅ como está · ❌ precisa mudar · ❓ precisa de decisão.
 | V-HUD-15 | **Progresso da tarefa** no overview: "7 de 12" e uma barra por sessão | Dado | A lista de tarefas que o próprio CLI mantém (R50, D-093); sem lista, nada | ⏳ |
 | V-HUD-16 | **Atributos por área** no overview: barras com a parcela do trabalho em cada área | Dado | A mesma contagem do Papel (R40, D-096); não é pontuação | ✅ Ticket 12: quatro barras neutras (Development Center, Testing Lab, Research Center, Code Review) com a porcentagem; sem contagem, sem barras |
 | V-HUD-17 | **Árvore da Team** no overview: subagentes em árvore (quem criou quem), com tipo e estado | Dado | Campo `parent` dos subagentes (R57, D-116) | ✅ Ticket 12: a lista com recuo por profundidade (└), mostrando os ativos e os pais deles; concluídos sem filho ativo saem da lista, como antes |
-| V-HUD-12 | **Nível de Mankind** e a barra de progresso na barra de cima; clicar abre o painel **Progressão** (extrato, conquistas, placar por provider) | Dado | Soma da XP confirmada (R54, D-110) | ⏳ |
-| V-HUD-13 | No overview do realm: o **nível do realm** e, por Alter Ego, a **barra de XP** (confirmada cheia, provisória tracejada) | Dado | Extrato (R53) | ⚠️ Ticket 22: no cartão de cada Alter Ego, uma barra com o total dentro do nível atual e "XP / próximo nível", em branco neutro. O nível do realm e a barra tracejada da XP provisória vêm no ticket 23 |
+| V-HUD-12 | **Nível de Mankind** e a barra de progresso na barra de cima; clicar abre o painel **Progressão** (extrato, conquistas, placar por provider) | Dado | Soma da XP confirmada (R54, D-110) | ⚠️ Ticket 23: o botão "Mankind · nível N" com a barra e o total, na barra de cima, abre o painel Progressão com o nível, o placar por provider (a cor do provider em um ponto, a barra em branco neutro) e o extrato (as 200 entradas mais novas, cada uma com data, quem ganhou, regra, XP, estado e recibo; anulada e expirada riscadas). As conquistas vêm no ticket 24 |
+| V-HUD-13 | No overview do realm: o **nível do realm** e, por Alter Ego, a **barra de XP** (confirmada cheia, provisória tracejada) | Dado | Extrato (R53) | ✅ Tickets 22 e 23: no cartão de cada Alter Ego, uma barra com o total confirmado dentro do nível e "XP / próximo nível", em branco neutro, com a XP provisória (commits que ainda não chegaram à principal) em listras ao lado; o nível do realm entre os números do overview |
 | V-HUD-14 | **Conquista nova**: um aviso curto no HUD com o nome e o recibo | Dado | Conquista (R55) | ⏳ |
 
 ---

@@ -25,6 +25,8 @@ MAX_FOLDERS = 64              # realm.metrics: pastas de primeiro nível listada
 MAX_FOLDER_NAME = 255         # realm.metrics: tamanho do nome de uma pasta
 MAX_CHANGES = 5000            # realm.changes: alterações listadas (o resto vira `more`)
 MAX_CHANGE_PATH = 1024        # realm.changes: tamanho do caminho de uma alteração
+MAX_COMMITS = 500             # realm.commits: commits consultados por leitura
+MAX_COMMIT_KEY = 200          # realm.commits: tamanho do recibo (`key`) de um commit
 _ELLIPSIS = "…"
 
 Event = dict[str, Any]
@@ -158,6 +160,8 @@ def _validate_signal(signal: Any, event: dict[str, Any]) -> str | None:
         return _validate_split(signal, loc)
     if kind == "realm.changes":
         return _validate_changes(signal)
+    if kind == "realm.commits":
+        return _validate_commits(signal)
     if kind == "command.result":
         return _validate_command_result(signal)
     return None
@@ -173,6 +177,39 @@ def _validate_command_result(signal: dict[str, Any]) -> str | None:
     activity = signal.get("activity")
     if activity is not None and activity not in ACTIVITIES:
         return f"command.result: atividade inválida: {activity!r}"
+    commit = signal.get("commit")
+    if commit is not None:
+        if not isinstance(commit, dict):
+            return "command.result: commit deve ser um objeto"
+        if commit.get("sha") is not None and not valid_sha(commit["sha"]):
+            return "command.result: commit.sha deve ser um hash hexadecimal de 7 a 64 caracteres"
+    return None
+
+
+def valid_sha(value: Any) -> bool:
+    """O hash de um commit: 7 a 64 caracteres hexadecimais (o git abrevia e, com SHA-256, vai a 64)."""
+    return isinstance(value, str) and 7 <= len(value) <= 64 and all(ch in "0123456789abcdefABCDEF" for ch in value)
+
+
+def _validate_commits(signal: dict[str, Any]) -> str | None:
+    """`realm.commits`: o que o git disse de cada commit pedido (recibo, hash, se existe, linhas, se chegou à principal, se foi revertido)."""
+    commits = signal["commits"]
+    if not isinstance(commits, list) or len(commits) > MAX_COMMITS:
+        return f"realm.commits: commits deve ser uma lista de até {MAX_COMMITS} commits"
+    for commit in commits:
+        if not isinstance(commit, dict):
+            return "realm.commits: cada commit é um objeto"
+        key = commit.get("key")
+        if not isinstance(key, str) or not key or len(key) > MAX_COMMIT_KEY:
+            return f"realm.commits: key deve ser um texto de 1 a {MAX_COMMIT_KEY} caracteres"
+        if commit.get("sha") is not None and not valid_sha(commit["sha"]):
+            return "realm.commits: sha deve ser um hash hexadecimal de 7 a 64 caracteres"
+        for flag in ("exists", "on_main", "reverted"):
+            if not isinstance(commit.get(flag), bool):
+                return f"realm.commits: {flag} deve ser verdadeiro ou falso"
+        lines = commit.get("lines")
+        if lines is not None and (isinstance(lines, bool) or not isinstance(lines, int) or lines < 0):
+            return "realm.commits: lines deve ser um inteiro >= 0"
     return None
 
 

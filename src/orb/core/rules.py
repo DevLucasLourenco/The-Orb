@@ -102,6 +102,8 @@ class XpTable:
     trocar a versão recalcula tudo a partir das fontes. Mudar um valor é uma versão nova; o extrato antigo fica de lado, intacto."""
     version: int
     k: int                              # a curva dos níveis do Alter Ego: a XP para chegar ao nível n é k·n·(n−1)
+    k_realm: int                        #   ... a do Realm (a soma dos seus Alter Egos)
+    k_mankind: int                      #   ... a de Mankind (a soma de todos os realms)
     test_xp: int                        # X-TEST: teste que passou
     test_gap_seconds: int               #   ... no máximo um a cada tanto tempo por sessão (rodar em laço não rende)
     fix_xp: int                         # X-FIX: vermelho → verde, um por falha consertada
@@ -111,14 +113,22 @@ class XpTable:
     craft_window_seconds: int
     craft_cap: int                      #   ... teto por sessão por dia
     craft_activities: frozenset[str]    #   ... as atividades que contam como trabalho
+    commit_xp: int                      # X-COMMIT: commit feito pela sessão (provisório até chegar à branch principal)
+    commit_lines_per_xp: int            #   ... mais 1 XP a cada tanto de linhas alteradas pelo commit
+    commit_cap: int                     #   ... teto por commit
+    commit_expire_days: int             #   ... sem chegar à principal em tantos dias, expira; também a janela em que uma reversão ainda anula
 
 
 # A tabela v1 (PROGRESSION.md §3). k = 50 é provisório até o ticket 25 calibrar com o histórico real (§4).
 XP_TABLE = XpTable(
-    version=1, k=50, test_xp=5, test_gap_seconds=10 * 60, fix_xp=25, deleg_xp=3, deleg_cap=30,
+    version=1, k=50, k_realm=500, k_mankind=2500, test_xp=5, test_gap_seconds=10 * 60, fix_xp=25, deleg_xp=3, deleg_cap=30,
     craft_xp=1, craft_window_seconds=5 * 60, craft_cap=30,
     craft_activities=frozenset({"CODING", "TESTING", "READING", "RESEARCHING", "REVIEWING"}),
+    commit_xp=10, commit_lines_per_xp=20, commit_cap=40, commit_expire_days=30,
 )
+
+# Os providers do placar de Mankind (R54): a XP de cada um, lado a lado, mesmo quando ainda é zero.
+PROVIDERS: tuple[str, ...] = ("claude", "codex", "hermes", "opencode")
 
 
 @dataclass(frozen=True)

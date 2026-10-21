@@ -212,11 +212,11 @@ def test_the_level_says_where_the_bar_starts_and_ends():
 
 def test_the_alter_ego_snapshot_carries_total_level_and_the_bar():
     world = run(*[ran(11 * i, True) for i in range(21)])              # 21 testes verdes, 10 minutos entre eles: 105 XP
-    assert ego_xp(world) == {"total": 105, "level": 2, "floor": 100, "next": 300}
+    assert ego_xp(world) == {"total": 105, "provisional": 0, "level": 2, "floor": 100, "next": 300}
 
 
 def test_a_session_that_earned_nothing_is_level_1_with_an_empty_bar():
-    assert ego_xp(run(activity(0, "THINKING"))) == {"total": 0, "level": 1, "floor": 0, "next": 100}
+    assert ego_xp(run(activity(0, "THINKING"))) == {"total": 0, "provisional": 0, "level": 1, "floor": 0, "next": 100}
 
 
 # --- a tabela é versionada e recalculável ---------------------------------------------------------------------------
@@ -283,7 +283,7 @@ def test_the_registry_keeps_the_extract_with_date_rule_receipt_and_version_only(
         (row,) = conn.execute("SELECT ego, ts, rule, xp, ref, evidence, version FROM xp_ledger").fetchall()
     finally:
         conn.close()
-    assert columns == ["ego", "ts", "rule", "xp", "ref", "evidence", "version"]
+    assert columns == ["ego", "ts", "rule", "xp", "ref", "evidence", "version", "state"]
     assert row[0] == EGO and row[2:5] == ("X-TEST", 5, "claude:s1:t1") and row[6] == 1
     assert "exit_code" in row[5] and "claude:s1:t1" in row[5]
 
@@ -300,12 +300,12 @@ def test_a_damaged_row_of_the_extract_is_left_out_and_the_rest_still_counts(tmp_
     assert [e.ref for e in LocalRegistry(tmp_path).entries_of(EGO, 1)] == ["claude:s1:b"]
 
 
-def test_the_registry_never_keeps_the_same_receipt_twice(tmp_path):
+def test_the_registry_keeps_one_row_per_receipt_and_a_later_write_updates_it(tmp_path):
     registry = LocalRegistry(tmp_path)
     entry = Entry(ts="2026-10-07T10:00:00Z", rule="X-TEST", xp=5, ref="e1", evidence={"event": "e1"}, version=1)
     registry.record(EGO, entry)
     registry.record(EGO, replace(entry, xp=99))
-    assert [e.xp for e in registry.entries_of(EGO, 1)] == [5]
+    assert [e.xp for e in registry.entries_of(EGO, 1)] == [99]                  # o git mudou o que valia: o mesmo recibo, a XP nova
 
 
 def test_a_broken_registry_does_not_stop_the_xp_which_goes_on_in_memory(tmp_path):

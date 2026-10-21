@@ -15,7 +15,7 @@ from typing import Any, NamedTuple
 from ..protocol import Event, validate
 from . import building, city, facade, profile, rules
 from .names import NameSource
-from .progression import Ledger, XpSource
+from .progression import Ledger, XpSource, scale
 
 _TOKEN_FIELDS = ("input_tokens", "output_tokens", "cache_read_tokens", "reasoning_tokens")
 _ACTION_CHARS = 240     # tamanho do "fazendo agora" no overview
@@ -277,11 +277,13 @@ class World:
         uma que chega atrasada não volta no tempo."""
         signal = event.get("signal") or {}
         kind = signal.get("type")
-        if kind not in ("realm.metrics", "realm.changes") or event["id"] in self._realm_seen:
+        if kind not in ("realm.metrics", "realm.changes", "realm.commits") or event["id"] in self._realm_seen:
             return False
         self._realm_seen.append(event["id"])
         self.realms.setdefault(event["realm"], {})
-        if kind == "realm.metrics":
+        if kind == "realm.commits":
+            self._settle_commits(event["realm"], signal["commits"], event["ts"])
+        elif kind == "realm.metrics":
             current = self.metrics.get(event["realm"])
             if current is None or event["ts"] >= current["counted_at"]:
                 self.metrics[event["realm"]] = {"loc": signal["loc"], "files": signal.get("files"), "counted_at": event["ts"],
@@ -292,6 +294,60 @@ class World:
                 self.changes[event["realm"]] = {"items": [facade.Change(c["path"], c["type"], c["lines"]) for c in signal["changes"]],
                                                 "more": signal.get("more") or 0, "counted_at": event["ts"]}
         return True
+
+    def _settle_commits(self, realm_id: str, commits: list[dict[str, Any]], ts: str) -> None:
+        """O que o git disse dos commits das sessões deste realm (R53): confirma, anula ou expira a XP de cada um. Só entra quem uma
+        sessão reivindicou: o git falar de um commit que ninguém reportou não faz nada (D-106)."""
+        for ego in self.realms.get(realm_id, {}).values():
+            for entry in ego.xp.settle(commits, ts):
+                if self.xp is not None:
+                    self.xp.record(ego.id, entry)
+
+    def expire_commits(self, now: datetime) -> None:
+        """O prazo de 30 dias dos commits que não chegaram à principal vale com o git respondendo ou não (sem repositório, realm escondido,
+        Probe parado): quem avança o mundo chama isto com a hora dele. O que expira é guardado no extrato como qualquer mudança."""
+        _require_aware(now)
+        for egos in self.realms.values():
+            for ego in egos.values():
+                for entry in ego.xp.settle([], now.isoformat()):
+                    if self.xp is not None:
+                        self.xp.record(ego.id, entry)
+
+    def pending_commits(self, realm_id: str, now: datetime) -> list[dict[str, Any]]:
+        """O que perguntar ao git sobre os commits deste realm (quem lê o git é o Probe, na borda): os provisórios e os confirmados
+        ainda na janela de reversão. O mesmo recibo de duas sessões é perguntado uma vez."""
+        _require_aware(now)
+        asked: dict[str, dict[str, Any]] = {}
+        for ego in self.realms.get(realm_id, {}).values():
+            for query in ego.xp.commit_queries(now):
+                asked.setdefault(query["key"], query)
+        return list(asked.values())
+
+    def xp_extract(self, limit: int = 200) -> list[dict[str, Any]]:
+        """O extrato de XP do que o Orb viu (painel Progressão, V-HUD-12): as entradas de todas as sessões dos realms que a cidade mostra, as mais
+        novas primeiro, cada uma com quem ganhou e o recibo (só ids e números)."""
+        rows = [{"ego": ego.id, "name": ego.name, "provider": ego.provider, "realm": realm_id, "ts": entry.ts, "rule": entry.rule,
+                 "xp": entry.xp, "state": entry.state, "ref": entry.ref, "evidence": entry.evidence, "version": entry.version}
+                for realm_id, egos in self.realms.items() if realm_id not in self.hidden
+                for ego in egos.values() for entry in ego.xp.entries]
+        rows.sort(key=lambda row: row["ts"], reverse=True)
+        return rows[:limit]
+
+    def _xp_scales(self, realms: list[dict[str, Any]]) -> tuple[dict[str, dict[str, int]], dict[str, Any]]:
+        """Os níveis do Realm e de Mankind (R54): a XP confirmada de todos os Alter Egos do realm, também os do Histórico, e a soma dos
+        realms que a cidade mostra, com o placar por provider."""
+        by_realm, by_provider = {}, {provider: 0 for provider in rules.PROVIDERS}
+        provisional = 0
+        for realm in realms:
+            egos = self.realms[realm["id"]].values()
+            pending = sum(ego.xp.provisional for ego in egos)
+            by_realm[realm["id"]] = {**scale(sum(ego.xp.total for ego in egos), self.xp_table.k_realm), "provisional": pending}
+            provisional += pending
+            for ego in egos:
+                if ego.provider is not None:
+                    by_provider[ego.provider] = by_provider.get(ego.provider, 0) + ego.xp.total
+        mankind = {**scale(sum(by_provider.values()), self.xp_table.k_mankind), "provisional": provisional, "by_provider": by_provider}
+        return by_realm, mankind
 
     def _realm_facade(self, realm_id: str, metrics: dict[str, Any] | None) -> dict[str, Any] | None:
         """As janelas acesas do prédio (R20): dos andares que a contagem de linhas deu e das alterações locais que o git deu.
@@ -427,8 +483,11 @@ class World:
                 total_egos += 1
                 active_subs += ego["active_subagents"]
                 waiting += len(ego["waiting"])
+        by_realm, xp = self._xp_scales(realms)
+        for realm in realms:
+            realm["xp"] = by_realm[realm["id"]]
         return {"realms": realms, "city": plan, "hidden_realms": sorted(self.hidden),
-                "mankind": {"alter_egos": total_egos, "active_subagents": active_subs, "waiting": waiting}}
+                "mankind": {"alter_egos": total_egos, "active_subagents": active_subs, "waiting": waiting, "xp": xp}}
 
     def time_key(self, now: datetime) -> tuple:
         """O que, no estado do mundo, só o passar do tempo muda: quem dorme e quem está sem sinal.

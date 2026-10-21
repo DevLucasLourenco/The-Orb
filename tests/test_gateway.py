@@ -293,6 +293,17 @@ def test_the_app_keeps_the_local_registry_in_the_state_folder(tmp_path):
     assert (tmp_path / "orb" / REGISTRY_FILE).is_file()
 
 
+def test_the_world_stream_answers_an_xp_request_with_the_extract(tmp_path):
+    project = r"C:\p\proj"
+    _claude_session(tmp_path, project, "11111111-1111-4111-8111-111111111111", "Sessão A")
+    config = GatewayConfig(realms=[project], token="tok", home=tmp_path, poll_seconds=0.05)
+    with TestClient(create_app(config, check_installed=False)) as client:
+        with client.websocket_connect("/world?token=tok", headers={"origin": "http://127.0.0.1"}) as ws:
+            ws.send_text(json.dumps({"type": "xp"}))
+            msg = next(m for m in iter(ws.receive_json, None) if m["channel"] == "xp")
+            assert msg["entries"] == [] and msg["limit"] > 0                    # ninguém ganhou XP ainda: lista vazia, não erro
+
+
 def test_the_xp_extract_lives_in_the_same_local_registry_as_the_names(tmp_path):
     from orb.gateway import GatewayConfig, create_app
     from orb.registry import LocalRegistry

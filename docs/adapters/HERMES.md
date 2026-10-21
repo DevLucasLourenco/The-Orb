@@ -3,8 +3,10 @@
 > O que o Hermes Agent expõe e como o Orb o observa sem mexer na configuração do Lucas.
 > Código: `src/orb/adapters/hermes/` · Equivalentes: [CLAUDE.md](CLAUDE.md), [CODEX.md](CODEX.md).
 
-Última atualização: 2026-10-13 · Hermes Agent `0.20.5` (instalado nesta máquina em
+Última atualização: 2026-10-21 · Hermes Agent `0.20.5` (instalado nesta máquina em
 `%LOCALAPPDATA%\hermes`, instalação por git; mesma versão em 2026-10-13)
+
+> **Commit (ticket 23):** o comando do `terminal` que terminou com `exit_code` 0 alimenta o `command.result.commit` quando é um `git commit` (sem hash).
 
 ## Como isto foi verificado
 

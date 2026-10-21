@@ -1,8 +1,9 @@
-"""Quando rodar os Probes de cada realm: o das linhas de código (R19, D-055) e o das alterações locais do git (R20b).
+"""Quando rodar os Probes de cada realm: o das linhas de código (R19, D-055), o das alterações locais do git (R20b) e o dos commits
+das sessões (R53).
 
 Ler um projeto pode levar segundos num projeto grande; por isso cada Probe roda numa thread própria, **um realm por vez**, e
-nunca na thread que lê os providers. O resultado volta como um evento de realm (`realm.metrics`, `realm.changes`; protocolo
-0.3) que o Hub aplica no mundo. Só se publica quando algo mudou: a decisão é a impressão digital de cada Probe.
+nunca na thread que lê os providers. O resultado volta como um evento de realm (`realm.metrics`, `realm.changes`, `realm.commits`;
+protocolo 0.3) que o Hub aplica no mundo. Só se publica quando algo mudou: a decisão é a impressão digital de cada Probe.
 """
 from __future__ import annotations
 
@@ -17,20 +18,24 @@ from typing import Any
 
 from ..core.rules import LineFilter
 from ..probes import (
+    CommitQuery,
     changes_fingerprint,
+    commits_fingerprint,
     count_lines,
     fingerprint,
     git_changes,
+    git_commits,
     git_tracked_files,
     list_countable,
 )
-from ..protocol import MAX_FOLDERS, Event, make_event
+from ..protocol import MAX_COMMITS, MAX_FOLDERS, Event, make_event
 from .realms import Realm
 
-__all__ = ["ChangeScheduler", "LineScheduler", "Realm", "RealmScheduler"]
+__all__ = ["ChangeScheduler", "CommitScheduler", "LineScheduler", "Realm", "RealmScheduler"]
 
 MIN_INTERVAL_SECONDS = 60.0      # D-055: no máximo uma contagem por minuto por realm
 CHANGES_INTERVAL_SECONDS = 15.0  # as alterações locais mudam mais depressa que as linhas: uma olhada a cada 15 s por realm
+COMMITS_INTERVAL_SECONDS = 60.0  # os commits mudam devagar (um push, um merge): uma olhada por minuto, e só em quem tem commit a conferir
 IDLE_SECONDS = 1.0               # a thread olha de novo depois disto quando nada estava na hora
 
 
@@ -220,3 +225,42 @@ class ChangeScheduler(RealmScheduler):
         return make_event(id=f"{realm.id}:changes:{ts}", ts=ts, provider=None, source="probe/changes", realm=realm.id,
                           alter_ego=None, agent=None, seq=self._seq, kind="realm/changes", body={"changes": len(items), "more": result.more},
                           signal={"type": "realm.changes", "changes": items, "more": result.more})
+
+
+class CommitScheduler(RealmScheduler):
+    """O Probe dos commits (R53): pergunta ao git, a cada minuto, pelos commits que as sessões do realm disseram ter feito (o mundo diz quais:
+    os provisórios e os confirmados ainda na janela de reversão). Realm sem commit a conferir nunca é lido. Só publica quando o git respondeu
+    algo diferente, e uma vez por dia mesmo igual, para o mundo olhar o prazo de 30 dias."""
+
+    thread_name = "orb-commits"
+
+    def __init__(self, realms: Callable[[], dict[str, Realm]], hidden: Callable[[], frozenset[str] | set[str]],
+                 pending: Callable[[str, datetime], list[dict[str, Any]]], *,
+                 reader: Callable[[Path, list[CommitQuery]], list[dict[str, Any]] | None] = git_commits,
+                 clock: Callable[[], float] = time.monotonic, wall: Callable[[], datetime] | None = None,
+                 interval: float = COMMITS_INTERVAL_SECONDS) -> None:
+        super().__init__(realms, hidden, clock=clock, wall=wall, interval=interval)
+        self._pending = pending
+        self._reader = reader
+
+    def _measure(self, realm: Realm) -> Event | None:
+        now = self._wall()
+        asked = sorted(self._pending(realm.id, now), key=lambda q: q["at"], reverse=True)[:MAX_COMMITS]      # se passar do limite, os mais novos ficam
+        if not asked:
+            self._last_print.pop(realm.id, None)
+            return None                                   # nenhum commit a conferir: o git nem é aberto
+        facts = self._reader(Path(realm.cwd), [CommitQuery(q["key"], q.get("sha"), q["at"]) for q in asked])
+        if facts is None:
+            self.notes[realm.id] = "o git não respondeu sobre os commits (sem repositório, git ausente ou tempo esgotado)"
+            self._last_print.pop(realm.id, None)
+            return None                                   # sem repositório: sem dado, nunca "o commit não existe"
+        self.notes.pop(realm.id, None)
+        print_now = f"{commits_fingerprint(facts)}|{now.date()}"
+        if self._last_print.get(realm.id) == print_now:
+            return None                                   # nada mudou desde a última leitura, e ainda é o mesmo dia
+        self._last_print[realm.id] = print_now
+        self._seq += 1
+        ts = now.isoformat(timespec="milliseconds")
+        return make_event(id=f"{realm.id}:commits:{ts}", ts=ts, provider=None, source="probe/commits", realm=realm.id, alter_ego=None,
+                          agent=None, seq=self._seq, kind="realm/commits", body={"commits": len(facts)},
+                          signal={"type": "realm.commits", "commits": facts})
