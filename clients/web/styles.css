@@ -196,6 +196,7 @@ select option { background: #0c111c; }
 .lbl-ego .s { font-size: 10px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .lbl-ego.waiting { border-color: var(--wait); }
 .lbl-ego.waiting .s { color: var(--wait); }
+.lbl-more { font-size: 11px; font-weight: 700; padding: 1px 7px; border-radius: 8px; color: #0b1020; background: #e6ecf5; pointer-events: none; }
 .lbl-area { font-size: 9px; letter-spacing: .14em; text-transform: uppercase; color: rgba(200, 220, 255, .55); pointer-events: none; }
 
 /* ---------- dicas ---------- */

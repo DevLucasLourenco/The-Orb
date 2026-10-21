@@ -13,7 +13,7 @@ from datetime import datetime
 from typing import Any, NamedTuple
 
 from ..protocol import Event, validate
-from . import building, city, facade, profile, rules
+from . import building, city, facade, profile, room, rules
 from .names import NameSource
 from .progression import Ledger, XpSource, scale
 
@@ -57,6 +57,7 @@ class Subagent:
     target: str | None = None
     active: bool = True
     outcome: str | None = None
+    ended_at: str | None = None      # a hora do `subagent.ended` (R51); com ela o snapshot diz se ele ainda está `leaving`
     last_action: str | None = None
     last_ts: str | None = None
 
@@ -68,6 +69,11 @@ class Subagent:
     def without_signal(self, now: datetime | None) -> bool:
         return rules.subagent_without_signal(active=self.active, idle_seconds=_idle_seconds(self.last_ts, now))
 
+    def leaving(self, now: datetime | None) -> bool:
+        """Terminou há pouco (R51): é hora de caminhar até o líder. Sem `now`, nada que dependa do tempo é afirmado."""
+        since_end = _idle_seconds(self.ended_at, now)
+        return not self.active and since_end is not None and since_end < rules.SUBAGENT_LEAVE_WINDOW_SECONDS
+
     def snapshot(self, now: datetime | None = None) -> dict[str, Any]:
         base = self.base if self.active else "COMPLETED"
         no_signal = self.without_signal(now)
@@ -76,7 +82,7 @@ class Subagent:
         return {"id": self.id, "kind": self.kind, "parent": self.parent,
                 "state": "NO_SIGNAL" if no_signal else base, "area": rules.area_for(base),
                 "target": self.target, "active": self.active, "no_signal": no_signal,
-                "outcome": self.outcome, "last_action": self.last_action, "last_ts": self.last_ts}
+                "outcome": self.outcome, "ended_at": self.ended_at, "leaving": self.leaving(now), "last_action": self.last_action, "last_ts": self.last_ts}
 
 
 @dataclass
@@ -238,7 +244,7 @@ class World:
             if event["agent"] is None:
                 self._apply_to_leader(ego, signal)
             else:
-                self._apply_to_subagent(ego, event["agent"], signal)
+                self._apply_to_subagent(ego, event["agent"], signal, event["ts"])
         sub = ego.subagents.get(event["agent"]) if event["agent"] is not None else None
         if sub is not None:
             sub.touch(event["ts"])
@@ -429,7 +435,7 @@ class World:
             sub = ego.subagents[agent_id] = Subagent(id=agent_id)
         return sub
 
-    def _apply_to_subagent(self, ego: AlterEgo, agent_id: str, signal: dict[str, Any]) -> None:
+    def _apply_to_subagent(self, ego: AlterEgo, agent_id: str, signal: dict[str, Any], event_ts: str) -> None:
         sub = self._subagent(ego, agent_id)
         kind = signal["type"]
         if kind == "subagent.started":
@@ -437,9 +443,10 @@ class World:
             parent = signal.get("parent")
             if isinstance(parent, str) and parent:          # o protocolo não valida o tipo de `parent`: só um id de verdade entra na árvore
                 sub.parent = parent
-            sub.active, sub.base = True, "THINKING"
+            sub.active, sub.base, sub.ended_at = True, "THINKING", None
         elif kind == "subagent.ended":
             sub.active, sub.outcome = False, signal.get("outcome") or "completed"
+            sub.ended_at = event_ts
         elif kind == "activity":
             sub.base, sub.target = signal["activity"], signal.get("target")
         elif kind == "idle":
@@ -477,6 +484,7 @@ class World:
             metrics = self._realm_metrics(realm_id)
             # "Noite" (D-059, R47): nenhuma sessão na sala. O cliente só desenha a sala do teto apagada.
             realms.append({"id": realm_id, "alter_egos": egos, "night": not any(ego["in_room"] for ego in egos),
+                           "room": room.occupancy(ego for ego in egos if ego["in_room"]),
                            "metrics": metrics, "facade": self._realm_facade(realm_id, metrics), "weather": self._realm_weather(realm_id, now),
                            "place": plan["places"][realm_id]})
             for ego in (e for e in egos if e["in_room"]):          # Mankind conta a sala; o Histórico não entra

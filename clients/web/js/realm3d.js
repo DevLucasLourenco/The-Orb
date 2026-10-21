@@ -298,6 +298,7 @@ export class RealmBuilding {
 
   _areas() {
     this.areaLabels = [];
+    this.moreLabels = new Map();       // lugar -> o "+N" dos que não couberam (R33); só aparece quando há de perto
     this.roomLights = [];        // o que se apaga de noite: pisos das áreas e anel do lobby
     for (const [name, a] of Object.entries(AREAS)) {
       const pad = new THREE.Mesh(new THREE.BoxGeometry(a.w, 0.12, a.d),
@@ -318,6 +319,17 @@ export class RealmBuilding {
       this.roomLights.push(pad, edge, decal);
       this.room.add(pad, edge, decal, label);
     }
+    const corner = (name, x, z) => {
+      const more = new CSS2DObject(el("div", "lbl-more"));
+      more.position.set(x, 0.3, z);
+      more.userData.count = 0;
+      more.visible = false;
+      this.moreLabels.set(name, more);
+      this.room.add(more);
+    };
+    for (const [name, a] of Object.entries(AREAS)) corner(name, a.x + a.w / 2 - 0.9, a.z + a.d / 2 - 0.6);
+    corner("__lobby", LOBBY.x, LOBBY.z + LOBBY.r + 0.7);
+    corner("__dorm", DORM.x1 + 1.2, DORM.z);
     const lobby = new THREE.Mesh(new THREE.RingGeometry(LOBBY.r - 0.12, LOBBY.r, 48),
       new THREE.MeshBasicMaterial({ color: ROOM_REST, toneMapped: false, transparent: true, opacity: 0.5, side: THREE.DoubleSide }));
     lobby.rotation.x = -Math.PI / 2;
@@ -337,6 +349,14 @@ export class RealmBuilding {
     this.beaconRing.rotation.x = Math.PI / 2;
     this.beaconRing.position.y = 0.25;
     this.room.add(this.beacon, this.beaconRing);
+  }
+
+  // Quantos personagens passaram do limite de cada lugar (R33): o mundo conta, aqui só se escreve o "+N".
+  setOverflow(place, more) {
+    const label = this.moreLabels.get(place);
+    if (!label || label.userData.count === more) return;
+    label.userData.count = more;
+    label.element.textContent = more ? `+${more}` : "";
   }
 
   // O lote que o mundo deu (R32): posição já com o deslocamento e o giro tirados do nome do realm.
@@ -409,6 +429,7 @@ export class RealmBuilding {
     this.roomEdges.visible = lit;
     this.glass.visible = lit;
     for (const label of this.areaLabels) label.visible = near && lit;
+    for (const label of this.moreLabels.values()) label.visible = near && label.userData.count > 0;      // sem luz, o "+N" segue valendo
     this.label.visible = !focused;      // de perto o nome do prédio só atrapalha a sala
   }
 

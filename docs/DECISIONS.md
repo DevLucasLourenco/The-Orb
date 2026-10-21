@@ -229,6 +229,13 @@ ele revisar, e a proposta está escrita no documento do assunto.
 | D-212 | 2026-10-21 | **O Probe dos commits pergunta ao git uma vez por minuto por realm, só onde há commit a conferir;** o evento só sai quando a resposta muda ou, igual, uma vez por dia; sem repositório, nada é dito | Lucas | qt23-7, R16 |
 | D-213 | 2026-10-21 | **O painel Progressão abre pelo botão "Mankind · nível N" da barra de cima** e mostra o nível de Mankind, o placar por provider e as 200 entradas mais novas do extrato (atualizado a cada 5 s enquanto aberto); as conquistas ficam no ticket 24 | Lucas | qt23-8, V-HUD-12 |
 | D-214 | 2026-10-21 | **Um `git commit` só conta se está no começo de um comando** (depois de `&&`, `;`, `|`, invólucro de shell, variáveis e opções do git, com ou sem aspas), sem `--dry-run` como opção e **sem `||` na linha** (o `ok` pode vir de um `|| true`); o Claude ignora o texto e usa o `gitOperation` (D-090) | Lucas | qt23-9, D-090, R12 |
+| D-215 | 2026-10-21 | **O teto de 8 vale em todo lugar da sala:** as cinco áreas, o saguão e o dormitório, cada um com o próprio "+N" (a sala não cresce) | Lucas | qt13-1, R33, D-057 |
+| D-216 | 2026-10-21 | **Quem passa de 8 num lugar é escolhido por prioridade estável:** quem espera o Lucas primeiro, depois os líderes, depois o mais recente; empate pelo id. O magenta nunca fica escondido | Lucas | qt13-2, R33, R30 |
+| D-217 | 2026-10-21 | **Personagem na sala é o líder de toda sessão na sala e o subagente ativo de sessão não encerrada;** o subagente terminado não ocupa lugar (só caminha até o líder) | Lucas | qt13-3, R33, R51, R12 |
+| D-218 | 2026-10-21 | **O líder em erro ou sem sinal fica com o corpo a 70% e sem halo;** bloqueado só ganha o cadeado. Os ícones são brancos e neutros, nunca vermelhos | Lucas | qt13-4, R52, D-095, V-EGO-15 |
+| D-219 | 2026-10-21 | **O subagente terminado caminha até o líder só durante os 30 s depois do fim** (`leaving` no snapshot, regra do Core) e se já estava em cena e visível; sem o sinal de fim vale o cinza (R7) | Lucas | qt13-5, R51, D-094, R7 |
+| D-220 | 2026-10-21 | **A câmera solta o personagem seguido** quando o Lucas arrasta, gira, dá zoom, usa o teclado ou vai a outro alvo, e quando o personagem sai de cena ou passa do teto | Lucas | qt13-6, R17 |
+| D-221 | 2026-10-21 | **O duplo clique só alcança o personagem visível;** quem passou do teto ("+N") não é clicável e segue listado no overview | Lucas | qt13-7, R17, R33 |
 
 ## Decisões revistas
 
@@ -643,3 +650,19 @@ o agendador e as amostras dos providers); o painel e o cartão foram conferidos 
 | ~~Q-T23-7~~ D-212 | Quando o Probe pergunta ao git? | Uma vez por minuto por realm, **só** em realm com commit a conferir (provisório, ou confirmado ainda na janela de 30 dias); o evento só sai quando a resposta muda ou, igual, uma vez por dia (para o prazo ser olhado). Sem repositório, nada é dito (nunca "o commit não existe") |
 | ~~Q-T23-8~~ D-213 | Que painel é o da Progressão? | O botão **"Mankind · nível N"** com a barra e o total, na barra de cima, abre o painel: nível de Mankind, placar por provider e o extrato (as 200 entradas mais novas do que o Orb viu, de todas as sessões dos realms visíveis). As conquistas (V-HUD-14) ficam no ticket 24 |
 | ~~Q-T23-9~~ D-214 | Como se reconhece um `git commit` nos providers que não dizem isso? | Pelo texto do comando, **só no começo de um comando** (depois de `&&`, `;`, `|`, de um invólucro de shell, de variáveis de ambiente e de opções do git como `-C` e `-c`, com ou sem aspas): `grep git commit`, `rg "git commit"` e `echo git commit` **não** são commits; `--dry-run` como opção não conta; uma linha com `||` não conta, porque o `ok` dela pode vir de um `|| true` que esconde a falha. Só vale se o comando deu certo (o Claude ignora o texto e usa o `gitOperation`, D-090) |
+
+### Rodada: o que a implementação do ticket 13 decidiu por conta própria (aberta em 2026-10-21)
+
+Ao implementar o ticket 13 ([.scratch/the-orb-cidade-viva/issues/13-estados-do-personagem.md](../.scratch/the-orb-cidade-viva/issues/13-estados-do-personagem.md)),
+sete pontos **não estavam escritos** e foram escolhidos de forma provisória (regra P2). O mundo está coberto por teste (`tests/test_room.py`); a sala cheia, os ícones, o subagente que termina e o duplo clique foram
+conferidos na tela com um snapshot real do mundo feito de eventos sintéticos. **O Lucas confirmou as sete em 2026-10-21 (D-215 a D-221).**
+
+| Id | Pergunta | Proposta (já aplicada, provisória) |
+|---|---|---|
+| ~~Q-T13-1~~ D-215 | O teto de 8 vale só nas áreas? | **Em todo lugar**: as cinco áreas, o saguão e o dormitório têm o mesmo teto de 8 e o próprio "+N" (a sala não cresce, R33). |
+| ~~Q-T13-2~~ D-216 | Quem fica visível quando passa de 8? | **Quem espera o Lucas primeiro**, depois os **líderes**, depois o **mais recente**; empate pelo id (estável). Assim o magenta nunca fica escondido. |
+| ~~Q-T13-3~~ D-217 | Quem conta como personagem na sala? | O líder de toda sessão na sala e o subagente **ativo** de sessão não encerrada. O subagente terminado não ocupa lugar (só caminha, Q-T13-5). |
+| ~~Q-T13-4~~ D-218 | Quais estados do líder mudam o corpo? | Erro e sem sinal: **corpo a 70% de opacidade e sem halo**; bloqueado: só o cadeado. Os ícones são brancos e neutros (R30), nunca vermelhos. |
+| ~~Q-T13-5~~ D-219 | Quando o subagente terminado caminha até o líder? | Só durante os **30 s** depois do fim (`leaving`) e se o personagem já estava em cena e visível: ao abrir a página depois, ele não aparece só para sair. A janela é regra do Core (`leaving` no snapshot), não do cliente; sem o sinal vale o cinza (R7). |
+| ~~Q-T13-6~~ D-220 | O que solta a câmera do personagem seguido? | **Qualquer ação do Lucas na câmera** (arrastar, girar, zoom, teclado, voo para outro alvo) ou o personagem sair de cena. Depois do voo de chegada, a câmera acompanha o passo dele sem mudar o ângulo. |
+| ~~Q-T13-7~~ D-221 | O que o duplo clique alcança? | Só o personagem **visível**: quem passou do teto ("+N") não é clicável, mas segue no overview. |

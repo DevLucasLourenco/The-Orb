@@ -44,7 +44,7 @@ export class Stage {
     controls.maxDistance = 900;
     controls.maxPolarAngle = 1.38;
     controls.target.set(0, 20, 0);
-    controls.addEventListener("start", () => (this.flight = null));
+    controls.addEventListener("start", () => { this.flight = null; this.following = null; });       // mexer na câmera solta o personagem
 
     this._lights();
     this._ground();
@@ -59,6 +59,7 @@ export class Stage {
     this.clock = new THREE.Clock();
     this.keys = new Set();
     this.flight = null;
+    this.following = null;          // o personagem que a câmera segue (duplo clique)
     this.raycaster = new THREE.Raycaster();
     this.onFrame = () => {};
     window.addEventListener("resize", () => this.resize());
@@ -152,6 +153,7 @@ export class Stage {
 
   // Voa até um ponto, mantendo o ângulo horizontal atual da câmera.
   flyTo(target, distance, elevation = 0.82) {
+    this.following = null;                                    // ir a outro alvo solta o personagem seguido (R17)
     const azimuth = Math.atan2(this.camera.position.x - this.controls.target.x, this.camera.position.z - this.controls.target.z);
     const to = new THREE.Vector3(
       target.x + Math.sin(azimuth) * Math.cos(elevation) * distance,
@@ -161,6 +163,12 @@ export class Stage {
     // O voo avança pelo relógio real: não fica lento quando o navegador reduz a taxa de quadros.
     this.flight = { start: performance.now(), dur: 1100, fromPos: this.camera.position.clone(), toPos: to,
                     fromTarget: this.controls.target.clone(), toTarget: target.clone() };
+  }
+
+  // Duplo clique (R17): a câmera segue o personagem até o Lucas mexer nela (arrastar, girar, zoom ou teclado) ou ele sair de cena.
+  follow(object, distance = 24, elevation = 0.5) {
+    this.flyTo(object.position.clone().add(new THREE.Vector3(0, 1.5, 0)), distance, elevation);
+    this.following = object;
   }
 
   pick(clientX, clientY, objects) {
@@ -191,12 +199,14 @@ export class Stage {
       cam.add(move);
       target.add(move);
       this.flight = null;
+      this.following = null;
     }
     const turn = (k.has("q") ? 1 : 0) - (k.has("e") ? 1 : 0);
     if (turn) {
       const offset = new THREE.Vector3().subVectors(cam, target).applyAxisAngle(new THREE.Vector3(0, 1, 0), turn * 1.4 * dt);
       cam.copy(target).add(offset);
       this.flight = null;
+      this.following = null;
     }
   }
 
@@ -211,6 +221,16 @@ export class Stage {
         this.camera.position.lerpVectors(f.fromPos, f.toPos, e);
         this.controls.target.lerpVectors(f.fromTarget, f.toTarget, e);
         if (k >= 1) this.flight = null;
+      }
+      if (this.following) {
+        if (!this.following.parent || !this.following.visible) this.following = null;      // saiu de cena ou passou do teto da sala
+        else if (!this.flight) {                      // depois do voo até ele, a câmera acompanha o passo dele sem mudar o ângulo
+          const p = this.following.position;
+          const step = new THREE.Vector3(p.x - this.controls.target.x, p.y + 1.5 - this.controls.target.y, p.z - this.controls.target.z)
+            .multiplyScalar(Math.min(1, dt * 6));
+          this.controls.target.add(step);
+          this.camera.position.add(step);
+        }
       }
       this._keyboard(dt);
       this.controls.update();
