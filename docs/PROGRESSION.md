@@ -137,7 +137,7 @@ centenas de MB ([ARCHITECTURE.md](ARCHITECTURE.md) §5). O cálculo retroativo l
 
 ## 8. Onde mora no código
 
-**Feito (ticket 22, rodada Q-T22 em DECISIONS.md):** o módulo mora dentro do Core, em `src/orb/core/progression.py`, com a tabela v1 em
+**Feito (ticket 22, D-198 a D-205):** o módulo mora dentro do Core, em `src/orb/core/progression.py`, com a tabela v1 em
 `rules.py` (`XP_TABLE`), e não num pacote `src/orb/progression/` à parte: o Core só depende do Protocol, e o mundo (ponto de teste, D-099) é quem
 aplica os eventos. O extrato fica no registro local (`xp_ledger`). O resto do desenho abaixo (X-COMMIT, Probe do git, Realm e Mankind) segue para o ticket 23.
 

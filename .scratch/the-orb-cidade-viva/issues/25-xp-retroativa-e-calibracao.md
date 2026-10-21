@@ -36,3 +36,5 @@ Tem um ponto de parada com o Lucas (aprovação da curva) antes de concluir.
 - Uma branch e um PR para este ticket (D-114).
 
 ## Comments
+
+- **Herdado do ticket 22 (D-203):** trocar a versão da tabela de XP só recomeça o extrato; a releitura das sessões antigas para recalcular tudo a partir das fontes é deste ticket. `core/progression.replay` já recalcula de uma lista de eventos; falta um caminho de produção que leia o passado.
