@@ -1,6 +1,6 @@
 # 13: Estados do personagem
 
-Status: ready-for-agent
+Status: concluído (2026-10-21)
 Blocked by: 01, 05
 Origem: R52, R33, R51, R17; D-057, D-094, D-095
 Spec: [../spec.md](../spec.md)
