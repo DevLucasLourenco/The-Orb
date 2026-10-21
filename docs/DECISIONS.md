@@ -620,7 +620,7 @@ oito pontos **não estavam escritos** e foram escolhidos de forma provisória (r
 ### Rodada: o que a implementação do ticket 23 decidiu por conta própria (aberta em 2026-10-21)
 
 Ao implementar o ticket 23 ([.scratch/the-orb-cidade-viva/issues/23-xp-de-commits-e-tres-escalas.md](../.scratch/the-orb-cidade-viva/issues/23-xp-de-commits-e-tres-escalas.md)),
-oito pontos **não estavam escritos** e foram escolhidos de forma provisória (regra P2). Todos estão cobertos por teste (o mundo, o Probe com um repositório git de verdade,
+nove pontos **não estavam escritos** e foram escolhidos de forma provisória (regra P2). Todos estão cobertos por teste (o mundo, o Probe com um repositório git de verdade,
 o agendador e as amostras dos providers); o painel e o cartão foram conferidos na tela com um snapshot real do mundo feito de eventos sintéticos. O Lucas responde por número.
 
 | Id | Pergunta | Proposta (já aplicada, provisória) |
@@ -633,3 +633,4 @@ o agendador e as amostras dos providers); o painel e o cartão foram conferidos 
 | Q-T23-6 | Quais realms e sessões entram nos níveis do Realm e de Mankind? | Realm = a XP confirmada de **todos** os Alter Egos do realm, também os do Histórico; Mankind = a soma dos realms que a cidade mostra (os escondidos ficam de fora). *k* do Realm = 500 e de Mankind = 2.500 (provisórios até o ticket 25). O placar mostra sempre os quatro providers, mesmo com 0 |
 | Q-T23-7 | Quando o Probe pergunta ao git? | Uma vez por minuto por realm, **só** em realm com commit a conferir (provisório, ou confirmado ainda na janela de 30 dias); o evento só sai quando a resposta muda ou, igual, uma vez por dia (para o prazo ser olhado). Sem repositório, nada é dito (nunca "o commit não existe") |
 | Q-T23-8 | Que painel é o da Progressão? | O botão **"Mankind · nível N"** com a barra e o total, na barra de cima, abre o painel: nível de Mankind, placar por provider e o extrato (as 200 entradas mais novas do que o Orb viu, de todas as sessões dos realms visíveis). As conquistas (V-HUD-14) ficam no ticket 24 |
+| Q-T23-9 | Como se reconhece um `git commit` nos providers que não dizem isso? | Pelo texto do comando, **só no começo de um comando** (depois de `&&`, `;`, `|`, de um invólucro de shell, de variáveis de ambiente e de opções do git como `-C` e `-c`, com ou sem aspas): `grep git commit`, `rg "git commit"` e `echo git commit` **não** são commits; `--dry-run` como opção não conta; uma linha com `||` não conta, porque o `ok` dela pode vir de um `|| true` que esconde a falha. Só vale se o comando deu certo (o Claude ignora o texto e usa o `gitOperation`, D-090) |
