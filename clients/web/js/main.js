@@ -6,7 +6,7 @@ import { Avatar } from "./avatar.js";
 import { renderHistory, renderOverview, renderProgress, renderRealmList, renderSettings, renderTopbar, summarize } from "./hud.js";
 import { InnerWorld } from "./innerworld.js";
 import { connectWorld } from "./net.js";
-import { PROVIDERS, isAsleep } from "./providers.js";
+import { PROVIDERS } from "./providers.js";
 
 const stage = new Stage(document.getElementById("scene"));
 const inner = new InnerWorld();
@@ -18,6 +18,7 @@ let selectedRealm = null;
 const realmHistory = new Map();  // realm -> sessões que já saíram da sala (Histórico do realm)
 let roomCount = -1;              // quantas sessões o realm selecionado tem na sala: se mudar, o Histórico muda
 const NEAR = 120;                 // distância da câmera em que os detalhes aparecem
+const LEAVE_WINDOW_MS = 30000;    // o subagente só caminha até o líder se terminou há menos que isto (não ao abrir a página depois)
 
 // ---------------------------------------------------------------------------------------------
 // A cidade retangular (R32): o mundo calcula bairros, lotes, deslocamento e giro; aqui só se posiciona o que ele mandou.
@@ -49,13 +50,8 @@ function syncWorld(raw) {
   for (const realm of world.realms) {
     const b = buildings.get(realm.id);
     b.setData(realm, summarize(realm));
-    // Quem está em cada área (líderes e subagentes juntos), para distribuir os lugares.
-    const groups = new Map();
-    const place = (key, area) => { if (!groups.has(area)) groups.set(area, []); groups.get(area).push(key); };
     for (const ego of realm.alter_egos) {
       egoIndex.set(ego.id, { ego, realm });
-      const asleep = isAsleep(ego);
-      place(ego.id, asleep ? "__dorm" : ego.area || "__lobby");
       let a = avatars.get(ego.id);
       if (!a) avatars.set(ego.id, (a = new Avatar(stage.scene, { id: ego.id, providerName: ego.provider })));
       a.setEgo(ego);
@@ -64,9 +60,15 @@ function syncWorld(raw) {
       inner.updateEgo(ego);
       if (ego.ended) continue;       // sessão encerrada: a Team também terminou
       // Líder dormindo não esconde a Team: o subagente "sem sinal" fica cinza no lugar (R7), não some.
-      for (const sub of ego.team.filter((s) => s.active)) {
+      for (const sub of ego.team) {
         const key = `${ego.id}/${sub.id}`;
-        place(key, sub.area || "__lobby");
+        if (!sub.active) {
+          // O subagente que terminou (R51): se já estava em cena, caminha até o líder e só então sai; sem o sinal de fim vale o cinza (R7).
+          const mine = avatars.get(key);
+          const recent = sub.ended_at && Date.parse(world.generated_at) - Date.parse(sub.ended_at) < LEAVE_WINDOW_MS;
+          if (mine && recent) { mine.leaveTo(avatars.get(ego.id).group.position); alive.add(key); }
+          continue;
+        }
         let s = avatars.get(key);
         if (!s) avatars.set(key, (s = new Avatar(stage.scene, { id: key, providerName: ego.provider, sub: true })));
         s.setSub(sub);
@@ -74,9 +76,13 @@ function syncWorld(raw) {
         alive.add(key);
       }
     }
-    for (const [area, keys] of groups) {
-      keys.sort().forEach((key, i) => avatars.get(key).moveTo(b.slot(area, i, keys.length)));
+    // A sala cheia (R33): o mundo diz quem aparece em cada lugar (até 8) e quantos ficaram de fora; o resto some de cena e vira o "+N".
+    const shown = new Set();
+    for (const [place, info] of Object.entries(realm.room)) {
+      info.shown.forEach((key, i) => { shown.add(key); avatars.get(key)?.moveTo(b.slot(place, i, info.shown.length)); });
+      b.setOverflow(place, info.more);
     }
+    for (const [key, a] of avatars) if (a.realm === realm.id && !a.leaving) a.setHidden(!shown.has(key));
   }
   for (const [id, a] of avatars) if (!alive.has(id)) { a.dispose(); avatars.delete(id); }
 
@@ -152,12 +158,20 @@ let down = null;
 stage.renderer.domElement.addEventListener("pointerdown", (e) => (down = { x: e.clientX, y: e.clientY }));
 stage.renderer.domElement.addEventListener("pointerup", (e) => {
   if (!down || Math.hypot(e.clientX - down.x, e.clientY - down.y) > 5 || e.button !== 0) return;
-  const pickables = [...[...avatars.values()].flatMap((a) => a.pickables), ...[...buildings.values()].flatMap((b) => b.pickables)];
+  const pickables = [...[...avatars.values()].filter((a) => !a.hidden).flatMap((a) => a.pickables), ...[...buildings.values()].flatMap((b) => b.pickables)];
   const hit = stage.pick(e.clientX, e.clientY, pickables);
   if (!hit) return;
   const avatarId = hit.object.userData.avatarId;
   if (avatarId) openEgo(avatarId.split("/")[0]);
   else if (hit.object.userData.realmId) selectRealm(hit.object.userData.realmId);
+});
+
+// Duplo clique num personagem (R17): a câmera o segue até o Lucas mexer nela.
+stage.renderer.domElement.addEventListener("dblclick", (e) => {
+  const pickables = [...avatars.values()].filter((a) => !a.hidden).flatMap((a) => a.pickables);
+  const hit = stage.pick(e.clientX, e.clientY, pickables);
+  const avatar = hit && avatars.get(hit.object.userData.avatarId);
+  if (avatar) stage.follow(avatar.group);
 });
 
 window.addEventListener("keydown", (e) => {
@@ -235,7 +249,10 @@ stage.onFrame = (dt, t) => {
     const mine = !selectedRealm || b.id === selectedRealm;
     b.update(dt, t, near && mine, near && b.id === selectedRealm && distance < 70);
   }
-  for (const a of avatars.values()) a.update(dt, t, near && (!selectedRealm || a.realm === selectedRealm));
+  for (const [id, a] of avatars) {
+    a.update(dt, t, near && (!selectedRealm || a.realm === selectedRealm));
+    if (a.gone) { a.dispose(); avatars.delete(id); }              // o subagente que terminou chegou ao líder: sai de cena
+  }
 };
 stage.start();
 // Só o "há Xs" do overview depende do tempo que passa; dormindo e sem sinal vêm do mundo.

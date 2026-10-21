@@ -13,11 +13,11 @@ clique faz a câmera seguir um personagem.
 
 ## Critérios de aceite
 
-- [ ] Ícones neutros: erro = triângulo branco com "!" e corpo apagado; bloqueado = cadeado; sem sinal = sinal cortado. Nada em vermelho.
-- [ ] Até 8 personagens por área e um contador "+N"; o overview lista todos.
-- [ ] Com `subagent.ended`, o subagente caminha até o líder e então sai; sem o sinal, vale o cinza do ticket 01.
-- [ ] Duplo clique num personagem: a câmera o segue até o Lucas mexer nela.
-- [ ] Entradas novas em VISUAL.md conferidas (V-EGO-12, V-EGO-15, V-EGO-16).
+- [x] Ícones neutros: erro = triângulo branco com "!" e corpo apagado; bloqueado = cadeado; sem sinal = sinal cortado. Nada em vermelho.
+- [x] Até 8 personagens por área e um contador "+N"; o overview lista todos.
+- [x] Com `subagent.ended`, o subagente caminha até o líder e então sai; sem o sinal, vale o cinza do ticket 01.
+- [x] Duplo clique num personagem: a câmera o segue até o Lucas mexer nela.
+- [x] Entradas novas em VISUAL.md conferidas (V-EGO-12, V-EGO-15, V-EGO-16).
 
 ## Testes
 
@@ -33,3 +33,6 @@ Ponto de teste: o mundo (estados e contagem por área) e conferência no preview
 - Uma branch e um PR para este ticket (D-114).
 
 ## Comments
+- **Implementação (2026-10-21):** `core/room.py` (sala cheia, testada em `tests/test_room.py`, 31 casos), `ended_at` do subagente e `room` no snapshot; cliente: ícones, corpo apagado, "+N", subagente que caminha até o líder e duplo clique que segue.
+- **Verificado:** suíte inteira passou; no preview, com um snapshot real feito de eventos sintéticos: 11 numa área mostram 8 e "+3"; erro (triângulo), bloqueado (cadeado) e sem sinal (sinal cortado) sobre o líder; o subagente terminado caminha até o líder e some; o duplo clique leva a câmera ao personagem; console sem erros.
+- **Não verificado:** nenhuma sessão ou CLI real; que a câmera solta ao arrastar foi conferido só pelo código (o evento `start` dos controles), não pelo gesto na tela; as decisões Q-T13-1 a Q-T13-7 aguardam o Lucas.

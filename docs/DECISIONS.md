@@ -643,3 +643,19 @@ o agendador e as amostras dos providers); o painel e o cartão foram conferidos 
 | ~~Q-T23-7~~ D-212 | Quando o Probe pergunta ao git? | Uma vez por minuto por realm, **só** em realm com commit a conferir (provisório, ou confirmado ainda na janela de 30 dias); o evento só sai quando a resposta muda ou, igual, uma vez por dia (para o prazo ser olhado). Sem repositório, nada é dito (nunca "o commit não existe") |
 | ~~Q-T23-8~~ D-213 | Que painel é o da Progressão? | O botão **"Mankind · nível N"** com a barra e o total, na barra de cima, abre o painel: nível de Mankind, placar por provider e o extrato (as 200 entradas mais novas do que o Orb viu, de todas as sessões dos realms visíveis). As conquistas (V-HUD-14) ficam no ticket 24 |
 | ~~Q-T23-9~~ D-214 | Como se reconhece um `git commit` nos providers que não dizem isso? | Pelo texto do comando, **só no começo de um comando** (depois de `&&`, `;`, `|`, de um invólucro de shell, de variáveis de ambiente e de opções do git como `-C` e `-c`, com ou sem aspas): `grep git commit`, `rg "git commit"` e `echo git commit` **não** são commits; `--dry-run` como opção não conta; uma linha com `||` não conta, porque o `ok` dela pode vir de um `|| true` que esconde a falha. Só vale se o comando deu certo (o Claude ignora o texto e usa o `gitOperation`, D-090) |
+
+### Rodada: o que a implementação do ticket 13 decidiu por conta própria (aberta em 2026-10-21)
+
+Ao implementar o ticket 13 ([.scratch/the-orb-cidade-viva/issues/13-estados-do-personagem.md](../.scratch/the-orb-cidade-viva/issues/13-estados-do-personagem.md)),
+sete pontos **não estavam escritos** e foram escolhidos de forma provisória (regra P2). O mundo está coberto por teste (`tests/test_room.py`); a sala cheia, os ícones, o subagente que termina e o duplo clique foram
+conferidos na tela com um snapshot real do mundo feito de eventos sintéticos.
+
+| Id | Pergunta | Proposta (já aplicada, provisória) |
+|---|---|---|
+| Q-T13-1 | O teto de 8 vale só nas áreas? | **Em todo lugar**: as cinco áreas, o saguão e o dormitório têm o mesmo teto de 8 e o próprio "+N" (a sala não cresce, R33). |
+| Q-T13-2 | Quem fica visível quando passa de 8? | **Quem espera o Lucas primeiro**, depois os **líderes**, depois o **mais recente**; empate pelo id (estável). Assim o magenta nunca fica escondido. |
+| Q-T13-3 | Quem conta como personagem na sala? | O líder de toda sessão na sala e o subagente **ativo** de sessão não encerrada. O subagente terminado não ocupa lugar (só caminha, Q-T13-5). |
+| Q-T13-4 | Quais estados do líder mudam o corpo? | Erro e sem sinal: **corpo a 70% de opacidade e sem halo**; bloqueado: só o cadeado. Os ícones são brancos e neutros (R30), nunca vermelhos. |
+| Q-T13-5 | Quando o subagente terminado caminha até o líder? | Só se terminou há **menos de 30 s** pela hora do mundo e o personagem já estava em cena: ao abrir a página depois, ele não aparece só para sair. O mundo informa `ended_at`; sem o sinal vale o cinza (R7). |
+| Q-T13-6 | O que solta a câmera do personagem seguido? | **Qualquer ação do Lucas na câmera** (arrastar, girar, zoom, teclado, voo para outro alvo) ou o personagem sair de cena. Depois do voo de chegada, a câmera acompanha o passo dele sem mudar o ângulo. |
+| Q-T13-7 | O que o duplo clique alcança? | Só o personagem **visível**: quem passou do teto ("+N") não é clicável, mas segue no overview. |
