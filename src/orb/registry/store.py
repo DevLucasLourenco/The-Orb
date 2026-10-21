@@ -48,7 +48,7 @@ class LocalRegistry:
         self._rng = rng
         self._busy_seconds = _BUSY_SECONDS
         self._memory = NameBook(rng=rng)        # a cópia que atende enquanto o disco falha
-        self._xp_memory: dict[str, list[Entry]] = {}       # o extrato de cada sessão (todas as versões), a cópia que segue o disco
+        self._xp_memory: dict[str, dict[tuple[str, str, int], Entry]] = {}       # o extrato de cada sessão, a cópia que segue o disco
         self._ready = False
         try:
             self._prepare()
@@ -94,14 +94,18 @@ class LocalRegistry:
                 rows = conn.execute("SELECT ts, rule, xp, ref, evidence, version FROM xp_ledger WHERE ego = ? AND version = ? ORDER BY rowid",
                                     (ego_id, version)).fetchall()
         except _DISK_ERRORS:
-            return [e for e in self._xp_memory.get(ego_id, []) if e.version == version]
-        return [Entry(ts=ts, rule=rule, xp=xp, ref=ref, evidence=json.loads(evidence), version=v) for ts, rule, xp, ref, evidence, v in rows]
+            return [e for e in self._xp_memory.get(ego_id, {}).values() if e.version == version]
+        found: list[Entry] = []
+        for ts, rule, xp, ref, evidence, v in rows:
+            try:
+                found.append(Entry(ts=ts, rule=rule, xp=xp, ref=ref, evidence=json.loads(evidence), version=v))
+            except ValueError:                  # uma linha estragada não derruba as outras: fica de fora e o resto do extrato vale
+                continue
+        return found
 
     def record(self, ego_id: str, entry: Entry) -> None:
         """Guarda uma entrada do extrato de XP; o mesmo recibo na mesma versão nunca entra duas vezes."""
-        known = self._xp_memory.setdefault(ego_id, [])
-        if not any((e.rule, e.ref, e.version) == (entry.rule, entry.ref, entry.version) for e in known):
-            known.append(entry)
+        self._xp_memory.setdefault(ego_id, {}).setdefault((entry.rule, entry.ref, entry.version), entry)
         try:
             if not self._ready:
                 self._prepare()

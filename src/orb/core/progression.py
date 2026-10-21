@@ -59,9 +59,9 @@ def _when(ts: str) -> datetime | None:
     """A hora do evento em UTC; sem hora legível ou sem fuso não se afirma nada (R12): sem XP."""
     try:
         moment = datetime.fromisoformat(ts)
-    except (TypeError, ValueError):
+        return moment.astimezone(UTC) if moment.utcoffset() is not None else None
+    except (TypeError, ValueError, OverflowError):          # o Protocol só exige uma string: um ano 0001 com fuso estoura a conversão
         return None
-    return moment.astimezone(UTC) if moment.utcoffset() is not None else None
 
 
 class Ledger:
@@ -72,6 +72,7 @@ class Ledger:
         self.table = table
         self.entries: list[Entry] = [e for e in entries if e.version == table.version]
         self._seen = {(e.rule, e.ref) for e in self.entries}
+        self.total = sum(e.xp for e in self.entries)            # a soma corrente: o snapshot a pede a cada leitura
         self._open_failure: str | None = None                   # o primeiro teste vermelho que ainda não foi consertado
         self._last_test: datetime | None = None
         self._day_xp: dict[tuple[str, Any], int] = {}
@@ -83,10 +84,6 @@ class Ledger:
             self._day_xp[day] = self._day_xp.get(day, 0) + entry.xp
             if entry.rule == X_TEST and (self._last_test is None or when > self._last_test):
                 self._last_test = when
-
-    @property
-    def total(self) -> int:
-        return sum(entry.xp for entry in self.entries)
 
     def snapshot(self) -> dict[str, int]:
         """O que os clientes veem: o total, o nível e onde a barra começa e termina."""
@@ -105,7 +102,7 @@ class Ledger:
         if kind == "subagent.ended" and event.get("agent") and signal.get("outcome") in (None, "completed"):
             return self._award(event, when, X_DELEG, str(event["agent"]), self.table.deleg_xp, {"agent": event["agent"]},
                                cap=self.table.deleg_cap)
-        if kind == "activity" and signal["activity"] in self.table.craft_activities:
+        if kind == "activity" and signal.get("activity") in self.table.craft_activities:
             window = int(when.timestamp()) // self.table.craft_window_seconds
             start = datetime.fromtimestamp(window * self.table.craft_window_seconds, UTC).isoformat().replace("+00:00", "Z")
             return self._award(event, when, X_CRAFT, str(window), self.table.craft_xp, {"window": start, "event": event["id"]},
@@ -115,7 +112,7 @@ class Ledger:
     def _tests(self, event: Event, signal: dict[str, Any], when: datetime) -> list[Entry]:
         """Um teste que falha abre uma falha; um que passa rende X-TEST (no máximo um a cada `test_gap_seconds`) e, se havia uma falha
         aberta, também X-FIX, uma vez por falha consertada."""
-        if not signal["ok"]:
+        if not signal.get("ok"):
             if self._open_failure is None:
                 self._open_failure = event["id"]
             return []
@@ -127,7 +124,7 @@ class Ledger:
         if spaced:
             earned += self._award(event, when, X_TEST, event["id"], self.table.test_xp, evidence)
             if earned:
-                self._last_test = when
+                self._last_test = when if self._last_test is None else max(self._last_test, when)      # um evento atrasado não recua o limite
         if self._open_failure is not None:
             earned += self._award(event, when, X_FIX, event["id"], self.table.fix_xp, {"failed": self._open_failure, "passed": event["id"]})
             self._open_failure = None
@@ -143,6 +140,7 @@ class Ledger:
             return []
         entry = Entry(ts=event["ts"], rule=rule, xp=xp, ref=ref, evidence=evidence, version=self.table.version)
         self.entries.append(entry)
+        self.total += xp
         self._seen.add((rule, ref))
         self._day_xp[day] = self._day_xp.get(day, 0) + xp
         return [entry]

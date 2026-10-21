@@ -120,6 +120,18 @@ def test_the_fix_is_not_held_back_by_the_ten_minute_test_limit():
     assert rules_of(world) == ["X-TEST", "X-FIX"]                           # o verde de 2 min não rende X-TEST de novo, mas conserta
 
 
+def test_a_late_event_does_not_move_the_ten_minute_limit_back():
+    world = run(ran(20, True), ran(5, True), ran(26, True))
+    assert "10:26" not in [e.ts[11:16] for e in entries(world)]             # 6 min depois do teste mais recente já pago: ainda não vale
+
+
+@pytest.mark.parametrize("ts", ["2026-10-07T10:00:00", "isto não é uma hora", "0001-01-01T00:00:00+05:00", ""])
+def test_an_event_without_a_readable_time_with_a_zone_earns_nothing_and_breaks_nothing(ts):
+    event = ran(0, True)
+    event["ts"] = ts
+    assert Ledger().observe(event) == []
+
+
 # --- X-DELEG: subagente concluído (para o líder) -------------------------------------------------------
 
 def test_a_finished_subagent_earns_3_xp_for_the_leader():
@@ -276,6 +288,26 @@ def test_the_registry_keeps_the_extract_with_date_rule_receipt_and_version_only(
     assert "exit_code" in row[5] and "claude:s1:t1" in row[5]
 
 
+def test_a_damaged_row_of_the_extract_is_left_out_and_the_rest_still_counts(tmp_path):
+    registry = LocalRegistry(tmp_path)
+    run(ran(0, True, key="a"), ran(20, True, key="b"), source=registry)
+    conn = sqlite3.connect(tmp_path / REGISTRY_FILE)
+    try:
+        conn.execute("UPDATE xp_ledger SET evidence = 'nao e json' WHERE ref = 'claude:s1:a'")
+        conn.commit()
+    finally:
+        conn.close()
+    assert [e.ref for e in LocalRegistry(tmp_path).entries_of(EGO, 1)] == ["claude:s1:b"]
+
+
+def test_the_registry_never_keeps_the_same_receipt_twice(tmp_path):
+    registry = LocalRegistry(tmp_path)
+    entry = Entry(ts="2026-10-07T10:00:00Z", rule="X-TEST", xp=5, ref="e1", evidence={"event": "e1"}, version=1)
+    registry.record(EGO, entry)
+    registry.record(EGO, replace(entry, xp=99))
+    assert [e.xp for e in registry.entries_of(EGO, 1)] == [5]
+
+
 def test_a_broken_registry_does_not_stop_the_xp_which_goes_on_in_memory(tmp_path):
     (tmp_path / REGISTRY_FILE).write_bytes(b"isto nao e um banco sqlite " * 40)
     registry = LocalRegistry(tmp_path)
@@ -284,7 +316,7 @@ def test_a_broken_registry_does_not_stop_the_xp_which_goes_on_in_memory(tmp_path
     assert [e.rule for e in registry.entries_of(EGO, 1)] == ["X-TEST", "X-DELEG"]          # a cópia em memória segue o que foi ganho
 
 
-def test_the_ledger_is_pure_it_takes_the_table_and_the_old_entries_and_nothing_else():
+def test_the_ledger_does_not_pay_a_receipt_that_is_already_in_the_extract():
     entry = Entry(ts="2026-10-07T10:00:00Z", rule="X-TEST", xp=5, ref="e1", evidence={"event": "e1"}, version=1)
     ledger = Ledger(rules.XP_TABLE, [entry])
     assert ledger.total == 5 and ledger.entries == [entry]
