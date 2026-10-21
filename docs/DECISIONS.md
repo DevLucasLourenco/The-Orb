@@ -5,7 +5,7 @@
 > [ARCHITECTURE.md](ARCHITECTURE.md), [adr/](adr/)…). Decisões difíceis de reverter também têm um ADR.
 > Nada é apagado: uma decisão revista fica listada, com a que a substituiu.
 
-Última atualização: 2026-10-15
+Última atualização: 2026-10-21
 
 Quem: **Lucas** = decidido por ele · **Delegada** = o Lucas deixou a definição com o Claude; vale até
 ele revisar, e a proposta está escrita no documento do assunto.
@@ -206,6 +206,12 @@ ele revisar, e a proposta está escrita no documento do assunto.
 | D-189 | 2026-10-15 | **O azul de repouso da sala fica** (arestas e anel do lobby, `#7cc4ff`): é o tema da cidade, não uma cor com significado; só o estado de espera muda para magenta. Tornar o tema neutro, se vier, é outro ticket | Lucas | qt05-2, R20c |
 | D-190 | 2026-10-15 | **O desenho das áreas no piso fica como implementado:** piso `#2a3550` (55% opaco) igual nas cinco, aresta `#aebbd4` (50%), padrão a 16% no piso todo e o ícone no fundo da área. Valores na VISUAL §5 | Lucas | qt05-3, R20c, V-REALM-8 |
 | D-191 | 2026-10-15 | **O magenta vale também no painel e nos rótulos, com cor fixa:** contador, selo, cartão, chip, aviso, linha de pedido e rótulos do personagem e do prédio usam `#ff2bd6`; só o mundo 3D pulsa; o texto do selo é escuro (`#1a0014`) | Lucas | qt05-4, R20c |
+| D-192 | 2026-10-21 | **Os papéis são desenvolvedor, testador, pesquisador e revisor**, um por área de trabalho (Development Center, Testing Lab, Research Center, Code Review), numa tabela em `rules.py` (`ROLE_BY_AREA`) | Lucas | qt12-1, R40, D-069 |
+| D-193 | 2026-10-21 | **A contagem do papel usa só as atividades do líder** que caem numa das quatro áreas (EXECUTING conta como Development, como a área já faz). Pensar, delegar e bloquear não têm área, concluir cai na Task Board, e o trabalho dos subagentes não entra (cada um aparece na árvore) | Lucas | qt12-2, R40, D-096 |
+| D-194 | 2026-10-21 | **Com empate no topo, ou sem nenhuma atividade contada, não há papel** (R12: nada inventado); as barras seguem aparecendo quando há contagem | Lucas | qt12-3, R40, R12 |
+| D-195 | 2026-10-21 | **Os atributos são quatro barras neutras** (Development, Testing, Research, Review, nesta ordem) com a parcela de cada área no total contado e a porcentagem; o total aparece ao passar o mouse. Não é pontuação | Lucas | qt12-4, D-096, V-HUD-16 |
+| D-196 | 2026-10-21 | **A árvore da Team sai do `parent` de cada subagente:** sem pai, com pai inexistente, que não é um id ou que é ele mesmo, o subagente é filho do líder; um laço de pais não trava. O mundo manda `team` em ordem de árvore com `depth`; o overview mostra os ativos e os pais deles, e concluídos sem filho ativo saem da lista | Lucas | qt12-5, R57, D-116 |
+| D-197 | 2026-10-21 | **Papel e barras só contam o que o Orb viu chegar:** os leitores começam do fim dos arquivos que já existiam (D-087), então uma sessão aberta antes do Orb começa a contar quando ele a vê. Ler o passado fica para outro ticket | Lucas | qt12-6, D-184, D-087 |
 
 ## Decisões revistas
 
@@ -567,3 +573,19 @@ escolhidos de forma provisória (regra P2). O cliente só desenha: a conferênci
 | ~~Q-T05-2~~ D-189 | As arestas e o anel de repouso da sala, hoje azuis (`#7cc4ff`), entram no orçamento de cores? | **Ficam como estão**: são o tema azul da cidade (céu, chão e sala) e o azul só muda para magenta quando alguém espera. O orçamento da R20c vale para o que tem significado; tornar o resto neutro é mudar o tema inteiro |
 | ~~Q-T05-3~~ D-190 | Como as áreas aparecem no piso do prédio? | Piso cinza-azulado igual nas cinco (`#2a3550`, 55% opaco), aresta neutra (`#aebbd4`, 50%), o padrão bem fraco (16%) no piso todo e o ícone (traço claro) no fundo da área, longe do nome e de onde o personagem para. Valores em VISUAL §5 |
 | ~~Q-T05-4~~ D-191 | O magenta também vale no painel e nos rótulos? | **Sim**: o contador "esperando você", o selo, o cartão, o chip, o aviso, a linha de pedido da linha do tempo e o rótulo do personagem e do prédio usam o mesmo `#ff2bd6`; o texto sobre o selo é escuro |
+
+
+### Rodada: o que a implementação do ticket 12 decidiu por conta própria (aberta em 2026-10-15)
+
+Ao implementar o ticket 12 ([.scratch/the-orb-cidade-viva/issues/12-papel-atributos-e-arvore-da-team.md](../.scratch/the-orb-cidade-viva/issues/12-papel-atributos-e-arvore-da-team.md)),
+seis pontos **não estavam escritos** e foram escolhidos de forma provisória (regra P2). Todos estão cobertos por teste no mundo
+(`tests/test_profile.py`); o overview foi conferido na tela com um snapshot real do mundo feito de eventos sintéticos. **O Lucas confirmou as seis em 2026-10-21 (D-192 a D-197).**
+
+| Id | Pergunta | Proposta (já aplicada, provisória) |
+|---|---|---|
+| ~~Q-T12-1~~ D-192 | Que nome tem o papel de cada área? | Desenvolvimento = **desenvolvedor**, Testes = **testador**, Pesquisa = **pesquisador**, Revisão = **revisor** (os dois últimos são os exemplos da D-069). Tabela em `rules.py` (`ROLE_BY_AREA`) |
+| ~~Q-T12-2~~ D-193 | O que entra na contagem? | As atividades **do líder** que caem numa das quatro áreas (CODING e EXECUTING = Development; TESTING = Testing; READING e RESEARCHING = Research; REVIEWING = Review). Pensar, delegar e bloquear não têm área e concluir cai na Task Board, que não é área de trabalho; **o trabalho dos subagentes não entra**. EXECUTING (o shell genérico) conta como Development, como a área já faz (cada um aparece na árvore com o próprio tipo e estado) |
+| ~~Q-T12-3~~ D-194 | E se duas áreas empatam no topo? | **Nenhum papel** (a regra diz "o que mais fez" e com empate nada é "o mais"); as barras continuam aparecendo. Sem nenhuma atividade contada: sem papel e sem barras |
+| ~~Q-T12-4~~ D-195 | Como são os atributos? | A **parcela** de cada área no total contado (contagem ÷ total), em quatro barras neutras na ordem Development, Testing, Research, Review, com a porcentagem; o total aparece ao passar o mouse |
+| ~~Q-T12-5~~ D-196 | Como se monta a árvore da Team? | O `parent` de um subagente é outro subagente da mesma sessão; sem pai, com pai que não existe, ou que é ele mesmo, o subagente é filho do líder; um laço de pais não trava (quem sobra vira raiz). O mundo manda a lista `team` em **ordem de árvore** com `depth`; o overview mostra os ativos e os pais deles, e concluídos sem filho ativo saem como antes |
+| ~~Q-T12-6~~ D-197 | O papel e as barras contam o passado? | **Só o que o Orb viu chegar**: os leitores começam do fim dos arquivos que já existiam (D-087), então uma sessão aberta antes do Orb começa a contar quando ele a vê, e o papel nasce depois de algumas atividades. Ler o passado fica fora deste ticket |
