@@ -172,3 +172,17 @@ def test_a_subagent_still_working_or_without_the_end_signal_has_no_end_time():
     assert sub["ended_at"] is None and sub["active"] is True
     (silent,) = ego_of(world, minutes=20)["team"]                             # 20 min sem sinal: cinza no lugar (R7), nada de fim inventado
     assert silent["no_signal"] is True and silent["ended_at"] is None
+
+
+def test_a_subagent_is_leaving_only_while_the_end_is_recent():
+    world = world_with(ev(0, {"type": "subagent.started", "kind": "Explore"}, agent="a1"), act(0, "READING", agent="a1"),
+                       ev(5, {"type": "subagent.ended", "outcome": "completed"}, agent="a1"))
+    assert ego_of(world, minutes=5.25)["team"][0]["leaving"] is True             # 15 s depois do fim: caminha até o líder (R51)
+    assert ego_of(world, minutes=6)["team"][0]["leaving"] is False                # 60 s depois: já saiu (quem abre a página agora não vê nada)
+
+
+def test_a_subagent_still_working_or_without_the_end_signal_is_never_leaving():
+    world = world_with(ev(0, {"type": "subagent.started", "kind": "Explore"}, agent="a1"), act(0, "READING", agent="a1"))
+    assert ego_of(world, minutes=1)["team"][0]["leaving"] is False
+    assert ego_of(world, minutes=20)["team"][0]["leaving"] is False               # sem o sinal do fim vale o cinza (R7)
+    assert world.snapshot()["realms"][0]["alter_egos"][0]["team"][0]["leaving"] is False   # sem `now`, nada que dependa do tempo é afirmado

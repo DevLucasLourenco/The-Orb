@@ -52,7 +52,7 @@ const lockSprite = () => iconSprite((g) => {
   g.fillStyle = "#0b1020"; g.beginPath(); g.arc(32, 41, 3.8, 0, Math.PI * 2); g.fill(); g.fillRect(30, 41, 4, 9);
 });
 
-// Os estados do líder que ganham um ícone sobre a cabeça, e quais deixam o corpo apagado (erro e sem sinal).
+// Os estados do líder que deixam o corpo apagado (erro e sem sinal); os ícones de cada estado saem de `update`.
 const DIM_STATES = new Set(["ERROR", "NO_SIGNAL"]);
 const LEAVE_REACH = 0.7;      // o subagente que terminou chega ao líder quando está a esta distância dele (R51)
 
@@ -218,7 +218,7 @@ export class Avatar {
     this.errorIcon.visible = leader && this.state === "ERROR";
     this.lockIcon.visible = leader && this.state === "BLOCKED";
     for (const icon of [this.lostSignal, this.errorIcon, this.lockIcon]) if (icon.visible) icon.position.y = 3.3 + Math.sin(t * 2) * 0.06;
-    this.alert.visible = this.waiting && this.state !== "NO_SIGNAL";
+    this.alert.visible = this.waiting;                                  // o magenta de quem espera o Lucas nunca some (R30)
     if (this.waiting) {
       this.alert.rotation.y += dt * 2.5;
       this.alert.material.opacity = 0.6 + 0.4 * (0.5 + 0.5 * Math.sin(t * 3.2));      // pulsa no mesmo ritmo do feixe e do anel

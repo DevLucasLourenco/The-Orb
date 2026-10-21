@@ -113,7 +113,7 @@ Todo adapter expõe a mesma forma (`orb.adapters._shared.base`):
   (`{lugar: {shown: [chaves], more: n}}`, os lugares são as cinco áreas, `__lobby` e `__dorm`; a chave do subagente é
   `"<ego>/<subagente>"`), calculado por `room.occupancy` só com quem está na sala; o teto de 8 por lugar e a prioridade
   (espera, depois líder, depois o mais recente) ficam em `rules.py` (`PLACE_CAP`) e em `room.py`. O subagente ganha `ended_at`
-  (a hora do `subagent.ended`; zerado se ele recomeça). O cliente só desenha: posiciona os `shown`, esconde os demais, escreve o
+  (a hora do `subagent.ended`; zerado se ele recomeça) e `leaving` (terminou há menos de 30 s, `SUBAGENT_LEAVE_WINDOW_SECONDS`). O cliente só desenha: posiciona os `shown`, esconde os demais, escreve o
   "+N" e leva o subagente terminado até o líder.
 - **Decidido (D-085):** o Core guarda também estado **por realm** (métricas, alterações locais,
   Weather) e **do mundo** (limites da conta), vindo de eventos com `alter_ego: null` (protocolo 0.3).

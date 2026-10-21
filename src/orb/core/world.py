@@ -57,7 +57,7 @@ class Subagent:
     target: str | None = None
     active: bool = True
     outcome: str | None = None
-    ended_at: str | None = None      # a hora do `subagent.ended` (R51): o cliente o leva até o líder antes de tirá-lo de cena
+    ended_at: str | None = None      # a hora do `subagent.ended` (R51); com ela o snapshot diz se ele ainda está `leaving`
     last_action: str | None = None
     last_ts: str | None = None
 
@@ -69,6 +69,11 @@ class Subagent:
     def without_signal(self, now: datetime | None) -> bool:
         return rules.subagent_without_signal(active=self.active, idle_seconds=_idle_seconds(self.last_ts, now))
 
+    def leaving(self, now: datetime | None) -> bool:
+        """Terminou há pouco (R51): é hora de caminhar até o líder. Sem `now`, nada que dependa do tempo é afirmado."""
+        since_end = _idle_seconds(self.ended_at, now)
+        return not self.active and since_end is not None and since_end < rules.SUBAGENT_LEAVE_WINDOW_SECONDS
+
     def snapshot(self, now: datetime | None = None) -> dict[str, Any]:
         base = self.base if self.active else "COMPLETED"
         no_signal = self.without_signal(now)
@@ -77,7 +82,7 @@ class Subagent:
         return {"id": self.id, "kind": self.kind, "parent": self.parent,
                 "state": "NO_SIGNAL" if no_signal else base, "area": rules.area_for(base),
                 "target": self.target, "active": self.active, "no_signal": no_signal,
-                "outcome": self.outcome, "ended_at": self.ended_at, "last_action": self.last_action, "last_ts": self.last_ts}
+                "outcome": self.outcome, "ended_at": self.ended_at, "leaving": self.leaving(now), "last_action": self.last_action, "last_ts": self.last_ts}
 
 
 @dataclass

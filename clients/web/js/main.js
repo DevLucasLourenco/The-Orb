@@ -18,7 +18,6 @@ let selectedRealm = null;
 const realmHistory = new Map();  // realm -> sessões que já saíram da sala (Histórico do realm)
 let roomCount = -1;              // quantas sessões o realm selecionado tem na sala: se mudar, o Histórico muda
 const NEAR = 120;                 // distância da câmera em que os detalhes aparecem
-const LEAVE_WINDOW_MS = 30000;    // o subagente só caminha até o líder se terminou há menos que isto (não ao abrir a página depois)
 
 // ---------------------------------------------------------------------------------------------
 // A cidade retangular (R32): o mundo calcula bairros, lotes, deslocamento e giro; aqui só se posiciona o que ele mandou.
@@ -65,8 +64,8 @@ function syncWorld(raw) {
         if (!sub.active) {
           // O subagente que terminou (R51): se já estava em cena, caminha até o líder e só então sai; sem o sinal de fim vale o cinza (R7).
           const mine = avatars.get(key);
-          const recent = sub.ended_at && Date.parse(world.generated_at) - Date.parse(sub.ended_at) < LEAVE_WINDOW_MS;
-          if (mine && recent) { mine.leaveTo(avatars.get(ego.id).group.position); alive.add(key); }
+          const leader = avatars.get(ego.id);
+          if (mine && leader && sub.leaving && !mine.hidden) { mine.leaveTo(leader.group.position); alive.add(key); }
           continue;
         }
         let s = avatars.get(key);

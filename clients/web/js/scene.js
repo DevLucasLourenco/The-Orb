@@ -153,6 +153,7 @@ export class Stage {
 
   // Voa até um ponto, mantendo o ângulo horizontal atual da câmera.
   flyTo(target, distance, elevation = 0.82) {
+    this.following = null;                                    // ir a outro alvo solta o personagem seguido (R17)
     const azimuth = Math.atan2(this.camera.position.x - this.controls.target.x, this.camera.position.z - this.controls.target.z);
     const to = new THREE.Vector3(
       target.x + Math.sin(azimuth) * Math.cos(elevation) * distance,
@@ -222,7 +223,7 @@ export class Stage {
         if (k >= 1) this.flight = null;
       }
       if (this.following) {
-        if (!this.following.parent) this.following = null;
+        if (!this.following.parent || !this.following.visible) this.following = null;      // saiu de cena ou passou do teto da sala
         else if (!this.flight) {                      // depois do voo até ele, a câmera acompanha o passo dele sem mudar o ângulo
           const p = this.following.position;
           const step = new THREE.Vector3(p.x - this.controls.target.x, p.y + 1.5 - this.controls.target.y, p.z - this.controls.target.z)
