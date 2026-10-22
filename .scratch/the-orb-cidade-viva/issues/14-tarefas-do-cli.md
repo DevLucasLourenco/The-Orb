@@ -1,6 +1,6 @@
 # 14: Tarefas do CLI
 
-Status: ready-for-agent
+Status: concluído (2026-10-22)
 Blocked by: 09
 Origem: R50, R49; D-093, D-097
 Spec: [../spec.md](../spec.md)
