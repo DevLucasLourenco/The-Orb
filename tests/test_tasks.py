@@ -72,9 +72,10 @@ def test_the_signal_counts_every_known_status_and_keeps_the_list_order():
     assert validate(ev(0, signal)) is None
 
 
-def test_statuses_are_named_the_way_each_provider_does_and_unknown_ones_are_not_counted():
-    signal = tasks_signal([("a", "inProgress"), ("b", "cancelled"), ("c", "deleted"), ("d", "algo novo"), ("e", None), ("f", "completed")])
-    assert (signal["done"], signal["total"]) == (1, 2)                                 # só o que o provider disse com um status conhecido
+def test_only_the_protocol_statuses_are_counted_and_unknown_ones_are_not():
+    signal = tasks_signal([("a", "in_progress"), ("b", "cancelled"), ("c", "deleted"), ("d", "algo novo"), ("e", None), ("f", "completed"),
+                           ("g", ["lista"]), ("h", "inProgress"), "par torto", ("i", "pending", "sobra")])
+    assert (signal["done"], signal["total"]) == (1, 2)                                 # só o que o provider disse com um status do protocolo
     assert [i["status"] for i in signal["items"]] == ["in_progress", "completed"]
 
 
@@ -191,3 +192,9 @@ def test_the_world_snapshot_is_json_ready():
     import json
     world = world_with(tasks(1, 2, [item("a", "completed"), item("b")]))
     json.dumps(world.snapshot(T0 + timedelta(minutes=1)))
+
+
+def test_the_task_board_more_counts_the_completed_tasks_the_signal_did_not_list():
+    world = world_with(tasks(40, MAX_TASKS + 60, [item(f"feita {i}", "completed") for i in range(10)]))      # 40 feitas, só 10 listadas
+    board = realm_of(world)["tasks"]["board"]
+    assert len(board["items"]) == rules.TASK_BOARD_MAX and board["more"] == 40 - rules.TASK_BOARD_MAX

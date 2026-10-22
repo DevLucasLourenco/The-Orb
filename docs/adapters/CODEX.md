@@ -220,4 +220,4 @@ Só estrutura e contagens, nos 12 rollouts mais recentes (176 linhas `agent_mess
 
 **Rollouts (nível 0): não implementado.** Nenhuma das 35 sessões recentes nem dos rollouts desta máquina tem `update_plan` ou plano (`function_call`: só `followup_task`, `wait`, `spawn_agent`...; `custom_tool_call`: só `exec`; itens `item_completed` sem `Plan`). A ferramenta `update_plan` emite `EventMsg::PlanUpdate` (código-fonte do Codex), mas não há evidência de que o rollout o grave. Sem exemplo real, o leitor de rollout não inventa.
 
-**Confiança:** alta para o app-server (é o esquema); nenhuma para os rollouts.
+**Confiança:** média para o app-server (é o esquema 0.163.0, mas nenhum `turn/plan/updated` foi visto ao vivo); nenhuma para os rollouts.

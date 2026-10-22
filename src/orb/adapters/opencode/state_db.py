@@ -19,8 +19,7 @@ from pathlib import Path
 from typing import Any
 
 from ...protocol import Event
-from .._shared import EventFactory, RealmOf, connect_readonly, exit_code_of, result_signal, single_realm, table_columns
-from .._shared.tasks import native_pairs, tasks_signal
+from .._shared import EventFactory, RealmOf, connect_readonly, exit_code_of, result_signal, single_realm, table_columns, todos_signal
 from . import mapping
 
 SOURCE = "opencode/db"
@@ -69,8 +68,7 @@ def _task_list(name: str, state: dict[str, Any]) -> dict[str, Any] | None:
     não é uma lista de tarefas."""
     if name.lower() != mapping.TASK_LIST_TOOL or state.get("status") != "completed":
         return None
-    tool_input = state.get("input")
-    return tasks_signal(native_pairs(tool_input.get("todos"), title="content")) if isinstance(tool_input, dict) else None
+    return todos_signal(state.get("input"))
 
 
 class OpencodeDbReader:
@@ -227,7 +225,7 @@ class OpencodeDbReader:
                                                         "text": ("[erro] " if state.get("status") == "error" else "") + text},
                                     signal=_command_result(name, state)))
                     tasks = _task_list(name, state) if agent is None else None
-                    if tasks is not None and self._once(mid, f"{index}:tasks"):
+                    if tasks is not None:
                         out.append(make(f"{key}:tasks", ts, f"{kind}:tool_tasks", {"name": name, "status": state.get("status")},
                                         signal=tasks))
             elif completed and btype in ("text", "reasoning") and block.get("text") and self._once(mid, str(index)):

@@ -27,9 +27,11 @@ const ANTENNA_H = 22;
 // O céu sobre o prédio (Weather, R42, VISUAL.md V-REALM-16): céu limpo = uma lua branca; chuva = uma nuvem cinza com chuva. Só tons neutros,
 // fora do orçamento de cores. O mundo diz qual dos dois (ou nenhum); o cliente só desenha.
 const SKY_LABEL = { clear: "céu limpo", rain: "chuva" };
-const openTasksText = (open) => (open ? `${open} ${open === 1 ? "tarefa aberta" : "tarefas abertas"}` : "tarefas: todas feitas");
 const RAIN_STREAKS = 36;
 const RAIN_DEPTH = 12;
+
+const openTasksText = (open) => (open ? `${open} ${open === 1 ? "tarefa aberta" : "tarefas abertas"}` : "tarefas: todas feitas");       // R50, D-097
+const BOARD_HEIGHT = 2.6;        // o quadro do Task Board flutua a esta altura sobre a área
 
 // Áreas do Environment no piso do quartinho (x, z, largura, profundidade). +z = frente. Sem cor própria (R20c, D-187): o piso é neutro e
 // cada área se identifica pelo ícone, pelo nome e por um padrão (areaicons.js).
@@ -380,7 +382,7 @@ export class RealmBuilding {
   _board() {
     this.boardEl = el("div", "lbl-board");
     this.boardLabel = new CSS2DObject(this.boardEl);
-    this.boardLabel.position.set(AREAS["Task Board"].x, 2.6, AREAS["Task Board"].z);
+    this.boardLabel.position.set(AREAS["Task Board"].x, BOARD_HEIGHT, AREAS["Task Board"].z);
     this.boardLabel.visible = false;
     this.boardCount = 0;
     this.room.add(this.boardLabel);
@@ -388,6 +390,9 @@ export class RealmBuilding {
 
   _setBoard(tasks) {
     const board = tasks ? tasks.board : null;
+    const key = JSON.stringify(board);
+    if (key === this.boardKey) return;           // o quadro só se refaz quando as tarefas concluídas mudam
+    this.boardKey = key;
     this.boardCount = board ? board.items.length : 0;
     this.boardEl.replaceChildren(...(board ? board.items.map((item) => el("div", "t", `✓ ${item.content}`)) : []),
                                  ...(board && board.more ? [el("div", "more", `+${board.more}`)] : []));

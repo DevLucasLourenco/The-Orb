@@ -31,4 +31,4 @@ def realm_summary(egos: Iterable[dict[str, Any]]) -> dict[str, Any] | None:
                 for ego in sorted(listed, key=lambda e: (e.get("last_ts") or "", e["id"]), reverse=True)
                 for entry in ego["tasks"]["items"] if entry["status"] == "completed"]
     return {"open": total - done, "done": done, "total": total, "sessions": len(listed),
-            "board": {"items": finished[:rules.TASK_BOARD_MAX], "more": max(0, len(finished) - rules.TASK_BOARD_MAX)}}
+            "board": {"items": finished[:rules.TASK_BOARD_MAX], "more": max(0, done - rules.TASK_BOARD_MAX)}}      # `done` conta também as que o sinal não listou

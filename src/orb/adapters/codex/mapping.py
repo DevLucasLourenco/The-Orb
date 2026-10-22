@@ -9,7 +9,7 @@ from __future__ import annotations
 import json
 from typing import Any
 
-from .._shared import Capabilities, classify_command, exit_code_of, result_signal
+from .._shared import Capabilities, classify_command, exit_code_of, native_pairs, result_signal
 
 PROVIDER = "codex"
 
@@ -50,6 +50,17 @@ STREAMING_SUFFIXES: tuple[str, ...] = ("/delta", "/outputDelta", "/summaryTextDe
 
 def is_streaming(method: str) -> bool:
     return method.endswith(STREAMING_SUFFIXES)
+
+
+# O plano do turno (R50): `turn/plan/updated` traz `plan` = [{step, status}], com `status` em `pending`, `inProgress` ou `completed` (esquema oficial).
+PLAN_UPDATED = "turn/plan/updated"
+PLAN_STATUS: dict[str, str] = {"pending": "pending", "inProgress": "in_progress", "completed": "completed"}
+
+
+def plan_pairs(plan: Any) -> list[tuple[Any, Any]] | None:
+    """O plano como pares (título, estado do protocolo); estado que o esquema não tem fica de fora da conta."""
+    pairs = native_pairs(plan, title="step")
+    return None if pairs is None else [(step, PLAN_STATUS.get(status) if isinstance(status, str) else None) for step, status in pairs]
 
 
 def command_activity(item: dict[str, Any]) -> str:

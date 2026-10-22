@@ -1,6 +1,6 @@
 """A lista de tarefas do próprio CLI -> o sinal `tasks.updated` (R50, D-093). Só traduz o que o provider gravou: nada é estimado.
 
-Cada provider escreve o estado de uma tarefa a seu modo (`in_progress`, `inProgress`...); aqui eles viram os três do protocolo. Estado
+Os providers que escrevem o estado com outro nome (`inProgress` no Codex) o traduzem no `mapping.py` deles; aqui valem os três do protocolo. Estado
 fora deles (cancelada, apagada, desconhecido) não entra na conta.
 """
 from __future__ import annotations
@@ -10,10 +10,7 @@ from typing import Any
 
 from ...protocol import MAX_TASK_TITLE, MAX_TASKS, TASK_STATUSES, clip_text
 
-STATUS_ALIASES: dict[str, str] = {
-    "pending": "pending", "in_progress": "in_progress", "inProgress": "in_progress", "completed": "completed",
-}
-assert set(STATUS_ALIASES.values()) == set(TASK_STATUSES)
+KNOWN_STATUSES = frozenset(TASK_STATUSES)
 
 
 def tasks_signal(raw: Iterable[tuple[Any, Any]] | None) -> dict[str, Any] | None:
@@ -28,8 +25,11 @@ def tasks_signal(raw: Iterable[tuple[Any, Any]] | None) -> dict[str, Any] | None
     items: list[dict[str, str]] = []
     total = done = 0
     for pair in pairs:
-        title, native = pair
-        status = STATUS_ALIASES.get(native) if isinstance(native, str) else None
+        if not isinstance(pair, tuple) or len(pair) != 2:
+            continue
+        title, status = pair
+        if not isinstance(status, str) or status not in KNOWN_STATUSES:
+            status = None
         text = title.strip() if isinstance(title, str) else ""
         if status is None or not text:
             continue
@@ -38,6 +38,11 @@ def tasks_signal(raw: Iterable[tuple[Any, Any]] | None) -> dict[str, Any] | None
         if len(items) < MAX_TASKS:
             items.append({"content": clip_text(text, MAX_TASK_TITLE), "status": status})
     return {"type": "tasks.updated", "done": done, "total": total, "items": items}
+
+
+def todos_signal(tool_input: Any) -> dict[str, Any] | None:
+    """O `input.todos` (`[{content, status}]`) de uma ferramenta que grava a lista inteira (TodoWrite do Claude, todowrite do opencode) como sinal."""
+    return tasks_signal(native_pairs(tool_input.get("todos"), title="content")) if isinstance(tool_input, dict) else None
 
 
 def native_pairs(entries: Any, *, title: str, status: str = "status") -> list[tuple[Any, Any]] | None:

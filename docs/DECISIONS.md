@@ -673,7 +673,7 @@ conferidos na tela com um snapshot real do mundo feito de eventos sintéticos. *
 Ao implementar o ticket 14 ([.scratch/the-orb-cidade-viva/issues/14-tarefas-do-cli.md](../.scratch/the-orb-cidade-viva/issues/14-tarefas-do-cli.md)),
 nove pontos **não estavam escritos** e foram escolhidos de forma provisória (regra P2). O mundo, o sinal e os leitores estão cobertos por teste (amostras sintéticas, com a
 forma que a documentação oficial e o esquema do Codex descrevem e o `todowrite` do opencode mostrou nesta máquina); a linha do cartão, o rótulo do prédio e o quadro do Task Board foram
-conferidos na tela com um snapshot real do mundo feito de eventos sintéticos.
+conferidos na tela com um snapshot do mundo feito de eventos sintéticos.
 
 | Id | Pergunta | Proposta (já aplicada, provisória) |
 |---|---|---|
@@ -682,7 +682,7 @@ conferidos na tela com um snapshot real do mundo feito de eventos sintéticos.
 | Q-T14-3 | O Codex lê o plano nos rollouts? | **Não**: só no app-server (`turn/plan/updated`, esquema oficial). Nenhum rollout desta máquina tem plano, e sem exemplo real o leitor de rollout não inventa. |
 | Q-T14-4 | A lista de um subagente vale? | **Não**: só a do líder é o progresso da sessão. O sinal de um subagente é ignorado (o Core e os leitores). |
 | Q-T14-5 | Que sessões contam para o prédio? | As da **sala** (R28a) e **não encerradas**. O rótulo diz "N tarefas abertas" (ou "tarefas: todas feitas" quando há lista e nenhuma aberta); sem nenhuma lista, nada. |
-| Q-T14-6 | O que o Task Board mostra? | Um quadro sobre a área com até **5** tarefas concluídas ("✓ título") e o "+N" das que não couberam, da sessão mais recente para a mais antiga, na ordem da lista; só de perto e com a sala acesa. |
+| Q-T14-6 | O que o Task Board mostra? (O ticket diz "da sessão"; R50, V-REALM-17 e D-093 dizem "da lista do CLI".) | Um quadro sobre a área com até **5** tarefas concluídas ("✓ título") e o "+N" das que não couberam, da sessão mais recente para a mais antiga, na ordem da lista; só de perto e com a sala acesa. |
 | Q-T14-7 | Quando o sinal sai? | **Claude:** a cada `TodoWrite`. **opencode:** quando o `todowrite` termina com sucesso, uma vez por bloco. **Codex:** a cada `turn/plan/updated`. Cada lista substitui a anterior; lista vazia apaga o progresso. |
 | Q-T14-8 | Quais os limites? | Até **100** tarefas por sinal (as primeiras; `done` e `total` contam todas) e título de **200** caracteres, cortado com reticências. |
 | Q-T14-9 | Como o progresso aparece no cartão? | Uma linha "tarefas" com a barra em branco neutro e "7 de 12"; passar o mouse lista as primeiras 5 abertas (▶ em andamento). Sem lista, a linha não existe. |

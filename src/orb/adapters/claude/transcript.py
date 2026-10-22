@@ -20,11 +20,10 @@ from .._shared import (
     JsonlFollower,
     RealmOf,
     iso_from_seconds,
-    native_pairs,
     realm_id_for,
     result_signal,
     single_realm,
-    tasks_signal,
+    todos_signal,
 )
 from . import mapping
 
@@ -357,7 +356,7 @@ class TranscriptReader:
                                 signal={"type": "activity", "activity": activity, "target": mapping.tool_target(tool_input)}))
                 tasks = self._task_list(name, tool_input) if agent is None else None
                 if tasks is not None:
-                    out.append(make(f"{ekey}#tasks", ts, "assistant/tool_use:tasks", block, signal=tasks))
+                    out.append(make(f"{ekey}#tasks", ts, "assistant/tool_use:tasks", {"name": name, "tool_use_id": block.get("id")}, signal=tasks))
             elif btype == "text" and block.get("text"):
                 out.append(make(ekey, ts, "assistant/text", block, agent=agent,
                                 inner={"role": "narration", "text": block["text"]}))
@@ -381,9 +380,7 @@ class TranscriptReader:
     @staticmethod
     def _task_list(name: str, tool_input: Any) -> dict[str, Any] | None:
         """A lista de tarefas que o `TodoWrite` gravou (R50): só a do líder, e só se `todos` é mesmo uma lista de objetos."""
-        if name != mapping.TASK_LIST_TOOL or not isinstance(tool_input, dict):
-            return None
-        return tasks_signal(native_pairs(tool_input.get("todos"), title="content"))
+        return todos_signal(tool_input) if name == mapping.TASK_LIST_TOOL else None
 
     @staticmethod
     def _command_result(session: _Session, block: dict[str, Any], entry: dict[str, Any]) -> dict[str, Any] | None:

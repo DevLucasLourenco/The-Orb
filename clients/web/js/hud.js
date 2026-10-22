@@ -90,6 +90,7 @@ function attributeBars(attributes) {
   return box;
 }
 
+const OPEN_HINT = 5;         // quantas tarefas abertas a dica da linha "tarefas" lista
 const MAX_INDENT = 6;       // uma Team muito funda não empurra o cartão para fora do painel
 
 // A trilha de uma barra de XP (V-HUD-13): a parte confirmada cheia e a provisória (commits que ainda não chegaram à principal) tracejada.
@@ -122,8 +123,8 @@ function tasksRow(tasks) {
   const bar = el("span", "bar");
   bar.append(fill);
   const box = el("div", "xp tasks");
-  const open = tasks.items.filter((item) => item.status !== "completed").slice(0, 5).map((item) => `${item.status === "in_progress" ? "▶" : "·"} ${item.content}`);
-  box.title = open.length ? `Abertas: ${open.join(" | ")}` : "Todas as tarefas da lista estão feitas";
+  const open = tasks.items.filter((item) => item.status !== "completed").slice(0, OPEN_HINT).map((item) => `${item.status === "in_progress" ? "▶" : "·"} ${item.content}`);
+  box.title = tasks.done === tasks.total ? "Todas as tarefas da lista estão feitas" : `${tasks.total - tasks.done} abertas${open.length ? `: ${open.join(" | ")}` : ""}`;
   box.append(el("span", null, "tarefas"), bar, el("span", "xp-n", `${tasks.done} de ${tasks.total}`));
   return box;
 }
