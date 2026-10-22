@@ -6,6 +6,8 @@ from .events import (
                      MAX_FOLDERS,
                      MAX_INNER_TEXT,
                      MAX_STRING,
+                     MAX_TASK_TITLE,
+                     MAX_TASKS,
                      Event,
                      clip_body,
                      clip_text,
@@ -22,6 +24,7 @@ from .vocab import (
                      PROTOCOL_VERSION,
                      SIGNAL_FIELDS,
                      SYSTEM_SIGNALS,
+                     TASK_STATUSES,
 )
 
 __all__ = [
@@ -35,9 +38,12 @@ __all__ = [
                      "MAX_FOLDERS",
                      "MAX_INNER_TEXT",
                      "MAX_STRING",
+                     "MAX_TASK_TITLE",
+                     "MAX_TASKS",
                      "PROTOCOL_VERSION",
                      "SIGNAL_FIELDS",
                      "SYSTEM_SIGNALS",
+                     "TASK_STATUSES",
                      "Event",
                      "clip_body",
                      "clip_text",

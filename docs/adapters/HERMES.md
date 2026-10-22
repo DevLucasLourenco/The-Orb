@@ -3,7 +3,7 @@
 > O que o Hermes Agent expõe e como o Orb o observa sem mexer na configuração do Lucas.
 > Código: `src/orb/adapters/hermes/` · Equivalentes: [CLAUDE.md](CLAUDE.md), [CODEX.md](CODEX.md).
 
-Última atualização: 2026-10-21 · Hermes Agent `0.20.5` (instalado nesta máquina em
+Última atualização: 2026-10-22 · Hermes Agent `0.20.5` (instalado nesta máquina em
 `%LOCALAPPDATA%\hermes`, instalação por git; mesma versão em 2026-10-13)
 
 > **Commit (ticket 23):** o comando do `terminal` que terminou com `exit_code` 0 alimenta o `command.result.commit` quando é um `git commit` (sem hash).
@@ -144,3 +144,7 @@ do Orb.
 ## command.result (ticket 19, D-084)
 
 A chamada de `terminal` (`tool_calls[].id` + `function.arguments.command`) é lembrada (até 512); a mensagem `tool` seguinte (`tool_call_id`) cujo `content` é um JSON com `exit_code` inteiro vira `command.result` no próprio evento `messages/tool` (`ok` = código 0). Conteúdo que não é esse JSON, ou resultado sem a chamada vista, não afirma nada; só se lembra a chamada que traz um `command` de verdade (`execute_code` não é shell). A fonte (`exit_code`, 262 de 262) vem da D-084 e não foi reconferida ao vivo no ticket 19.
+
+## Lista de tarefas (ticket 14, R50, D-093)
+
+**Nada a ler por enquanto.** As ferramentas chamadas nas mensagens desta máquina (`messages.tool_calls`) foram: `terminal`, `read_file`, `search_files`, `web_search`, `computer_use`, `browser_exec`, `clarify`, `web_extract`, `patch`, `process` e `write_file`; nenhuma é uma lista de tarefas, e o Orb não tem o formato de uma. Sem lista gravada pelo provider, o Hermes não mostra progresso (R50). Se uma versão futura gravar uma lista, o formato entra aqui antes do leitor.

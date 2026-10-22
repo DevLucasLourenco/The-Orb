@@ -13,7 +13,7 @@ from datetime import datetime
 from typing import Any, NamedTuple
 
 from ..protocol import Event, validate
-from . import building, city, facade, profile, room, rules
+from . import building, city, facade, profile, room, rules, tasks
 from .names import NameSource
 from .progression import Ledger, XpSource, scale
 
@@ -103,6 +103,7 @@ class AlterEgo:
     subagents: dict[str, Subagent] = field(default_factory=dict)
     usage: dict[str, float] = field(default_factory=dict)
     work: dict[str, int] = field(default_factory=dict)       # atividades do líder por área (R40): o papel e os atributos saem daqui
+    tasks: dict[str, Any] | None = None                      # a última lista de tarefas que o CLI gravou (R50); sem lista, nada
     xp: Ledger = field(default_factory=Ledger)               # o extrato e a conta de XP (R53): os subagentes rendem para o líder
     events: int = 0
     seq_gaps: int = 0
@@ -154,7 +155,7 @@ class AlterEgo:
             "waiting": [{"request": r, "action": a} for r, a in self.waiting.items()],
             "events": self.events, "seq_gaps": self.seq_gaps,
             "usage": dict(self.usage), "last_ts": self.last_ts,
-            "role": profile.role(self.work), "attributes": profile.attributes(self.work), "xp": self.xp.snapshot(),
+            "role": profile.role(self.work), "attributes": profile.attributes(self.work), "xp": self.xp.snapshot(), "tasks": self.tasks,
             "team": [{**self.subagents[agent].snapshot(now), "depth": depth}
                      for agent, depth in profile.team_order({a: sub.parent for a, sub in self.subagents.items()})],
         }
@@ -423,6 +424,8 @@ class World:
                 ego.usage["cost_usd"] = ego.usage.get("cost_usd", 0.0) + signal["cost_usd"]
         elif kind == "error":
             ego.error = str(signal["message"])
+        elif kind == "tasks.updated":
+            ego.tasks = tasks.from_signal(signal)
         elif kind == "signal.lost":
             ego.no_signal = True
         elif kind == "signal.restored":
@@ -485,6 +488,7 @@ class World:
             # "Noite" (D-059, R47): nenhuma sessão na sala. O cliente só desenha a sala do teto apagada.
             realms.append({"id": realm_id, "alter_egos": egos, "night": not any(ego["in_room"] for ego in egos),
                            "room": room.occupancy(ego for ego in egos if ego["in_room"]),
+                           "tasks": tasks.realm_summary(ego for ego in egos if ego["in_room"]),
                            "metrics": metrics, "facade": self._realm_facade(realm_id, metrics), "weather": self._realm_weather(realm_id, now),
                            "place": plan["places"][realm_id]})
             for ego in (e for e in egos if e["in_room"]):          # Mankind conta a sala; o Histórico não entra

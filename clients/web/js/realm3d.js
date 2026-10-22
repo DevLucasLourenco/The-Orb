@@ -27,6 +27,7 @@ const ANTENNA_H = 22;
 // O céu sobre o prédio (Weather, R42, VISUAL.md V-REALM-16): céu limpo = uma lua branca; chuva = uma nuvem cinza com chuva. Só tons neutros,
 // fora do orçamento de cores. O mundo diz qual dos dois (ou nenhum); o cliente só desenha.
 const SKY_LABEL = { clear: "céu limpo", rain: "chuva" };
+const openTasksText = (open) => (open ? `${open} ${open === 1 ? "tarefa aberta" : "tarefas abertas"}` : "tarefas: todas feitas");
 const RAIN_STREAKS = 36;
 const RAIN_DEPTH = 12;
 
@@ -152,6 +153,7 @@ export class RealmBuilding {
     this.group.add(this.plinth, this.room);
     this._areas();
     this._beacon();
+    this._board();
 
     // Rótulo do prédio (visível de longe).
     this.labelEl = el("div", "lbl-realm");
@@ -374,7 +376,25 @@ export class RealmBuilding {
     return new THREE.Vector3(this.group.position.x, this.floorY, this.group.position.z);
   }
 
+  // O Task Board (R50, V-REALM-17): as tarefas concluídas da lista do CLI, num quadro sobre a área. O mundo diz quais (e quantas ficaram de fora).
+  _board() {
+    this.boardEl = el("div", "lbl-board");
+    this.boardLabel = new CSS2DObject(this.boardEl);
+    this.boardLabel.position.set(AREAS["Task Board"].x, 2.6, AREAS["Task Board"].z);
+    this.boardLabel.visible = false;
+    this.boardCount = 0;
+    this.room.add(this.boardLabel);
+  }
+
+  _setBoard(tasks) {
+    const board = tasks ? tasks.board : null;
+    this.boardCount = board ? board.items.length : 0;
+    this.boardEl.replaceChildren(...(board ? board.items.map((item) => el("div", "t", `✓ ${item.content}`)) : []),
+                                 ...(board && board.more ? [el("div", "more", `+${board.more}`)] : []));
+  }
+
   setData(realm, summary) {
+    this._setBoard(realm.tasks);
     this._body(realm);       // a classe, a altura ou as janelas mudaram (os Probes leram de novo): o corpo é refeito
     this._sky(realm);        // o Weather mudou (um teste passou ou falhou): o céu é refeito
     this.waiting = summary.waiting;
@@ -384,6 +404,7 @@ export class RealmBuilding {
       el("div", "n", realm.name || realm.id),
       ...(size ? [el("div", "c", size)] : []),
       ...(realm.weather && SKY_LABEL[realm.weather.sky] ? [el("div", "c", `Weather: ${SKY_LABEL[realm.weather.sky]}`)] : []),
+      ...(realm.tasks ? [el("div", "c", openTasksText(realm.tasks.open))] : []),          // só com a lista do CLI (D-097); sem lista, nada
       (() => {
         const c = el("div", "c", `${summary.sessions} sessões · ${summary.active} ativas`);
         if (summary.waiting) c.append(" · ", el("span", "w", `${summary.waiting} esperando`));
@@ -430,6 +451,7 @@ export class RealmBuilding {
     this.glass.visible = lit;
     for (const label of this.areaLabels) label.visible = near && lit;
     for (const label of this.moreLabels.values()) label.visible = near && label.userData.count > 0;      // sem luz, o "+N" segue valendo
+    this.boardLabel.visible = near && lit && this.boardCount > 0;          // sem luz (noite), o quadro some com a sala
     this.label.visible = !focused;      // de perto o nome do prédio só atrapalha a sala
   }
 

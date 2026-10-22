@@ -13,12 +13,12 @@ abertas. Sem lista gravada pelo provider, nada aparece.
 
 ## Critérios de aceite
 
-- [ ] Formato da lista de tarefas levantado só pela estrutura em cada CLI (TodoWrite do Claude, plano do Codex, `todowrite` do opencode; Hermes se houver) e registrado nos documentos dos adapters.
-- [ ] Sinal `tasks.updated` no protocolo 0.3, produzido pelos adapters que têm a lista.
-- [ ] Overview: "concluídas de total" e uma barra por sessão.
-- [ ] Task Board: as tarefas concluídas da sessão.
-- [ ] Rótulo do prédio: tarefas abertas, quando houver dado.
-- [ ] Nada estimado: sem lista, nenhum progresso.
+- [x] Formato da lista de tarefas levantado só pela estrutura em cada CLI (TodoWrite do Claude, plano do Codex, `todowrite` do opencode; Hermes se houver) e registrado nos documentos dos adapters.
+- [x] Sinal `tasks.updated` no protocolo 0.3, produzido pelos adapters que têm a lista.
+- [x] Overview: "concluídas de total" e uma barra por sessão.
+- [x] Task Board: as tarefas concluídas da sessão.
+- [x] Rótulo do prédio: tarefas abertas, quando houver dado.
+- [x] Nada estimado: sem lista, nenhum progresso.
 
 ## Testes
 
@@ -34,3 +34,8 @@ Ponto de teste: os leitores dos CLIs (amostras sintéticas → `tasks.updated`) 
 - Uma branch e um PR para este ticket (D-114).
 
 ## Comments
+
+- **Implementação (2026-10-22):** sinal `tasks.updated` (protocolo 0.3), leitura comum em `adapters/_shared/tasks.py`, leitores do `TodoWrite` (Claude), do `todowrite` (opencode) e do `turn/plan/updated` (app-server do Codex), `core/tasks.py` (resumo do realm e Task Board) e o cliente (linha "tarefas" no cartão, tarefas abertas no rótulo e quadro sobre o Task Board).
+- **Levantamento só pela estrutura:** opencode (18 blocos `todowrite`, chaves e valores de `status`); Claude e Codex nos rollouts: nenhuma lista vista nesta máquina; Hermes: nenhuma ferramenta de lista entre as chamadas. O formato do Claude (`TodoWrite`) vem da documentação oficial e o do Codex do esquema do app-server; está nos documentos de adapter com a confiança de cada um.
+- **Verificado:** suíte inteira; no preview, com um snapshot feito de eventos sintéticos: "7 de 7" e "2 de 5" nos cartões, "3 tarefas abertas" no rótulo, o quadro com 5 concluídas e "+4"; sessão sem lista sem a linha. O 404 e o erro de JSON do console vêm da página de prévia (sem `/config` nem ícone), não do app.
+- **Não verificado:** nenhuma sessão ou CLI real; os leitores só foram exercitados com amostras sintéticas; `TaskCreate`/`TaskUpdate` do Claude, o plano do Codex nos rollouts e o Hermes não têm leitor (Q-T14-1, Q-T14-3). As decisões Q-T14-1 a Q-T14-9 aguardam o Lucas.

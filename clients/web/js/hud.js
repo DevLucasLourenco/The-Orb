@@ -115,6 +115,19 @@ function xpBar(xp) {
   return box;
 }
 
+// O progresso da tarefa da sessão (R50, V-HUD-15): "7 de 12" e uma barra, da lista que o próprio CLI mantém. Sem lista, a linha não existe.
+function tasksRow(tasks) {
+  const fill = el("i");
+  fill.style.width = `${Math.round((tasks.done / tasks.total) * 100)}%`;
+  const bar = el("span", "bar");
+  bar.append(fill);
+  const box = el("div", "xp tasks");
+  const open = tasks.items.filter((item) => item.status !== "completed").slice(0, 5).map((item) => `${item.status === "in_progress" ? "▶" : "·"} ${item.content}`);
+  box.title = open.length ? `Abertas: ${open.join(" | ")}` : "Todas as tarefas da lista estão feitas";
+  box.append(el("span", null, "tarefas"), bar, el("span", "xp-n", `${tasks.done} de ${tasks.total}`));
+  return box;
+}
+
 // A Team em árvore (R57, D-116, V-HUD-17): o mundo manda a lista na ordem da árvore, com a profundidade de cada um. Ficam os
 // ativos (os "sem sinal" também, em cinza) e os pais deles, para a árvore não perder o fio.
 function teamTree(team) {
@@ -152,6 +165,7 @@ function sessionCard(ego, onOpen) {
   now.title = ego.last_action || "";
   card.append(now);
   card.append(xpBar(ego.xp));
+  if (ego.tasks) card.append(tasksRow(ego.tasks));
   if (ego.attributes) card.append(attributeBars(ego.attributes));
   const tree = teamTree(ego.team);
   if (tree) card.append(tree);

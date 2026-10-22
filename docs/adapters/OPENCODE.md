@@ -4,7 +4,7 @@
 > Código: `src/orb/adapters/opencode/` · Equivalentes: [CLAUDE.md](CLAUDE.md), [CODEX.md](CODEX.md),
 > [HERMES.md](HERMES.md).
 
-Última atualização: 2026-10-21 · opencode `2.0.23` (instalado nesta máquina via npm; mesma versão em 2026-10-13)
+Última atualização: 2026-10-22 · opencode `2.0.23` (instalado nesta máquina via npm; mesma versão em 2026-10-13)
 
 > **Commit (ticket 23):** o comando do `bash` que terminou com `state.metadata.exit` igual a 0 alimenta o `command.result.commit` quando é um `git commit` (sem hash).
 
@@ -126,3 +126,9 @@ de eventos e confirmar que nada muda na configuração do Lucas.
 ## command.result (ticket 19, D-084)
 
 Quando um bloco `bash` termina (`state.status` `completed` ou `error`), o evento `:tool_result` ganha `command.result`: `ok` = `state.metadata.exit` igual a 0 (com `exit_code`); **sem esse campo, nada se afirma** (o estado da ferramenta sozinho não diz se o comando passou). Outras ferramentas não geram o sinal. Esta fonte vem da D-084 (44 de 44 `bash` com `metadata.exit`) e não foi reconferida ao vivo no ticket 19.
+
+## Lista de tarefas (ticket 14, R50, D-093)
+
+**`todowrite`**: no `session_message` do assistente, o bloco `{type: "tool", name: "todowrite", state}` tem `state.input.todos` (lista de `{content, status, priority}`) e, quando termina, o mesmo em `state.metadata.todos` (mais `truncated`). `status` visto: `pending`, `in_progress`, `completed`. O leitor usa `state.input.todos` **quando a ferramenta termina** (`state.status` `completed`; uma que falhou não gravou lista) e gera, no próprio `session_message`, o evento `:tool_tasks` com `tasks.updated`, uma vez por bloco (a linha é reescrita durante o streaming). Só a sessão raiz: `todowrite` de uma sessão filha não vale. Estado fora dos três (por exemplo `cancelled`) não entra na conta.
+
+**Confiança: alta** para a forma e os três estados (18 blocos em `session_message` nesta máquina, opencode 2.0.23, conferidos só pelas chaves e valores de `status`, sem texto); `cancelled` não foi visto, e por isso não é contado. A tabela `todo` do banco **não é lida** (o adapter só lê `session_v2` e `session_message`).

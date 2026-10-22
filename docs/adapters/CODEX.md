@@ -4,7 +4,7 @@
 > [PROTOCOL.md](../PROTOCOL.md). Código: `src/orb/adapters/codex/` · Equivalente:
 > [CLAUDE.md](CLAUDE.md).
 
-Última atualização: 2026-10-21 · Levantado com Codex `0.149.0` (Spike 4, 2026-10-06), revisto com
+Última atualização: 2026-10-22 · Levantado com Codex `0.149.0` (Spike 4, 2026-10-06), revisto com
 `0.160.1` (esta máquina, 2026-10-07) e reconferido em 2026-10-13 (CLI `0.160.1` instalado; rollouts
 locais de `0.142.5` a `0.162.0`)
 
@@ -213,3 +213,11 @@ Só estrutura e contagens, nos 12 rollouts mais recentes (176 linhas `agent_mess
 ## command.result (ticket 19, D-084)
 
 **App-server:** `item/completed:commandExecution` com `exitCode` inteiro vira `command.result` no próprio evento (`ok` = código 0, atividade por `commandActions` ou pelo classificador); sem código (`inProgress`), nada se afirma. **Rollout:** `event_msg/item_completed` com `item.type = CommandExecution` e `exit_code` inteiro vira um evento novo `event_msg/item_completed` (o `command` é uma lista de argumentos, juntada para o classificador); a saída grande (`stdout`, `aggregated_output`) não vai no nativo (exceção à regra do nativo intacto, como o `encrypted_content`: o `native.body` leva só `id`, `command`, `exit_code`, `status` e `duration`). Outros itens e comandos sem código continuam ignorados.
+
+## Lista de tarefas (ticket 14, R50, D-093)
+
+**App-server (nível 1):** a notificação `turn/plan/updated` (esquema oficial 0.163.0, `TurnPlanUpdatedNotification`: `threadId`, `turnId`, `plan` = lista de `{step, status}`, `explanation?`) vira `tasks.updated`; `status` = `pending`, `inProgress` ou `completed`. Cada plano **substitui** o anterior. Só o líder: o plano de uma thread filha não vale. O item `plan` (`item/completed:plan`, só `text`) continua sendo narração.
+
+**Rollouts (nível 0): não implementado.** Nenhuma das 35 sessões recentes nem dos rollouts desta máquina tem `update_plan` ou plano (`function_call`: só `followup_task`, `wait`, `spawn_agent`...; `custom_tool_call`: só `exec`; itens `item_completed` sem `Plan`). A ferramenta `update_plan` emite `EventMsg::PlanUpdate` (código-fonte do Codex), mas não há evidência de que o rollout o grave. Sem exemplo real, o leitor de rollout não inventa.
+
+**Confiança:** alta para o app-server (é o esquema); nenhuma para os rollouts.

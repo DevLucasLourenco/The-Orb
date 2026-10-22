@@ -283,3 +283,32 @@ def test_only_rollouts_written_inside_the_window_are_followed_and_old_ones_are_r
     assert {e["alter_ego"] for e in events} == {f"codex:{TID}"} and "event_msg/task_started" in [e["native"]["kind"] for e in events]
     tail = RolloutReader(cwd, realm="demo", since=window, fresh_after=time.time() + 100, home=tmp_path)
     assert [e["native"]["kind"] for e in tail.poll()] == ["session_meta"]        # só a sessão aparece; o passado não é relido
+
+
+# --- a lista de tarefas (ticket 14, R50): o plano do Codex, `turn/plan/updated` do app-server --------------------------------
+
+def test_the_plan_update_becomes_the_task_list_with_codex_statuses():
+    t = AppServerTranslator("demo")
+    t.translate(note("thread/started", thread={"id": TID, "cwd": "C:/proj", "model": "gpt", "parentThreadId": None}))
+    event = t.translate(note("turn/plan/updated", threadId=TID, turnId="turn1", explanation="um começo", plan=[
+        {"step": "Ler o MVP", "status": "completed"}, {"step": "Escrever o teste", "status": "inProgress"},
+        {"step": "Rodar a suíte", "status": "pending"}]))
+    assert validate(event) is None
+    assert event["native"]["kind"] == "turn/plan/updated"
+    assert event["signal"] == {"type": "tasks.updated", "done": 1, "total": 3, "items": [
+        {"content": "Ler o MVP", "status": "completed"}, {"content": "Escrever o teste", "status": "in_progress"},
+        {"content": "Rodar a suíte", "status": "pending"}]}
+    world = World()
+    assert world.apply(event)
+    assert world.alter_ego(event["alter_ego"]).tasks["total"] == 3
+
+
+def test_a_plan_update_without_a_plan_or_from_a_subagent_thread_says_nothing_about_tasks():
+    t = AppServerTranslator("demo")
+    t.translate(note("thread/started", thread={"id": TID, "cwd": "C:/proj", "model": "gpt", "parentThreadId": None}))
+    bad = t.translate(note("turn/plan/updated", threadId=TID, turnId="turn1", plan="nada"))
+    assert bad is None or bad["signal"] is None
+    child = "019a0000-0000-7000-8000-000000000002"
+    t.translate(note("thread/started", thread={"id": child, "cwd": "C:/proj", "model": "gpt", "parentThreadId": TID}))
+    sub = t.translate(note("turn/plan/updated", threadId=child, turnId="turn2", plan=[{"step": "x", "status": "pending"}]))
+    assert sub is None or sub["signal"] is None

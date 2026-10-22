@@ -5,7 +5,7 @@
 > [ARCHITECTURE.md](ARCHITECTURE.md), [adr/](adr/)…). Decisões difíceis de reverter também têm um ADR.
 > Nada é apagado: uma decisão revista fica listada, com a que a substituiu.
 
-Última atualização: 2026-10-21
+Última atualização: 2026-10-22
 
 Quem: **Lucas** = decidido por ele · **Delegada** = o Lucas deixou a definição com o Claude; vale até
 ele revisar, e a proposta está escrita no documento do assunto.
@@ -666,3 +666,23 @@ conferidos na tela com um snapshot real do mundo feito de eventos sintéticos. *
 | ~~Q-T13-5~~ D-219 | Quando o subagente terminado caminha até o líder? | Só durante os **30 s** depois do fim (`leaving`) e se o personagem já estava em cena e visível: ao abrir a página depois, ele não aparece só para sair. A janela é regra do Core (`leaving` no snapshot), não do cliente; sem o sinal vale o cinza (R7). |
 | ~~Q-T13-6~~ D-220 | O que solta a câmera do personagem seguido? | **Qualquer ação do Lucas na câmera** (arrastar, girar, zoom, teclado, voo para outro alvo) ou o personagem sair de cena. Depois do voo de chegada, a câmera acompanha o passo dele sem mudar o ângulo. |
 | ~~Q-T13-7~~ D-221 | O que o duplo clique alcança? | Só o personagem **visível**: quem passou do teto ("+N") não é clicável, mas segue no overview. |
+
+
+### Rodada: o que a implementação do ticket 14 decidiu por conta própria (aberta em 2026-10-22)
+
+Ao implementar o ticket 14 ([.scratch/the-orb-cidade-viva/issues/14-tarefas-do-cli.md](../.scratch/the-orb-cidade-viva/issues/14-tarefas-do-cli.md)),
+nove pontos **não estavam escritos** e foram escolhidos de forma provisória (regra P2). O mundo, o sinal e os leitores estão cobertos por teste (amostras sintéticas, com a
+forma que a documentação oficial e o esquema do Codex descrevem e o `todowrite` do opencode mostrou nesta máquina); a linha do cartão, o rótulo do prédio e o quadro do Task Board foram
+conferidos na tela com um snapshot real do mundo feito de eventos sintéticos.
+
+| Id | Pergunta | Proposta (já aplicada, provisória) |
+|---|---|---|
+| Q-T14-1 | O que o Claude entrega no primeiro corte? | **Só o `TodoWrite`** (a lista inteira a cada chamada). `TaskCreate`/`TaskUpdate` ficam para um ticket próprio: uma tarefa por chamada, o id vem do resultado e a lista só se reconstrói vendo a sessão desde o começo (o leitor começa do fim num transcript que já existia). Nenhum dos dois apareceu nos transcripts desta máquina, então nenhum foi visto de verdade. |
+| Q-T14-2 | Que estados de tarefa contam? | Os três do protocolo: `pending`, `in_progress`, `completed`. O que o provider disser fora disso (`cancelled`, `deleted`, desconhecido) **não entra na conta** (nem em `done`, nem em `total`): nada é inventado. |
+| Q-T14-3 | O Codex lê o plano nos rollouts? | **Não**: só no app-server (`turn/plan/updated`, esquema oficial). Nenhum rollout desta máquina tem plano, e sem exemplo real o leitor de rollout não inventa. |
+| Q-T14-4 | A lista de um subagente vale? | **Não**: só a do líder é o progresso da sessão. O sinal de um subagente é ignorado (o Core e os leitores). |
+| Q-T14-5 | Que sessões contam para o prédio? | As da **sala** (R28a) e **não encerradas**. O rótulo diz "N tarefas abertas" (ou "tarefas: todas feitas" quando há lista e nenhuma aberta); sem nenhuma lista, nada. |
+| Q-T14-6 | O que o Task Board mostra? | Um quadro sobre a área com até **5** tarefas concluídas ("✓ título") e o "+N" das que não couberam, da sessão mais recente para a mais antiga, na ordem da lista; só de perto e com a sala acesa. |
+| Q-T14-7 | Quando o sinal sai? | **Claude:** a cada `TodoWrite`. **opencode:** quando o `todowrite` termina com sucesso, uma vez por bloco. **Codex:** a cada `turn/plan/updated`. Cada lista substitui a anterior; lista vazia apaga o progresso. |
+| Q-T14-8 | Quais os limites? | Até **100** tarefas por sinal (as primeiras; `done` e `total` contam todas) e título de **200** caracteres, cortado com reticências. |
+| Q-T14-9 | Como o progresso aparece no cartão? | Uma linha "tarefas" com a barra em branco neutro e "7 de 12"; passar o mouse lista as primeiras 5 abertas (▶ em andamento). Sem lista, a linha não existe. |
