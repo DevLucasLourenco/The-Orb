@@ -236,6 +236,15 @@ ele revisar, e a proposta está escrita no documento do assunto.
 | D-219 | 2026-10-21 | **O subagente terminado caminha até o líder só durante os 30 s depois do fim** (`leaving` no snapshot, regra do Core) e se já estava em cena e visível; sem o sinal de fim vale o cinza (R7) | Lucas | qt13-5, R51, D-094, R7 |
 | D-220 | 2026-10-21 | **A câmera solta o personagem seguido** quando o Lucas arrasta, gira, dá zoom, usa o teclado ou vai a outro alvo, e quando o personagem sai de cena ou passa do teto | Lucas | qt13-6, R17 |
 | D-221 | 2026-10-21 | **O duplo clique só alcança o personagem visível;** quem passou do teto ("+N") não é clicável e segue listado no overview | Lucas | qt13-7, R17, R33 |
+| D-222 | 2026-10-22 | **O Claude entrega só o `TodoWrite` no primeiro corte;** `TaskCreate`/`TaskUpdate` (uma tarefa por chamada, o id vem do resultado) ficam para um ticket próprio, depois de ver um transcript real com elas | Lucas | qt14-1, R50 |
+| D-223 | 2026-10-22 | **Tarefa cancelada, apagada ou de estado desconhecido fica fora da conta** (nem em `done`, nem em `total`): só valem `pending`, `in_progress` e `completed` | Lucas | qt14-2, R12 |
+| D-224 | 2026-10-22 | **O Codex lê o plano só no app-server** (`turn/plan/updated`, esquema oficial); sem leitor nos rollouts enquanto nenhum rollout real trouxer um plano | Lucas | qt14-3, R50 |
+| D-225 | 2026-10-22 | **Só a lista do líder é o progresso da sessão;** o sinal de um subagente é ignorado | Lucas | qt14-4, R50 |
+| D-226 | 2026-10-22 | **O rótulo do prédio soma só as sessões da sala que não terminaram** ("N tarefas abertas", ou "tarefas: todas feitas"); sem nenhuma lista, nada aparece | Lucas | qt14-5, D-097 |
+| D-227 | 2026-10-22 | **O Task Board mostra até 5 tarefas concluídas do realm,** da sessão mais recente para a mais antiga, com o "+N" das que não couberam; só de perto e com a sala acesa | Lucas | qt14-6, R50, V-REALM-17 |
+| D-228 | 2026-10-22 | **Cada lista substitui a anterior da sessão e a lista vazia a apaga;** o sinal sai a cada `TodoWrite`, quando o `todowrite` do opencode termina com sucesso e a cada plano do Codex | Lucas | qt14-7, R50 |
+| D-229 | 2026-10-22 | **Limites do sinal:** até 100 tarefas listadas (`done` e `total` contam todas) e título de 200 caracteres | Lucas | qt14-8, R49 |
+| D-230 | 2026-10-22 | **O cartão da sessão mostra a linha "tarefas"** com a barra em branco neutro e "7 de 12"; a dica lista as 5 primeiras abertas; sem lista, a linha não existe | Lucas | qt14-9, V-HUD-15 |
 
 ## Decisões revistas
 
@@ -673,16 +682,16 @@ conferidos na tela com um snapshot real do mundo feito de eventos sintéticos. *
 Ao implementar o ticket 14 ([.scratch/the-orb-cidade-viva/issues/14-tarefas-do-cli.md](../.scratch/the-orb-cidade-viva/issues/14-tarefas-do-cli.md)),
 nove pontos **não estavam escritos** e foram escolhidos de forma provisória (regra P2). O mundo, o sinal e os leitores estão cobertos por teste (amostras sintéticas, com a
 forma que a documentação oficial e o esquema do Codex descrevem e o `todowrite` do opencode mostrou nesta máquina); a linha do cartão, o rótulo do prédio e o quadro do Task Board foram
-conferidos na tela com um snapshot do mundo feito de eventos sintéticos.
+conferidos na tela com um snapshot do mundo feito de eventos sintéticos. **O Lucas confirmou as nove em 2026-10-22 (D-222 a D-230).**
 
 | Id | Pergunta | Proposta (já aplicada, provisória) |
 |---|---|---|
-| Q-T14-1 | O que o Claude entrega no primeiro corte? | **Só o `TodoWrite`** (a lista inteira a cada chamada). `TaskCreate`/`TaskUpdate` ficam para um ticket próprio: uma tarefa por chamada, o id vem do resultado e a lista só se reconstrói vendo a sessão desde o começo (o leitor começa do fim num transcript que já existia). Nenhum dos dois apareceu nos transcripts desta máquina, então nenhum foi visto de verdade. |
-| Q-T14-2 | Que estados de tarefa contam? | Os três do protocolo: `pending`, `in_progress`, `completed`. O que o provider disser fora disso (`cancelled`, `deleted`, desconhecido) **não entra na conta** (nem em `done`, nem em `total`): nada é inventado. |
-| Q-T14-3 | O Codex lê o plano nos rollouts? | **Não**: só no app-server (`turn/plan/updated`, esquema oficial). Nenhum rollout desta máquina tem plano, e sem exemplo real o leitor de rollout não inventa. |
-| Q-T14-4 | A lista de um subagente vale? | **Não**: só a do líder é o progresso da sessão. O sinal de um subagente é ignorado (o Core e os leitores). |
-| Q-T14-5 | Que sessões contam para o prédio? | As da **sala** (R28a) e **não encerradas**. O rótulo diz "N tarefas abertas" (ou "tarefas: todas feitas" quando há lista e nenhuma aberta); sem nenhuma lista, nada. |
-| Q-T14-6 | O que o Task Board mostra? (O ticket diz "da sessão"; R50, V-REALM-17 e D-093 dizem "da lista do CLI".) | Um quadro sobre a área com até **5** tarefas concluídas ("✓ título") e o "+N" das que não couberam, da sessão mais recente para a mais antiga, na ordem da lista; só de perto e com a sala acesa. |
-| Q-T14-7 | Quando o sinal sai? | **Claude:** a cada `TodoWrite`. **opencode:** quando o `todowrite` termina com sucesso, uma vez por bloco. **Codex:** a cada `turn/plan/updated`. Cada lista substitui a anterior; lista vazia apaga o progresso. |
-| Q-T14-8 | Quais os limites? | Até **100** tarefas por sinal (as primeiras; `done` e `total` contam todas) e título de **200** caracteres, cortado com reticências. |
-| Q-T14-9 | Como o progresso aparece no cartão? | Uma linha "tarefas" com a barra em branco neutro e "7 de 12"; passar o mouse lista as primeiras 5 abertas (▶ em andamento). Sem lista, a linha não existe. |
+| ~~Q-T14-1~~ D-222 | O que o Claude entrega no primeiro corte? | **Só o `TodoWrite`** (a lista inteira a cada chamada). `TaskCreate`/`TaskUpdate` ficam para um ticket próprio: uma tarefa por chamada, o id vem do resultado e a lista só se reconstrói vendo a sessão desde o começo (o leitor começa do fim num transcript que já existia). Nenhum dos dois apareceu nos transcripts desta máquina, então nenhum foi visto de verdade. |
+| ~~Q-T14-2~~ D-223 | Que estados de tarefa contam? | Os três do protocolo: `pending`, `in_progress`, `completed`. O que o provider disser fora disso (`cancelled`, `deleted`, desconhecido) **não entra na conta** (nem em `done`, nem em `total`): nada é inventado. |
+| ~~Q-T14-3~~ D-224 | O Codex lê o plano nos rollouts? | **Não**: só no app-server (`turn/plan/updated`, esquema oficial). Nenhum rollout desta máquina tem plano, e sem exemplo real o leitor de rollout não inventa. |
+| ~~Q-T14-4~~ D-225 | A lista de um subagente vale? | **Não**: só a do líder é o progresso da sessão. O sinal de um subagente é ignorado (o Core e os leitores). |
+| ~~Q-T14-5~~ D-226 | Que sessões contam para o prédio? | As da **sala** (R28a) e **não encerradas**. O rótulo diz "N tarefas abertas" (ou "tarefas: todas feitas" quando há lista e nenhuma aberta); sem nenhuma lista, nada. |
+| ~~Q-T14-6~~ D-227 | O que o Task Board mostra? (O ticket diz "da sessão"; R50, V-REALM-17 e D-093 dizem "da lista do CLI".) | Um quadro sobre a área com até **5** tarefas concluídas ("✓ título") e o "+N" das que não couberam, da sessão mais recente para a mais antiga, na ordem da lista; só de perto e com a sala acesa. |
+| ~~Q-T14-7~~ D-228 | Quando o sinal sai? | **Claude:** a cada `TodoWrite`. **opencode:** quando o `todowrite` termina com sucesso, uma vez por bloco. **Codex:** a cada `turn/plan/updated`. Cada lista substitui a anterior; lista vazia apaga o progresso. |
+| ~~Q-T14-8~~ D-229 | Quais os limites? | Até **100** tarefas por sinal (as primeiras; `done` e `total` contam todas) e título de **200** caracteres, cortado com reticências. |
+| ~~Q-T14-9~~ D-230 | Como o progresso aparece no cartão? | Uma linha "tarefas" com a barra em branco neutro e "7 de 12"; passar o mouse lista as primeiras 5 abertas (▶ em andamento). Sem lista, a linha não existe. |
