@@ -19,7 +19,7 @@ from pathlib import Path
 from typing import Any
 
 from ...protocol import Event
-from .._shared import EventFactory, RealmOf, connect_readonly, exit_code_of, result_signal, single_realm, table_columns
+from .._shared import EventFactory, RealmOf, connect_readonly, exit_code_of, result_signal, single_realm, table_columns, todos_signal
 from . import mapping
 
 SOURCE = "opencode/db"
@@ -61,6 +61,14 @@ def _command_result(name: str, state: dict[str, Any]) -> dict[str, Any] | None:
     metadata = state.get("metadata") if isinstance(state.get("metadata"), dict) else {}
     code = exit_code_of(metadata.get("exit"))
     return None if code is None else result_signal(command, ok=code == 0, exit_code=code)
+
+
+def _task_list(name: str, state: dict[str, Any]) -> dict[str, Any] | None:
+    """A lista que um `todowrite` terminado gravou (R50): `state.input.todos`. Ferramenta que falhou não gravou lista; o que não é lista de objetos
+    não é uma lista de tarefas."""
+    if name.lower() != mapping.TASK_LIST_TOOL or state.get("status") != "completed":
+        return None
+    return todos_signal(state.get("input"))
 
 
 class OpencodeDbReader:
@@ -216,6 +224,10 @@ class OpencodeDbReader:
                                     agent=agent, inner={"role": "result",
                                                         "text": ("[erro] " if state.get("status") == "error" else "") + text},
                                     signal=_command_result(name, state)))
+                    tasks = _task_list(name, state) if agent is None else None
+                    if tasks is not None:
+                        out.append(make(f"{key}:tasks", ts, f"{kind}:tool_tasks", {"name": name, "status": state.get("status")},
+                                        signal=tasks))
             elif completed and btype in ("text", "reasoning") and block.get("text") and self._once(mid, str(index)):
                 if btype == "text":
                     out.append(make(key, ts, f"{kind}:text", block, agent=agent,

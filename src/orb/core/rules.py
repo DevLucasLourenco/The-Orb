@@ -36,6 +36,7 @@ ATTRIBUTE_AREAS: tuple[str, ...] = tuple(ROLE_BY_AREA)
 LOBBY, DORM = "__lobby", "__dorm"        # quem pensa, espera ou está parado; quem dorme ou terminou
 PLACES: tuple[str, ...] = ("Development Center", "Testing Lab", "Research Center", "Code Review", "Task Board", LOBBY, DORM)
 PLACE_CAP = 8
+TASK_BOARD_MAX = 5                       # R50: quantas tarefas concluídas o Task Board mostra; o resto vira "+N"
 SUBAGENT_LEAVE_WINDOW_SECONDS = 30      # R51, D-094: o subagente que terminou só caminha até o líder se o fim é recente (não ao abrir a página depois)
 
 # Estado-base depois de cada sinal (para o personagem a quem o sinal se refere).

@@ -35,10 +35,11 @@ SIGNAL_FIELDS: dict[str, frozenset[str]] = {
     "signal.lost": frozenset(),
     "signal.restored": frozenset(),
     # 0.3 (R49, D-085): sinais de realm (`alter_ego` nulo), produzidos pelos Probes. Os outros sinais da 0.3
-    # (`account.limits`, `tasks.updated`) entram nos tickets deles; `command.result` é de sessão (ticket 19).
+    # (`account.limits`) entra no ticket dele; `command.result` é de sessão (ticket 19).
     "realm.metrics": frozenset({"loc"}),
     "realm.changes": frozenset({"changes"}),
     "realm.commits": frozenset({"commits"}),          # ticket 23: o que o git diz dos commits que as sessões fizeram (R53)
+    "tasks.updated": frozenset({"done", "total"}),    # ticket 14: a lista de tarefas que o próprio CLI mantém (R50, D-093); sinal de sessão
 }
 
 # Sinais que só o sistema emite (nunca um adapter).
@@ -49,6 +50,10 @@ REALM_SIGNALS: frozenset[str] = frozenset({"realm.metrics", "realm.changes", "re
 
 # Os tipos de alteração local do git (R20a): a ordem é a da fachada (VISUAL.md §6) e a das cores (VISUAL.md §5).
 CHANGE_TYPES: tuple[str, ...] = ("modified", "added", "untracked", "renamed", "deleted", "conflict")
+
+# Os estados de uma tarefa da lista do CLI (R50): cada provider os escreve a seu modo e o adapter traduz para estes três. O que o provider
+# disser fora disto (cancelada, apagada, desconhecida) não entra na conta: nada é inventado (R12).
+TASK_STATUSES: tuple[str, ...] = ("pending", "in_progress", "completed")
 
 INNER_ROLES: frozenset[str] = frozenset({"thought", "narration", "tool", "result", "prompt", "system"})
 FIDELITIES: frozenset[str] = frozenset({"raw", "summary"})

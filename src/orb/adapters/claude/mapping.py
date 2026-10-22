@@ -30,6 +30,9 @@ TOOL_ACTIVITY: dict[str, str] = {
     "TodoWrite": "THINKING", "TaskCreate": "THINKING", "TaskUpdate": "THINKING",
 }
 SHELL_TOOLS = frozenset({"Bash", "PowerShell"})
+# A ferramenta que grava a lista de tarefas inteira a cada chamada (R50): `input.todos` = [{content, status, activeForm}]. As ferramentas
+# TaskCreate/TaskUpdate (uma tarefa por chamada) não entram: a lista só se reconstrói vendo a sessão desde o começo (docs/adapters/CLAUDE.md).
+TASK_LIST_TOOL = "TodoWrite"
 DELEGATING_TOOLS = frozenset({"Agent", "Task"})
 
 # Campo do input que melhor descreve o alvo de uma ferramenta, em ordem de preferência.

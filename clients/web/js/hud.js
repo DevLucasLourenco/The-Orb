@@ -90,6 +90,7 @@ function attributeBars(attributes) {
   return box;
 }
 
+const OPEN_HINT = 5;         // quantas tarefas abertas a dica da linha "tarefas" lista
 const MAX_INDENT = 6;       // uma Team muito funda não empurra o cartão para fora do painel
 
 // A trilha de uma barra de XP (V-HUD-13): a parte confirmada cheia e a provisória (commits que ainda não chegaram à principal) tracejada.
@@ -112,6 +113,19 @@ function xpBar(xp) {
   const provisional = xp.provisional ? ` (+${xp.provisional} provisória)` : "";
   box.title = `${xp.total} XP confirmada${provisional}; o nível ${xp.level + 1} começa em ${xp.next}`;
   box.append(el("span", null, `nível ${xp.level}`), xpTrack(xp), el("span", "xp-n", `${xp.total} / ${xp.next} XP`));
+  return box;
+}
+
+// O progresso da tarefa da sessão (R50, V-HUD-15): "7 de 12" e uma barra, da lista que o próprio CLI mantém. Sem lista, a linha não existe.
+function tasksRow(tasks) {
+  const fill = el("i");
+  fill.style.width = `${Math.round((tasks.done / tasks.total) * 100)}%`;
+  const bar = el("span", "bar");
+  bar.append(fill);
+  const box = el("div", "xp tasks");
+  const open = tasks.items.filter((item) => item.status !== "completed").slice(0, OPEN_HINT).map((item) => `${item.status === "in_progress" ? "▶" : "·"} ${item.content}`);
+  box.title = tasks.done === tasks.total ? "Todas as tarefas da lista estão feitas" : `${tasks.total - tasks.done} abertas${open.length ? `: ${open.join(" | ")}` : ""}`;
+  box.append(el("span", null, "tarefas"), bar, el("span", "xp-n", `${tasks.done} de ${tasks.total}`));
   return box;
 }
 
@@ -152,6 +166,7 @@ function sessionCard(ego, onOpen) {
   now.title = ego.last_action || "";
   card.append(now);
   card.append(xpBar(ego.xp));
+  if (ego.tasks) card.append(tasksRow(ego.tasks));
   if (ego.attributes) card.append(attributeBars(ego.attributes));
   const tree = teamTree(ego.team);
   if (tree) card.append(tree);

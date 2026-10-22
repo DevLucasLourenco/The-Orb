@@ -11,7 +11,7 @@ import json
 from typing import Any, Awaitable, Callable, Protocol
 
 from ...protocol import Event
-from .._shared import EventFactory, iso_from_ms, now_iso
+from .._shared import EventFactory, iso_from_ms, now_iso, tasks_signal
 from . import mapping
 
 SOURCE = "codex/app-server"
@@ -88,6 +88,8 @@ class AppServerTranslator:
             signal = {"type": "activity", "activity": "THINKING"}
         elif method == "turn/completed":
             signal = {"type": "idle"}
+        elif method == mapping.PLAN_UPDATED and not agent:      # o plano do líder (R50); o de um subagente não é o progresso da sessão
+            signal = tasks_signal(mapping.plan_pairs(params.get("plan")))
         elif method == "thread/closed":
             signal = {"type": "subagent.ended"} if agent else {"type": "session.ended"}
         elif method == "thread/status/changed":

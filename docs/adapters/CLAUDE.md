@@ -4,7 +4,7 @@
 > [PROTOCOL.md](../PROTOCOL.md): o evento nativo intacto + sinal de mundo + entrada de Inner World.
 > Código: `src/orb/adapters/claude/` · Vocabulário: [CONTEXT.md](../../CONTEXT.md).
 
-Última atualização: 2026-10-21
+Última atualização: 2026-10-22
 
 ## Como isto foi verificado
 
@@ -214,3 +214,11 @@ processo termina antes do `curl` (`SessionEnd` em `-p`); `SessionStart` não che
 ## command.result (ticket 19, D-084)
 
 O bloco `tool_result` de uma chamada de `Bash`/`PowerShell` vira o sinal `command.result` no próprio evento `user/tool_result`: `ok` é falso se o bloco é `is_error` ou se o `toolUseResult.interrupted` do registro é verdadeiro. **O Claude não grava código de saída**, então não há `exit_code`. O comando vem da chamada (`tool_use`) vista antes, ligada pelo `tool_use_id` (até 512 pendentes na memória); resultado sem a chamada vista não afirma nada. `interrupted` conta como falha por decisão (D-084); o formato vem da D-084 e do que o `CLAUDE.md` §2 já registrava, e não foi reconferido ao vivo no ticket 19.
+
+## Lista de tarefas (ticket 14, R50, D-093)
+
+**`TodoWrite`** (a ferramenta que grava a lista inteira a cada chamada): o bloco `tool_use` de nome `TodoWrite` tem `input.todos`, uma lista de `{content, status, activeForm}`, com `status` = `pending`, `in_progress` ou `completed`. O bloco ganha, além do evento de atividade de sempre (`THINKING`), um evento `assistant/tool_use:tasks` com o sinal `tasks.updated`; cada chamada **substitui** a lista. Só o líder: o `TodoWrite` de um subagente (no transcript dele) não vira sinal.
+
+**Confiança: média.** O formato vem da documentação oficial ([Track todos, Agent SDK](https://code.claude.com/docs/en/agent-sdk/todo-tracking)); **nenhuma chamada de `TodoWrite` apareceu nos transcripts desta máquina** (conferido pela estrutura: nomes de ferramenta, sem conteúdo), então o leitor está coberto só por amostra sintética.
+
+**Fora do escopo, de propósito:** `TaskCreate`, `TaskUpdate`, `TaskList` e `TaskGet`. A documentação diz que são o conjunto padrão em alguns modelos (e o `TodoWrite` só com `CLAUDE_CODE_ENABLE_TASKS=0`); cada chamada traz uma tarefa, o id vem do resultado (`toolUseResult.task.id`) e a lista só se reconstrói vendo a sessão desde o começo, o que o leitor não faz com um transcript que já existia (começa do fim, R48). Fica para um ticket próprio, depois de ver um transcript real com essas ferramentas.

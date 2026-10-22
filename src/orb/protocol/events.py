@@ -16,6 +16,7 @@ from .vocab import (
     PROTOCOL_VERSION,
     REALM_SIGNALS,
     SIGNAL_FIELDS,
+    TASK_STATUSES,
 )
 
 MAX_BODY_BYTES = 16 * 1024    # native.body serializado
@@ -27,6 +28,8 @@ MAX_CHANGES = 5000            # realm.changes: alterações listadas (o resto vi
 MAX_CHANGE_PATH = 1024        # realm.changes: tamanho do caminho de uma alteração
 MAX_COMMITS = 500             # realm.commits: commits consultados por leitura
 MAX_COMMIT_KEY = 200          # realm.commits: tamanho do recibo (`key`) de um commit
+MAX_TASKS = 100               # tasks.updated: tarefas listadas (as primeiras; o total e as feitas contam todas)
+MAX_TASK_TITLE = 200          # tasks.updated: tamanho do título de uma tarefa, em caracteres
 _ELLIPSIS = "…"
 
 Event = dict[str, Any]
@@ -164,6 +167,36 @@ def _validate_signal(signal: Any, event: dict[str, Any]) -> str | None:
         return _validate_commits(signal)
     if kind == "command.result":
         return _validate_command_result(signal)
+    if kind == "tasks.updated":
+        return _validate_tasks(signal)
+    return None
+
+
+def _validate_tasks(signal: dict[str, Any]) -> str | None:
+    """`tasks.updated`: quantas tarefas a lista do CLI tem (`total`), quantas estão feitas (`done`) e, opcionalmente, as primeiras com título e estado."""
+    done, total = signal["done"], signal["total"]
+    for name, value in (("done", done), ("total", total)):
+        if isinstance(value, bool) or not isinstance(value, int) or value < 0:
+            return f"tasks.updated: {name} deve ser um inteiro >= 0"
+    if done > total:
+        return "tasks.updated: done não pode passar de total"
+    items = signal.get("items")
+    if items is None:
+        return None
+    if not isinstance(items, list) or len(items) > MAX_TASKS or len(items) > total:
+        return f"tasks.updated: items deve ser uma lista de até {MAX_TASKS} tarefas, sem passar de total"
+    completed = 0
+    for entry in items:
+        if not isinstance(entry, dict):
+            return "tasks.updated: cada tarefa é um objeto"
+        content = entry.get("content")
+        if not isinstance(content, str) or not content or len(content) > MAX_TASK_TITLE:
+            return f"tasks.updated: content deve ser um texto de 1 a {MAX_TASK_TITLE} caracteres"
+        if entry.get("status") not in TASK_STATUSES:
+            return f"tasks.updated: status desconhecido {entry.get('status')!r}"
+        completed += entry["status"] == "completed"
+    if completed > done:
+        return "tasks.updated: há mais tarefas feitas em items do que em done"
     return None
 
 

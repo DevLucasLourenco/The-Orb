@@ -197,6 +197,9 @@ select option { background: #0c111c; }
 .lbl-ego.waiting { border-color: var(--wait); }
 .lbl-ego.waiting .s { color: var(--wait); }
 .lbl-more { font-size: 11px; font-weight: 700; padding: 1px 7px; border-radius: 8px; color: #0b1020; background: #e6ecf5; pointer-events: none; }
+.lbl-board { font-size: 10px; color: rgba(230, 236, 245, .85); text-align: left; pointer-events: none; max-width: 190px; text-shadow: 0 1px 6px #000; }
+.lbl-board .t { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lbl-board .more { font-weight: 700; }
 .lbl-area { font-size: 9px; letter-spacing: .14em; text-transform: uppercase; color: rgba(200, 220, 255, .55); pointer-events: none; }
 
 /* ---------- dicas ---------- */

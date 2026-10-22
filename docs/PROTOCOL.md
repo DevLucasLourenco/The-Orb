@@ -4,7 +4,7 @@
 > (Core, Gateway, clientes). Vocabulário: [CONTEXT.md](../CONTEXT.md) · Módulos:
 > [ARCHITECTURE.md](ARCHITECTURE.md) · Por que é assim: [ADR 0002](adr/0002-eventos-nativos-por-provider.md).
 
-Versão do protocolo: `0.3` (rascunho; a 0.3 está sendo entregue em partes: eventos de realm e `realm.metrics` no ticket 09) · Última atualização: 2026-10-21 · Implementação:
+Versão do protocolo: `0.3` (rascunho; a 0.3 está sendo entregue em partes: eventos de realm e `realm.metrics` no ticket 09) · Última atualização: 2026-10-22 · Implementação:
 `src/orb/protocol/`
 
 > **Mudança desde a 0.1:** o protocolo deixou de traduzir eventos para um vocabulário universal.
@@ -107,6 +107,7 @@ Vocabulário **fechado**. Um tipo novo exige nova versão do protocolo.
 | `realm.metrics` | `loc` (inteiro ≥ 0), `files?`, `root?`, `folders?` | **0.3, evento de realm** (`alter_ego: null`, só Probes): as linhas não vazias de código do projeto. `root` são as linhas dos arquivos da raiz e `folders` (objeto de até 64 pastas, nome de 1 a 255 caracteres e sem barra → linhas) as de cada pasta de primeiro nível, as maiores; `root` mais as pastas não passam de `loc`. O mundo guarda por realm e deriva a classe, a altura em níveis, as cintas e os andares do prédio (`rules.BUILDING_CLASSES`, `core/building.py`); sem evento, o realm não tem número |
 | `realm.changes` | `changes` (lista de até 5.000 objetos `{path, type, lines}`), `more?` | **0.3, evento de realm** (só Probes): as alterações locais do git. `path` é relativo à raiz do projeto, com `/`, sem `..`; `type` é um de `modified`, `added`, `untracked`, `renamed`, `deleted`, `conflict`; `lines` são as linhas alteradas (peso). `more` conta as que passaram do limite. Lista vazia = repositório limpo (dado válido). O mundo guarda por realm e calcula a fachada (`core/facade.py`) |
 | `command.result` | `ok`, `exit_code?`, `activity?`, `commit?` | **0.3, sinal de sessão** (leva o Alter Ego): como terminou um comando de shell. `ok` é verdadeiro/falso; `exit_code` só quando o provider informa (Codex, Hermes e opencode sim; o Claude só `is_error`/`interrupted`); `activity` é a do comando pelo classificador (`TESTING` para pytest, jest, `npm test`…). Não muda o estado do personagem. O mundo guarda o último `TESTING` de cada realm como o **Weather** (R42). `commit?` (ticket 23, D-090): objeto `{sha?}` presente só quando o comando **fez um commit** (e `ok`): no Claude vem do `gitOperation.commit` do resultado (com o `sha`); nos outros, de um `git commit` no comando (sem `sha`). É a evidência da XP de commit (X-COMMIT) |
+| `tasks.updated` | `done`, `total`, `items?` (até 100 objetos `{content, status}`, `content` de 1 a 200 caracteres, `status` = `pending`, `in_progress` ou `completed`) | **0.3, sinal de sessão** (ticket 14, R50, D-093): a lista de tarefas que o próprio CLI mantém. `total` e `done` contam todas as tarefas conhecidas; `items` traz as primeiras 100 (`done` ≤ `total`, e `items` não passa de `total`). Cada lista **substitui** a anterior da sessão; `total` 0 é a lista apagada. O Core e os adapters só valem o do líder (o validador não impõe isso). Sem lista gravada pelo provider, nenhum sinal: nada é estimado |
 | `realm.commits` | `commits` (lista de até 500 objetos `{key, sha?, exists, lines?, on_main, reverted}`) | **0.3, evento de realm** (só Probes, ticket 23): o que o git do projeto diz de cada commit que uma sessão disse ter feito. `key` é o recibo que o mundo pediu; `sha` é o commit completo que o git achou; `exists`: o commit existe no repositório; `lines`: linhas alteradas por ele (inseridas mais removidas); `on_main`: chegou à branch principal; `reverted`: um commit de reversão dele chegou à principal. O mundo usa para confirmar, anular ou expirar a XP do commit (R53). O `ts` do evento é a hora da leitura |
 | `session.started` | `cwd?`, `model?`, `title?` | O Alter Ego aparece no Rooftop Room |
 | `session.ended` | `reason?` | A sessão terminou; o Alter Ego **não é excluído**: fica na sala enquanto for recente e depois no Histórico do realm (R28) |
@@ -261,7 +262,7 @@ No canal do mundo (`/world`), o cliente pode pedir o histórico de uma sessão:
   | `realm.changes` | `changes[]` (caminho, tipo, linhas), `more?` | Alterações locais do git (Probe, R20b). **Entregue no ticket 11** |
   | `realm.commits` | `commits[]` (recibo, hash, existe, linhas, na principal, revertido) | O que o git diz dos commits das sessões (Probe, R53). **Entregue no ticket 23** |
   | `account.limits` | `provider`, `limits` | Limites de uso da conta, quando o provider informa (Energy, R43) |
-  | `tasks.updated` | `done`, `total`, `items?` | A lista de tarefas que o CLI mantém (D-093, R50); só quando o provider grava |
+  | `tasks.updated` | `done`, `total`, `items?` | A lista de tarefas que o CLI mantém (D-093, R50); só quando o provider grava. **Entregue no ticket 14** |
 
   Eventos de realm e de mundo têm `alter_ego: null`; o Core passa a guardá-los (D-085). Os campos
   exatos são fechados no ticket.

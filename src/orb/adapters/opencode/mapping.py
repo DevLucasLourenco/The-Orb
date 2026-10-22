@@ -28,6 +28,7 @@ TOOL_ACTIVITY: dict[str, str] = {
     "todowrite": "THINKING", "todoread": "THINKING",
 }
 SHELL_TOOLS = frozenset({"bash", "shell"})
+TASK_LIST_TOOL = "todowrite"     # R50: `state.input.todos` = [{content, status, priority}], a lista inteira a cada chamada
 TARGET_KEYS: tuple[str, ...] = ("filePath", "path", "command", "pattern", "url", "query", "description")
 
 # session_message.type -> papel da linha no Inner World (o tipo nativo continua no rótulo).

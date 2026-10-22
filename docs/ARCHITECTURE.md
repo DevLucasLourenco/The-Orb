@@ -4,7 +4,7 @@
 > âmbito. Vocabulário: [CONTEXT.md](../CONTEXT.md) · Contrato de eventos: [PROTOCOL.md](PROTOCOL.md)
 > · Decisões: [adr/](adr/).
 
-Última atualização: 2026-10-21
+Última atualização: 2026-10-22
 
 ---
 
@@ -49,7 +49,7 @@
 | Módulo | Pasta | Responsabilidade | Conhece | **Não** conhece |
 |---|---|---|---|---|
 | **Protocol** | `src/orb/protocol/` | Envelope, vocabulário fechado (atividades, sinais), limites de tamanho, validação | nada | todos os outros |
-| **Core** | `src/orb/core/` | O mundo: aplica eventos, deriva a atividade de cada personagem, Teams, pendências, Energy; snapshot; a sacola e o livro de nomes históricos (`names.py`); o traçado da cidade (`city.py`), a altura e os andares dos prédios (`building.py`), as janelas acesas da fachada (`facade.py`) e o perfil de trabalho (`profile.py`: papel, atributos por área e a Team em árvore) a XP e os níveis (`progression.py`: extrato com estados, X-COMMIT, escalas; tabela v1 em `rules.py`) e a sala cheia (`room.py`: quem aparece em cada lugar, até 8, e quantos passaram) | Protocol | Adapters, Gateway, disco, rede, relógio |
+| **Core** | `src/orb/core/` | O mundo: aplica eventos, deriva a atividade de cada personagem, Teams, pendências, Energy; snapshot; a sacola e o livro de nomes históricos (`names.py`); o traçado da cidade (`city.py`), a altura e os andares dos prédios (`building.py`), as janelas acesas da fachada (`facade.py`) e o perfil de trabalho (`profile.py`: papel, atributos por área e a Team em árvore) a XP e os níveis (`progression.py`: extrato com estados, X-COMMIT, escalas; tabela v1 em `rules.py`) a sala cheia (`room.py`: quem aparece em cada lugar, até 8, e quantos passaram) e a lista de tarefas do CLI (`tasks.py`: o resumo do realm e o Task Board) | Protocol | Adapters, Gateway, disco, rede, relógio |
 | **Adapters** (claude, codex, hermes, opencode) | `src/orb/adapters/<provider>/` | Ler a fonte nativa do provider e produzir eventos (nativo + sinal + inner) pelo Mapa do provider | Protocol | Core, Gateway, outros adapters |
 | **Terminal Host** | `src/orb/terminal_host/` | Abrir o terminal real (ConPTY), chamar o CLI (lista fixa), transportar bytes, limpar o ambiente herdado | nada do domínio | Core, adapters |
 | **Gateway** | `src/orb/gateway/` | Autenticar, ligar terminal + adapter + Core por sessão, validar mensagens do cliente, distribuir por WebSocket; detectar os realms (`realms.py`) e decidir pasta → projeto (`projects.py`, a borda que conhece o disco) | todos, por interfaces | internals de adapters |
@@ -115,6 +115,9 @@ Todo adapter expõe a mesma forma (`orb.adapters._shared.base`):
   (espera, depois líder, depois o mais recente) ficam em `rules.py` (`PLACE_CAP`) e em `room.py`. O subagente ganha `ended_at`
   (a hora do `subagent.ended`; zerado se ele recomeça) e `leaving` (terminou há menos de 30 s, `SUBAGENT_LEAVE_WINDOW_SECONDS`). O cliente só desenha: posiciona os `shown`, esconde os demais, escreve o
   "+N" e leva o subagente terminado até o líder.
+  **Tarefas do CLI (ticket 14, R50, D-093):** o sinal de sessão `tasks.updated` troca a lista do Alter Ego (`tasks`: `done`, `total`, `items`; sem
+  lista, `null`); cada realm do snapshot ganha `tasks` (`open`, `done`, `total`, `sessions` e o `board` com as concluídas, no máximo
+  `TASK_BOARD_MAX` e o `more`), somando só as sessões da sala que não terminaram (`tasks.realm_summary`); sem nenhuma lista, `null`. O cliente só desenha.
 - **Decidido (D-085):** o Core guarda também estado **por realm** (métricas, alterações locais,
   Weather) e **do mundo** (limites da conta), vindo de eventos com `alter_ego: null` (protocolo 0.3).
 - **Decidido (D-099; traçado entregue no ticket 08, `orb.core.city`):** o mundo também calcula, em Python, o **traçado da cidade** (bairros, lotes,
@@ -337,6 +340,7 @@ ticket existir.
 | XP de commits e escalas | Evidência de commit (`gitOperation` do Claude, `git commit` dos outros) → XP provisória; repositório git de verdade → existe, linhas, na principal, revertido; o mundo confirma, anula ou expira; níveis do Realm e de Mankind e o placar; o extrato para o painel | `tests/test_commit_evidence.py`, `tests/test_commit_probe.py`, `tests/test_commit_scheduler.py`, `tests/test_commit_xp.py` |
 | XP e níveis | Eventos de teste, conserto, subagente e ofício → extrato (regra, recibo, versão da tabela) e nível pela curva k·n·(n−1); limites; tabela nova recalcula; o extrato no registro local, que sobrevive ao reinício sem pagar duas vezes | `tests/test_progression.py` |
 | Sala cheia (lugares, teto de 8, "+N") | Sessões e subagentes → quem aparece em cada lugar e quantos passaram; prioridade; só subagente ativo; fora da sala não aparece; `ended_at` | `tests/test_room.py` |
+| Tarefas do CLI (R50) | Amostras sintéticas dos leitores (`TodoWrite`, `todowrite`, plano do Codex) → `tasks.updated`; lista nova substitui a anterior, lista vazia apaga, subagente não vale; resumo do realm e Task Board | `tests/test_tasks.py`, `tests/test_adapter_claude.py`, `tests/test_adapter_opencode.py`, `tests/test_adapter_codex.py` |
 | Papel, atributos e árvore da Team | Eventos de atividade → papel (o que mais fez; sem empate), parcela do trabalho por área, Team em ordem de árvore (pai antes dos filhos, pai desconhecido, laço de pais) | `tests/test_profile.py` |
 | Altura e andares | Linhas e pastas → níveis por classe, cintas, antena e andares (térreo, pastas, "demais pastas"); evento do Probe com a divisão por pasta | `tests/test_building.py`, `tests/test_realm_metrics.py`, `tests/test_probes.py` |
 | Nomes e registro local | Sacola e livro de nomes sem disco; registro numa pasta temporária (reabrir, falhas de disco) | `tests/test_names.py`, `tests/test_registry.py` |
@@ -366,7 +370,7 @@ The Orb/
 │   └── adr/        decisões numeradas
 ├── src/orb/
 │   ├── protocol/        events.py · vocab.py
-│   ├── core/            world.py · rules.py · names.py · room.py
+│   ├── core/            world.py · rules.py · names.py · room.py · tasks.py
 │   ├── registry/        store.py · preferences.py · paths.py
 │   ├── probes/          lines.py
 │   ├── adapters/

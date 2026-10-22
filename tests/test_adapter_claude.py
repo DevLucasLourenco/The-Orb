@@ -247,3 +247,49 @@ def test_only_transcripts_written_inside_the_window_are_followed_and_old_ones_ar
     with open(recent, "a", encoding="utf-8") as fh:
         fh.write(json.dumps({"type": "user", "uuid": "u3", "timestamp": "2026-10-07T10:05:00Z", "message": {"content": "novo"}}) + "\n")
     assert [e["inner"]["text"] for e in tail.poll() if e["inner"]] == ["novo"]
+
+
+# --- a lista de tarefas (ticket 14, R50): o `TodoWrite` grava a lista inteira a cada chamada --------------------------------------
+
+def todo_write(uuid, todos):
+    return {"type": "assistant", "uuid": uuid, "timestamp": "2026-10-22T10:00:00Z", "message": {"id": f"m-{uuid}", "content": [
+        {"type": "tool_use", "id": f"t-{uuid}", "name": "TodoWrite", "input": {"todos": todos}}]}}
+
+
+def test_todowrite_becomes_the_task_list_with_the_provider_statuses(tmp_path, jsonl):
+    jsonl(session_file(tmp_path), [todo_write("a1", [
+        {"content": "Ler o MVP", "status": "completed", "activeForm": "Lendo o MVP"},
+        {"content": "Escrever o teste", "status": "in_progress", "activeForm": "Escrevendo o teste"},
+        {"content": "Rodar a suíte", "status": "pending", "activeForm": "Rodando a suíte"}])])
+    events = work(reader(tmp_path).poll())
+    assert all(validate(e) is None for e in events)
+    assert kinds(events) == ["assistant/tool_use", "assistant/tool_use:tasks"]
+    assert events[0]["signal"]["activity"] == "THINKING"                          # a atividade da ferramenta continua como era
+    assert events[1]["signal"] == {"type": "tasks.updated", "done": 1, "total": 3, "items": [
+        {"content": "Ler o MVP", "status": "completed"}, {"content": "Escrever o teste", "status": "in_progress"},
+        {"content": "Rodar a suíte", "status": "pending"}]}
+    assert events[1]["native"]["body"]["name"] == "TodoWrite"                    # o nativo fica intacto
+    world = World()
+    for event in events:
+        world.apply(event)
+    assert world.alter_ego(f"claude:{SID}").tasks["done"] == 1
+
+
+def test_each_todowrite_replaces_the_list_and_an_empty_one_clears_it(tmp_path, jsonl):
+    jsonl(session_file(tmp_path), [
+        todo_write("a1", [{"content": "um", "status": "pending"}, {"content": "dois", "status": "pending"}]),
+        todo_write("a2", [{"content": "um", "status": "completed"}, {"content": "dois", "status": "pending"}]),
+        todo_write("a3", []),
+    ])
+    signals = [e["signal"] for e in work(reader(tmp_path).poll()) if e["signal"]["type"] == "tasks.updated"]
+    assert [(s["done"], s["total"]) for s in signals] == [(0, 2), (1, 2), (0, 0)]
+
+
+def test_todowrite_without_a_list_says_nothing_about_tasks(tmp_path, jsonl):
+    jsonl(session_file(tmp_path), [
+        {"type": "assistant", "uuid": "a1", "message": {"id": "m1", "content": [
+            {"type": "tool_use", "id": "t1", "name": "TodoWrite", "input": {"todos": "nenhuma"}},
+            {"type": "tool_use", "id": "t2", "name": "TodoWrite", "input": None}]}},
+    ])
+    events = work(reader(tmp_path).poll())
+    assert all(e["signal"]["type"] != "tasks.updated" for e in events)

@@ -166,3 +166,53 @@ def test_reasoning_block_with_the_observed_shape_is_declared_raw(tmp_path, db):
     assert validate(thought) is None
     assert thought["inner"] == {"role": "thought", "text": "pensando", "fidelity": "raw"}
 
+
+# --- a lista de tarefas (ticket 14, R50): o `todowrite` guarda a lista inteira em `state.input.todos` ----------------------------
+
+def todowrite_block(index, todos, status="completed"):
+    return {"type": "tool", "id": f"t{index}", "name": "todowrite", "time": {},
+            "state": {"status": status, "input": {"todos": todos}, "content": [{"type": "text", "text": "ok"}],
+                      "metadata": {"todos": todos, "truncated": False}}}
+
+
+def task_signals(events):
+    return [e["signal"] for e in events if e["signal"] and e["signal"]["type"] == "tasks.updated"]
+
+
+def test_todowrite_becomes_the_task_list_once_the_tool_finishes(tmp_path, db):
+    db.session("ses_root1")
+    r = reader(tmp_path)
+    r.poll()
+    todos = [{"content": "Ler o MVP", "status": "completed", "priority": "high"},
+             {"content": "Escrever o teste", "status": "in_progress", "priority": "high"},
+             {"content": "Rodar a suíte", "status": "pending", "priority": "medium"}]
+    db.put("msg_a", "ses_root1", "assistant", {"content": [todowrite_block(0, todos, status="running")], "time": {"created": 3}}, seq=1)
+    assert task_signals(r.poll()) == []                                            # ainda rodando: a lista pode mudar
+    db.put("msg_a", "ses_root1", "assistant", {"content": [todowrite_block(0, todos)], "time": {"created": 3}}, seq=1)
+    events = r.poll()
+    assert all(validate(e) is None for e in events)
+    assert task_signals(events) == [{"type": "tasks.updated", "done": 1, "total": 3, "items": [
+        {"content": "Ler o MVP", "status": "completed"}, {"content": "Escrever o teste", "status": "in_progress"},
+        {"content": "Rodar a suíte", "status": "pending"}]}]
+    db.put("msg_a", "ses_root1", "assistant", {"content": [todowrite_block(0, todos)], "time": {"created": 3}}, seq=1)
+    assert task_signals(r.poll()) == []                                            # a linha reescrita não repete a lista
+
+
+def test_todowrite_of_a_subagent_session_is_not_the_leader_list(tmp_path, db):
+    db.session("ses_root1")
+    db.session("ses_child", parent="ses_root1", agent="explore")
+    r = reader(tmp_path)
+    r.poll()
+    db.put("msg_c", "ses_child", "assistant", {"content": [todowrite_block(0, [{"content": "x", "status": "pending"}])],
+                                              "time": {"created": 3}}, seq=1)
+    assert task_signals(r.poll()) == []
+
+
+def test_a_cancelled_task_is_not_counted(tmp_path, db):
+    db.session("ses_root1")
+    r = reader(tmp_path)
+    r.poll()
+    todos = [{"content": "a", "status": "completed", "priority": "low"}, {"content": "b", "status": "cancelled", "priority": "low"}]
+    db.put("msg_a", "ses_root1", "assistant", {"content": [todowrite_block(0, todos)], "time": {"created": 3}}, seq=1)
+    (signal,) = task_signals(r.poll())
+    assert (signal["done"], signal["total"]) == (1, 1)
