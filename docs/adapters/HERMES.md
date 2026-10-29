@@ -148,3 +148,9 @@ A chamada de `terminal` (`tool_calls[].id` + `function.arguments.command`) é le
 ## Lista de tarefas (ticket 14, R50, D-093)
 
 **Nada a ler por enquanto.** As ferramentas chamadas nas mensagens desta máquina (`messages.tool_calls`) foram: `terminal`, `read_file`, `search_files`, `web_search`, `computer_use`, `browser_exec`, `clarify`, `web_extract`, `patch`, `process` e `write_file`; nenhuma é uma lista de tarefas, e o Orb não tem o formato de uma. Sem lista gravada pelo provider, o Hermes não mostra progresso (R50). Se uma versão futura gravar uma lista, o formato entra aqui antes do leitor.
+
+## Leitura do passado (ticket 25, R48 camada 3)
+
+`StateDbPast` (`past.py`) entrega os eventos de **uma sessão antiga inteira, com a Team dela**, em lotes, para o cálculo único da XP retroativa (D-088, D-108). Reaproveita o `StateDbReader` com `sessions=` (a sessão e as filhas com `source = "subagent"`), `replay=True`: `WHERE id > ? AND session_id IN (...) ORDER BY id LIMIT 500`; o fim é `drained` (menos de 500 linhas no lote).
+Somente leitura, como o resto do adapter. **Confiança: baixa para dado real**: testado só com amostras sintéticas da forma já verificada; nenhum histórico real foi lido para este ticket
+(o custo em um histórico grande ainda não foi medido).

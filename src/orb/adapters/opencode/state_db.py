@@ -73,11 +73,16 @@ def _task_list(name: str, state: dict[str, Any]) -> dict[str, Any] | None:
 
 class OpencodeDbReader:
     def __init__(self, cwd: str | None = None, *, realm: str = "", data_dir: Path | None = None,
-                 since: float | None = None, replay: bool = False, realm_of: RealmOf | None = None) -> None:
+                 since: float | None = None, replay: bool = False, realm_of: RealmOf | None = None,
+                 sessions: frozenset[str] | None = None) -> None:
+        """`sessions`: só as mensagens destas sessões (a leitura do passado abre uma sessão por vez). `drained` diz que a última leitura
+        não achou mais nada a ler (acabaram as mensagens, ou não há banco)."""
         self.realm_of = realm_of or single_realm(cwd, realm)
         self.db_path = (data_dir or opencode_data_dir()) / "opencode.db"
         self.since = time.time() if since is None else since
         self.replay = replay
+        self.sessions = sessions
+        self.drained = False
         self.cursor: tuple[int, str] | None = None
         self._sessions: dict[str, dict[str, Any] | None] = {}
         self._announced: set[str] = set()
@@ -85,6 +90,7 @@ class OpencodeDbReader:
         self._emitted: "OrderedDict[str, set[str]]" = OrderedDict()
 
     def poll(self) -> list[Event]:
+        self.drained = True
         if not self.db_path.is_file():
             return []
         conn = connect_readonly(self.db_path)
@@ -99,11 +105,15 @@ class OpencodeDbReader:
                     row = conn.execute('SELECT time_updated, id FROM "session_message" '
                                        "ORDER BY time_updated DESC, id DESC LIMIT 1").fetchone()
                     self.cursor = (int(row[0]), str(row[1])) if row else (-1, "")
+                    self.drained = False
                     return []
             last_time, last_id = self.cursor
+            only = sorted(self.sessions) if self.sessions is not None else []
+            scope = f" AND session_id IN ({', '.join('?' for _ in only)})" if self.sessions is not None else ""
             rows = select(conn, "session_message", columns,
-                           "WHERE time_updated > ? OR (time_updated = ? AND id > ?) "
-                           "ORDER BY time_updated, id LIMIT ?", (last_time, last_time, last_id, BATCH))
+                           f"WHERE (time_updated > ? OR (time_updated = ? AND id > ?)){scope} "
+                           "ORDER BY time_updated, id LIMIT ?", (last_time, last_time, last_id, *only, BATCH))
+            self.drained = len(rows) < BATCH
             events: list[Event] = []
             for row in rows:
                 self.cursor = (int(row["time_updated"]), str(row["id"]))

@@ -87,9 +87,11 @@ class RolloutReader:
 
     def __init__(self, cwd: str | None = None, *, realm: str = "", since: float | None = None,
                  fresh_after: float | None = None, home: Path | None = None, replay: bool = False,
-                 realm_of: RealmOf | None = None) -> None:
+                 realm_of: RealmOf | None = None, paths: list[Path] | None = None) -> None:
         """`since`: só threads escritas depois disto são acompanhadas (a sala, R28a). `fresh_after`: threads
-        criadas depois disto são lidas desde o começo; as mais velhas, só do fim (nada é relido, R48)."""
+        criadas depois disto são lidas desde o começo; as mais velhas, só do fim (nada é relido, R48). `paths`: só estes rollouts (a leitura do
+        passado abre uma sessão por vez, sem varrer a árvore inteira)."""
+        self.paths = paths
         self.realm_of = realm_of or single_realm(cwd, realm)
         self.since = time.time() if since is None else since
         self.fresh_after = self.since if fresh_after is None else fresh_after
@@ -118,7 +120,7 @@ class RolloutReader:
         root = sessions_root(self.home)
         if not root.is_dir():
             return
-        for path in root.glob("*/*/*/rollout-*.jsonl"):
+        for path in (self.paths if self.paths is not None else root.glob("*/*/*/rollout-*.jsonl")):
             if path in self._threads or path in self._ignored:
                 continue
             try:
@@ -160,6 +162,10 @@ class RolloutReader:
         titles = load_session_titles(path)
         if titles is not None:
             self._titles = titles
+
+    def behind(self) -> bool:
+        """Ainda há bytes por ler em alguma thread acompanhada? A leitura do passado pergunta isto entre os lotes."""
+        return any(thread.follower.behind for thread in self._threads.values())
 
     def poll(self) -> list[Event]:
         self._discover()

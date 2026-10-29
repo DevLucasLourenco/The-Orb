@@ -4,7 +4,7 @@
 > R55. Nada é implementado antes dos tickets (P1, P5).
 > Vocabulário: [CONTEXT.md](../CONTEXT.md) · Regras: [RULES.md](RULES.md) · Visual: [VISUAL.md](VISUAL.md).
 
-Última atualização: 2026-10-21
+Última atualização: 2026-10-29
 
 ---
 
@@ -82,6 +82,10 @@ cálculo retroativo (§7) rodado sobre o histórico real desta máquina, ajusta-
 sessão típica fique entre os níveis 2 e 4 e só sessões excepcionais passem do 8. O ajuste é uma
 nova versão da tabela, registrada em [DECISIONS.md](DECISIONS.md).
 
+**Feito (ticket 25):** o relatório da distribuição de níveis, no painel Progressão (R54, D-107). "Sessão típica" é a **mediana** das sessões que têm alguma XP; "só excepcionais passam do 8" é
+**no máximo 5%** delas acima do nível 8 (proposta do ticket, qt25-3). O relatório mostra a curva em uso, curvas candidatas (k = 25, 50, 75, 100, 150, 200), a faixa de *k* que cumpre a meta e,
+em cada curva, como ficariam o Realm e Mankind mantendo a proporção 1 : 10 : 50. **Quem escolhe o *k* é o Lucas**, olhando o histórico real; o escolhido vira a tabela v2.
+
 O nível é função da XP **confirmada**. Se um commit for revertido, a XP dele é anulada e o nível
 pode cair; é raro e é a verdade do projeto.
 
@@ -135,11 +139,13 @@ centenas de MB ([ARCHITECTURE.md](ARCHITECTURE.md) §5). O cálculo retroativo l
 **uma vez**, em segundo plano, e nunca de novo (o registro local guarda o resultado). A alternativa
 é começar do zero no dia em que o Orb passa a registrar, como o Chronicle (D-078).
 
+**Feito (ticket 25):** a leitura retroativa roda sozinha ao abrir o Orb (sem botão nem configuração), uma sessão por vez e descansando entre os lotes; o ponto de parada é uma marca por sessão e por versão da tabela, gravada junto com o extrato; o indicador de progresso aparece na barra de cima e no painel (V-HUD-18). Trocar a versão da tabela lê o passado de novo para a versão nova. Os commits antigos que passaram de 30 dias sem chegar à principal expiram na leitura; os recentes esperam o git, como os da sala. A sessão antiga não vira personagem: só soma nas escalas.
+
 ## 8. Onde mora no código
 
 **Feito (ticket 22, D-198 a D-205):** o módulo mora dentro do Core, em `src/orb/core/progression.py`, com a tabela v1 em
 `rules.py` (`XP_TABLE`), e não num pacote `src/orb/progression/` à parte: o Core só depende do Protocol, e o mundo (ponto de teste, D-099) é quem
-aplica os eventos. O extrato fica no registro local (`xp_ledger`). **Ticket 23 (rodada Q-T23 em DECISIONS.md):** o X-COMMIT (evidência no `command.result.commit`, Probe dos commits em `probes/commits.py`, estados provisória, confirmada, anulada e expirada no extrato), os níveis do Realm e de Mankind (`World.snapshot`) e o painel Progressão. Falta o que o desenho abaixo guarda para o ticket 24 (conquistas) e o 25 (passado e calibração).
+aplica os eventos. O extrato fica no registro local (`xp_ledger`). **Ticket 23 (rodada Q-T23 em DECISIONS.md):** o X-COMMIT (evidência no `command.result.commit`, Probe dos commits em `probes/commits.py`, estados provisória, confirmada, anulada e expirada no extrato), os níveis do Realm e de Mankind (`World.snapshot`) e o painel Progressão. **Ticket 25:** a leitura única do passado (`gateway/past.py`, um `past.py` por adapter, `xp_past` no registro) e o relatório de calibração (`core/calibration.py`). Falta o que o desenho abaixo guarda para o ticket 24 (conquistas) e o *k* que o Lucas escolher com o relatório real (D-239).
 
 - **`src/orb/progression/`**: domínio puro, como o Core. Entra: eventos do Protocol e fatos do git
   (dos Probes). Sai: entradas do extrato e conquistas. Tabelas em `rules.py` (a tabela v1 da §3, a

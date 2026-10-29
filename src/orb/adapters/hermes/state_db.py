@@ -52,11 +52,16 @@ def _iso(value: Any) -> str | None:
 
 class StateDbReader:
     def __init__(self, cwd: str | None = None, *, realm: str = "", home: Path | None = None,
-                 since: float | None = None, replay: bool = False, realm_of: RealmOf | None = None) -> None:
+                 since: float | None = None, replay: bool = False, realm_of: RealmOf | None = None,
+                 sessions: frozenset[str] | None = None) -> None:
+        """`sessions`: só as mensagens destas sessões (a leitura do passado abre uma sessão por vez). `drained` diz que a última leitura
+        não achou mais nada a ler (acabaram as mensagens, ou não há banco)."""
         self.realm_of = realm_of or single_realm(cwd, realm)
         self.db_path = (home or hermes_home()) / "state.db"
         self.since = time.time() if since is None else since
         self.replay = replay
+        self.sessions = sessions
+        self.drained = False
         self.last_id: int | None = None
         self._sessions: dict[str, dict[str, Any] | None] = {}
         self._factories: dict[str, EventFactory] = {}
@@ -64,6 +69,7 @@ class StateDbReader:
         self._shell_calls: OrderedDict[str, str] = OrderedDict()      # tool_call_id -> comando, até o resultado
 
     def poll(self) -> list[Event]:
+        self.drained = True
         if not self.db_path.is_file():
             return []
         conn = connect_readonly(self.db_path)
@@ -73,9 +79,13 @@ class StateDbReader:
                 return []
             if self.last_id is None:
                 self.last_id = 0 if self.replay else int(conn.execute("SELECT COALESCE(MAX(id), 0) FROM messages").fetchone()[0])
+                self.drained = False
                 return []
-            rows = conn.execute(f"SELECT {', '.join(columns)} FROM messages WHERE id > ? ORDER BY id LIMIT ?",
-                                (self.last_id, BATCH)).fetchall()
+            only = sorted(self.sessions) if self.sessions is not None else []
+            scope = f" AND session_id IN ({', '.join('?' for _ in only)})" if self.sessions is not None else ""
+            rows = conn.execute(f"SELECT {', '.join(columns)} FROM messages WHERE id > ?{scope} ORDER BY id LIMIT ?",
+                                (self.last_id, *only, BATCH)).fetchall()
+            self.drained = len(rows) < BATCH
             events: list[Event] = []
             for row in rows:
                 self.last_id = int(row["id"])

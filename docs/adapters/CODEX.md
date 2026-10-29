@@ -221,3 +221,9 @@ Só estrutura e contagens, nos 12 rollouts mais recentes (176 linhas `agent_mess
 **Rollouts (nível 0): não implementado.** Nenhuma das 35 sessões recentes nem dos rollouts desta máquina tem `update_plan` ou plano (`function_call`: só `followup_task`, `wait`, `spawn_agent`...; `custom_tool_call`: só `exec`; itens `item_completed` sem `Plan`). A ferramenta `update_plan` emite `EventMsg::PlanUpdate` (código-fonte do Codex), mas não há evidência de que o rollout o grave. Sem exemplo real, o leitor de rollout não inventa.
 
 **Confiança:** média para o app-server (é o esquema 0.163.0, mas nenhum `turn/plan/updated` foi visto ao vivo); nenhuma para os rollouts.
+
+## Leitura do passado (ticket 25, R48 camada 3)
+
+`RolloutPast` (`past.py`) entrega os eventos de **uma sessão antiga inteira, com a Team dela**, em lotes, para o cálculo único da XP retroativa (D-088, D-108). Reaproveita o `RolloutReader` restrito aos rollouts da sessão e das threads-filhas dela (`paths`, abertos pelo `SessionMeta.path` que o índice informa; as filhas vêm do `parent_id`), `replay=True`, em lotes de até 4 MiB; sem varrer a árvore de sessões.
+Somente leitura, como o resto do adapter. **Confiança: baixa para dado real**: testado só com amostras sintéticas da forma já verificada; nenhum histórico real foi lido para este ticket
+(o custo em um histórico grande ainda não foi medido).

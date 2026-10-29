@@ -21,13 +21,23 @@ function stat(label, value, cls = "") {
 }
 
 // O nível de Mankind e a barra na barra de cima (V-HUD-12): o botão que abre o painel Progressão. Branco neutro, sem cor de significado.
-function topLevel(xp) {
+function topLevel(xp, past) {
   const button = document.getElementById("open-progress");
   button.replaceChildren(el("span", null, `Mankind · nível ${xp.level}`), xpTrack(xp), el("span", "xp-n", `${xp.total} XP`));
+  const reading = pastLabel(past);
+  if (reading) button.append(el("span", "xp-n", reading));          // o indicador da leitura do passado, só enquanto ela roda (V-HUD-18)
+}
+
+// A leitura única do passado (R48, V-HUD-18): na barra de cima só enquanto lê ou espera; o resultado fica no painel Progressão.
+function pastLabel(past) {
+  if (!past) return null;
+  if (past.state === "running") return `lendo o passado · ${past.done} de ${past.total}`;
+  if (past.state === "paused") return "passado em pausa";
+  return null;
 }
 
 export function renderTopbar(world) {
-  topLevel(world.mankind.xp);
+  topLevel(world.mankind.xp, world.xp_past);
   const totals = world.realms.map(summarize).reduce((a, s) => {
     for (const k of Object.keys(s)) a[k] = (a[k] || 0) + s[k];
     return a;
@@ -368,6 +378,79 @@ function receipt(entry) {
   return String(id).length > 24 ? `${String(id).slice(0, 12)}…` : String(id);
 }
 
+// O estado da leitura do passado no painel (V-HUD-18): quantas sessões antigas já foram lidas, por provider.
+function pastBlock(past) {
+  if (!past) return el("p", "hint", "Sem registro local, o Orb não lê o passado: só soma o que acontece enquanto está aberto.");
+  const said = {
+    waiting: "O Orb ainda está listando as sessões antigas.",
+    running: `Lendo as sessões antigas, uma vez só e em segundo plano: ${past.done} de ${past.total}.`,
+    paused: "A leitura do passado está em pausa: o registro local não está gravando (sem ele não há onde guardar o ponto de parada).",
+    done: `Passado lido: ${past.total} sessões, cada uma uma única vez (tabela v${past.version}).`,
+  };
+  const box = el("div", "calib");
+  const bar = el("span", "bar");
+  const fill = el("i");
+  fill.style.width = `${past.total ? Math.round((past.done / past.total) * 100) : 0}%`;
+  bar.append(fill);
+  box.append(el("p", "hint", said[past.state] || ""), bar);
+  for (const [name, count] of Object.entries(past.providers || {})) {
+    box.append(el("span", "xp-n", `${provider(name).label}: ${count.done} de ${count.total}`));
+  }
+  if (past.errors) box.append(el("p", "hint", past.errors === 1 ? "1 sessão não pôde ser lida e volta na próxima abertura." : `${past.errors} sessões não puderam ser lidas e voltam na próxima abertura.`));
+  return box;
+}
+
+const pct = (share) => (share == null ? "—" : `${Math.round(share * 100)}%`);
+
+// Os níveis de uma curva, do 1 ao 12 e "13 ou mais": quantas sessões em cada (V-HUD-19). Barras em branco neutro, sem cor de significado.
+function levelBars(levels) {
+  const grouped = {};
+  for (const [n, count] of Object.entries(levels)) {
+    const key = Number(n) > 12 ? "13 ou mais" : `nível ${n}`;
+    grouped[key] = (grouped[key] || 0) + count;
+  }
+  const top = Math.max(1, ...Object.values(grouped));
+  const box = el("div", "lvls");
+  for (const [name, count] of Object.entries(grouped)) {
+    const bar = el("span", "bar");
+    const fill = el("i");
+    fill.style.width = `${Math.round((count / top) * 100)}%`;
+    bar.append(fill);
+    box.append(el("span", null, name), bar, el("span", "xp-n", String(count)));
+  }
+  return box;
+}
+
+// A distribuição de níveis com o histórico real (V-HUD-19, R54, D-107): o que o Lucas olha para aprovar a curva. O Orb só mostra; a curva só
+// muda com a aprovação dele (uma nova versão da tabela).
+function reportBlock(report) {
+  const box = el("div", "calib");
+  if (!report.sessions.with_xp) {
+    box.append(el("p", "hint", "Ainda sem sessões com XP: o relatório aparece quando o Orb tiver lido algumas."));
+    return box;
+  }
+  const goal = report.target;
+  box.append(el("p", "hint", `${report.sessions.with_xp} sessões com XP (${report.sessions.zero} sem nenhuma) · XP da sessão: mediana ${report.xp.median}, 90% até ${report.xp.p90}, 99% até ${report.xp.p99}, máxima ${report.xp.max}.`),
+             el("p", "hint", `Meta (D-107): a sessão típica entre os níveis ${goal.typical[0]} e ${goal.typical[1]}, e no máximo ${Math.round(goal.exceptional_share * 100)}% das sessões acima do ${goal.exceptional_level}.`),
+             el("h4", null, `Curva em uso: k = ${report.current.k} (tabela v${report.version})`), levelBars(report.current.levels));
+  const head = el("div", "crow head");
+  head.append(el("span", null, "curva"), el("span", null, "nível mediano"), el("span", null, `entre ${goal.typical[0]} e ${goal.typical[1]}`),
+              el("span", null, `acima do ${goal.exceptional_level}`), el("span", null, "meta"));
+  const rows = [report.current, ...report.candidates].sort((a, b) => a.k - b.k).map((curve) => {
+    const row = el("div", `crow${curve.k === report.current.k ? " now" : ""}`);
+    row.append(el("span", null, `k = ${curve.k}${curve.k === report.current.k ? " (em uso)" : ""}`), el("span", null, String(curve.median_level)),
+               el("span", null, pct(curve.typical_share)), el("span", null, pct(curve.above_share)), el("span", null, curve.meets ? "cumpre" : "não cumpre"));
+    row.title = `Realm k = ${curve.realm_k}: ${Object.entries(curve.realm_levels).map(([n, c]) => `${c} no nível ${n}`).join(", ") || "nenhum"} · Mankind k = ${curve.mankind_k}: nível ${curve.mankind_level}`;
+    return row;
+  });
+  const fit = report.fit
+    ? `Com este histórico, a meta é cumprida por k de ${report.fit.min} a ${report.fit.max} (de 5 em 5). Realm e Mankind seguiriam a mesma proporção (1 : ${report.current.realm_k / report.current.k} : ${report.current.mankind_k / report.current.k}).`
+    : "Nenhum k cumpre a meta com este histórico (a distribuição é muito espalhada para a curva k·n·(n−1)).";
+  box.append(el("h4", null, "Comparação de curvas"), head, ...rows, el("p", "hint", fit),
+             el("p", "hint", "O Orb só mostra estes números. Para trocar a curva, aprove um k: ele vira uma nova versão da tabela e o passado é lido de novo."));
+  return box;
+}
+
 export function renderProgress(extract, world) {
   const body = document.getElementById("progress-body");
   const xp = world.mankind.xp;
@@ -397,6 +480,8 @@ export function renderProgress(extract, world) {
     return row;
   });
   body.replaceChildren(el("h3", null, "Mankind"), head, el("h3", null, "Placar por provider"), board,
+                       el("h3", null, "O passado"), pastBlock(world.xp_past),
+                       ...(extract.report ? [el("h3", null, "Distribuição de níveis"), reportBlock(extract.report)] : []),
                        el("h3", null, `Extrato · ${rows.length}${rows.length >= extract.limit ? " mais novas" : ""}`),
                        ...(rows.length ? rows : [el("p", "hint", "Ainda sem XP: ela nasce de testes que passam, consertos, subagentes concluídos, ofício e commits que chegam à principal.")]));
 }

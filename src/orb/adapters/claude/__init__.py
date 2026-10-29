@@ -6,7 +6,8 @@ Nível 0: `TranscriptReader` (lê ~/.claude/projects). Nível 1: `session_settin
 from .hooks import HOOK_EVENTS, HookTranslator, session_settings
 from .index import TranscriptIndex
 from .mapping import CAPABILITIES, PROVIDER
+from .past import TranscriptPast
 from .transcript import TranscriptReader, encode_cwd, project_dir, projects_root
 
-__all__ = ["CAPABILITIES", "HOOK_EVENTS", "HookTranslator", "PROVIDER", "TranscriptIndex", "TranscriptReader",
-           "encode_cwd", "project_dir", "projects_root", "session_settings"]
+__all__ = ["CAPABILITIES", "HOOK_EVENTS", "HookTranslator", "PROVIDER", "TranscriptIndex", "TranscriptPast",
+           "TranscriptReader", "encode_cwd", "project_dir", "projects_root", "session_settings"]

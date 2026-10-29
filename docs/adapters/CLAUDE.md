@@ -222,3 +222,9 @@ O bloco `tool_result` de uma chamada de `Bash`/`PowerShell` vira o sinal `comman
 **Confiança: média.** O formato vem da documentação oficial ([Track todos, Agent SDK](https://code.claude.com/docs/en/agent-sdk/todo-tracking)); **nenhuma chamada de `TodoWrite` apareceu nos transcripts desta máquina** (conferido pela estrutura: nomes de ferramenta, sem conteúdo), então o leitor está coberto só por amostra sintética.
 
 **Fora do escopo, de propósito:** `TaskCreate`, `TaskUpdate`, `TaskList` e `TaskGet`. A documentação diz que são o conjunto padrão em alguns modelos (e o `TodoWrite` só com `CLAUDE_CODE_ENABLE_TASKS=0`); cada chamada traz uma tarefa, o id vem do resultado (`toolUseResult.task.id`) e a lista só se reconstrói vendo a sessão desde o começo, o que o leitor não faz com um transcript que já existia (começa do fim, R48). Fica para um ticket próprio, depois de ver um transcript real com essas ferramentas.
+
+## Leitura do passado (ticket 25, R48 camada 3)
+
+`TranscriptPast` (`past.py`) entrega os eventos de **uma sessão antiga inteira, com a Team dela**, em lotes, para o cálculo único da XP retroativa (D-088, D-108). Reaproveita o `TranscriptReader` do modo Hospedar (`session_id`, `replay=True`, `since=0`): o transcript inteiro e a pasta `<sessão>/subagents/`, em lotes de até 4 MiB (`READ_CHUNK`); o fim da leitura é `JsonlFollower.behind` (nada por ler).
+Somente leitura, como o resto do adapter. **Confiança: baixa para dado real**: testado só com amostras sintéticas da forma já verificada; nenhum histórico real foi lido para este ticket
+(o custo em um histórico grande ainda não foi medido).

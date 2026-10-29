@@ -21,16 +21,17 @@ from typing import Any, Protocol
 
 from ..adapters._shared import (
     EventFactory,
+    PastSource,
     SessionIndex,
     SessionMeta,
     norm_path,
     realm_id_for,
     realm_resolver,
 )
-from ..adapters.claude import TranscriptIndex, TranscriptReader
-from ..adapters.codex import RolloutIndex, RolloutReader
-from ..adapters.hermes import StateDbIndex, StateDbReader
-from ..adapters.opencode import OpencodeDbIndex, OpencodeDbReader
+from ..adapters.claude import TranscriptIndex, TranscriptPast, TranscriptReader
+from ..adapters.codex import RolloutIndex, RolloutPast, RolloutReader
+from ..adapters.hermes import StateDbIndex, StateDbPast, StateDbReader
+from ..adapters.opencode import OpencodeDbIndex, OpencodeDbPast, OpencodeDbReader
 from ..core import rules
 from ..protocol import Event
 from .projects import Exclusions, ProjectResolver
@@ -105,6 +106,12 @@ class Observatory:
             "codex": RolloutReader(since=self.since, fresh_after=self.fresh_after, home=home, realm_of=self.realm_of),
             "hermes": StateDbReader(since=self.since, home=hermes_home, realm_of=self.realm_of),
             "opencode": OpencodeDbReader(since=self.since, data_dir=opencode_dir, realm_of=self.realm_of),
+        }
+        self.past: dict[str, PastSource] = {                   # a leitura única do passado (R48, camada 3): uma sessão inteira por vez
+            "claude": TranscriptPast(home=home),
+            "codex": RolloutPast(home=home),
+            "hermes": StateDbPast(home=hermes_home),
+            "opencode": OpencodeDbPast(data_dir=opencode_dir),
         }
         for folder in folders:
             self.add(folder)
@@ -214,6 +221,11 @@ class Observatory:
                 self._rostered.add(key)
                 self._roster.append(_presence(meta, realm))
         self._sessions = by_realm
+
+    def leaders(self) -> list[tuple[SessionMeta, str]]:
+        """As sessões líderes que o índice listou, cada uma com o realm dela (as que não são de nenhum realm não entram). É por aqui que a
+        leitura do passado sabe o que existe; lê só a referência de `_sessions`, trocada de uma vez, então roda em qualquer thread."""
+        return [(meta, realm) for realm, metas in self._sessions.items() for meta in metas]
 
     def set_recent_seconds(self, seconds: float) -> None:
         """O prazo da sala mudou na tela de configurações (R28a, R29): a leitura passa a cobrir a janela nova e o

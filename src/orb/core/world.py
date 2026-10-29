@@ -13,9 +13,10 @@ from datetime import datetime
 from typing import Any, NamedTuple
 
 from ..protocol import Event, validate
-from . import building, city, facade, profile, room, rules, tasks
+from . import building, calibration, city, facade, profile, room, rules, tasks
 from .names import NameSource
-from .progression import Ledger, XpSource, scale
+from .past import PastEgo
+from .progression import Entry, Ledger, XpSource, scale
 
 _TOKEN_FIELDS = ("input_tokens", "output_tokens", "cache_read_tokens", "reasoning_tokens")
 _ACTION_CHARS = 240     # tamanho do "fazendo agora" no overview
@@ -181,6 +182,7 @@ class World:
         self.changes: dict[str, dict[str, Any]] = {}          # estado por realm (D-085): última leitura das alterações locais (git)
         self.tests: dict[str, dict[str, Any]] = {}            # estado por realm (D-085): o último resultado de um comando de teste (Weather)
         self.window_percent = window_percent                  # quanto vale uma janela acesa (R20d); o Hub o muda pelas preferências
+        self.past: dict[str, dict[str, PastEgo]] = {}         # a XP das sessões antigas (R48, camada 3): realm -> sessão -> o que ela rendeu
         self._facades: dict[str, _FacadeCache] = {}           # fachada por realm, até algo mudar
         self._realm_seen: deque[str] = deque(maxlen=256)      # ids recentes de eventos de realm (dedupe)
         self._city: tuple[tuple[str, ...], dict[str, Any]] = ((), city.plan(()))     # o traçado da última lista de realms
@@ -208,6 +210,16 @@ class World:
                 return egos[ego_id]
         return None
 
+    def add_past(self, ego_id: str, realm_id: str, provider: str, entries: Iterable[Entry]) -> None:
+        """A leitura do passado terminou uma sessão: `entries` é tudo o que o registro guarda dela, nesta versão da tabela. Uma sessão que já é um
+        personagem recebe o que faltava no extrato dela; as outras ficam só como XP (não aparecem na cidade, não têm estado nem nome)."""
+        live = self.alter_ego(ego_id)
+        if live is not None:
+            live.xp.absorb(entries)
+            return
+        self.add_realm(realm_id)
+        self.past.setdefault(realm_id, {})[ego_id] = PastEgo.from_entries(self.xp_table, ego_id, realm_id, provider, entries)
+
     def apply(self, event: Event) -> bool:
         """Aplica um evento. Falso se inválido, repetido ou sem Alter Ego."""
         if validate(event) is not None:
@@ -220,6 +232,7 @@ class World:
         ego = egos.get(ego_id)
         if ego is None:
             stored = self.xp.entries_of(ego_id, self.xp_table.version) if self.xp is not None else ()
+            self.past.get(event["realm"], {}).pop(ego_id, None)          # a sessão antiga voltou à sala: o extrato dela agora é do personagem
             ego = egos[ego_id] = AlterEgo(id=ego_id, realm=event["realm"], provider=event["provider"],
                                           name=self._name_for(ego_id, egos), xp=Ledger(self.xp_table, stored))
         if not ego.remember(event["id"]):
@@ -305,28 +318,35 @@ class World:
     def _settle_commits(self, realm_id: str, commits: list[dict[str, Any]], ts: str) -> None:
         """O que o git disse dos commits das sessões deste realm (R53): confirma, anula ou expira a XP de cada um. Só entra quem uma
         sessão reivindicou: o git falar de um commit que ninguém reportou não faz nada (D-106)."""
-        for ego in self.realms.get(realm_id, {}).values():
-            for entry in ego.xp.settle(commits, ts):
+        for ego_id, ledger in self._ledgers(realm_id):
+            for entry in ledger.settle(commits, ts):
                 if self.xp is not None:
-                    self.xp.record(ego.id, entry)
+                    self.xp.record(ego_id, entry)
+
+    def _ledgers(self, realm_id: str | None = None) -> list[tuple[str, Ledger]]:
+        """Os extratos que o git ainda pode mudar: os dos personagens e os das sessões antigas (de um realm, ou de todos)."""
+        ids = [realm_id] if realm_id is not None else list(self.realms)
+        found = [(ego.id, ego.xp) for rid in ids for ego in self.realms.get(rid, {}).values()]
+        for rid in (ids if realm_id is not None else list(self.past)):
+            found += [(past.ego, past.commits) for past in list(self.past.get(rid, {}).values()) if past.commits.entries]     # só quem tem commit a decidir
+        return found
 
     def expire_commits(self, now: datetime) -> None:
         """O prazo de 30 dias dos commits que não chegaram à principal vale com o git respondendo ou não (sem repositório, realm escondido,
         Probe parado): quem avança o mundo chama isto com a hora dele. O que expira é guardado no extrato como qualquer mudança."""
         _require_aware(now)
-        for egos in self.realms.values():
-            for ego in egos.values():
-                for entry in ego.xp.settle([], now.isoformat()):
-                    if self.xp is not None:
-                        self.xp.record(ego.id, entry)
+        for ego_id, ledger in self._ledgers():
+            for entry in ledger.settle([], now.isoformat()):
+                if self.xp is not None:
+                    self.xp.record(ego_id, entry)
 
     def pending_commits(self, realm_id: str, now: datetime) -> list[dict[str, Any]]:
         """O que perguntar ao git sobre os commits deste realm (quem lê o git é o Probe, na borda): os provisórios e os confirmados
         ainda na janela de reversão. O mesmo recibo de duas sessões é perguntado uma vez."""
         _require_aware(now)
         asked: dict[str, dict[str, Any]] = {}
-        for ego in self.realms.get(realm_id, {}).values():
-            for query in ego.xp.commit_queries(now):
+        for _ego_id, ledger in self._ledgers(realm_id):
+            for query in ledger.commit_queries(now):
                 asked.setdefault(query["key"], query)
         return list(asked.values())
 
@@ -347,14 +367,32 @@ class World:
         provisional = 0
         for realm in realms:
             egos = self.realms[realm["id"]].values()
-            pending = sum(ego.xp.provisional for ego in egos)
-            by_realm[realm["id"]] = {**scale(sum(ego.xp.total for ego in egos), self.xp_table.k_realm), "provisional": pending}
+            old = self.past.get(realm["id"], {}).values()          # as sessões antigas também contam (R48): nunca as mesmas dos personagens
+            pending = sum(ego.xp.provisional for ego in egos) + sum(past.provisional for past in old)
+            total = sum(ego.xp.total for ego in egos) + sum(past.total for past in old)
+            by_realm[realm["id"]] = {**scale(total, self.xp_table.k_realm), "provisional": pending}
             provisional += pending
             for ego in egos:
                 if ego.provider is not None:
                     by_provider[ego.provider] = by_provider.get(ego.provider, 0) + ego.xp.total
+            for past in old:
+                by_provider[past.provider] = by_provider.get(past.provider, 0) + past.total
         mankind = {**scale(sum(by_provider.values()), self.xp_table.k_mankind), "provisional": provisional, "by_provider": by_provider}
         return by_realm, mankind
+
+    def xp_report(self) -> dict[str, Any]:
+        """O relatório da distribuição de níveis com o histórico que o Orb leu (R54, D-107): a XP confirmada de cada sessão dos realms que a cidade
+        mostra (as da sala e as antigas), a de cada realm e a de Mankind, na curva em uso e nas candidatas (`calibration.report`)."""
+        sessions, realms = [], []
+        for realm_id in sorted(self.realms.keys() | self.past.keys()):
+            if realm_id in self.hidden:
+                continue
+            # `list(...)`: quem pede o relatório (o loop) não roda na thread que aplica eventos; a cópia é uma só operação
+            totals = [ego.xp.total for ego in list(self.realms.get(realm_id, {}).values())]
+            totals += [past.total for past in list(self.past.get(realm_id, {}).values())]
+            sessions += totals
+            realms.append(sum(totals))
+        return calibration.report(self.xp_table, sessions, realms, sum(realms))
 
     def _realm_facade(self, realm_id: str, metrics: dict[str, Any] | None) -> dict[str, Any] | None:
         """As janelas acesas do prédio (R20): dos andares que a contagem de linhas deu e das alterações locais que o git deu.
