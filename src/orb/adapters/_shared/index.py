@@ -23,6 +23,7 @@ class SessionMeta:
     updated_at: str | None = None
     title: str | None = None
     model: str | None = None
+    path: str | None = None               # o arquivo da sessão, quando o provider guarda um por sessão (a leitura do passado o abre direto)
 
 
 class SessionIndex(Protocol):

@@ -5,6 +5,7 @@ Levantado pela leitura do código-fonte do Hermes 0.20.5; ainda **não verificad
 """
 from .index import StateDbIndex
 from .mapping import CAPABILITIES, PROVIDER
+from .past import StateDbPast
 from .state_db import StateDbReader, hermes_home
 
-__all__ = ["CAPABILITIES", "PROVIDER", "StateDbIndex", "StateDbReader", "hermes_home"]
+__all__ = ["CAPABILITIES", "PROVIDER", "StateDbIndex", "StateDbPast", "StateDbReader", "hermes_home"]

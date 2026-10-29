@@ -48,6 +48,7 @@ from ..terminal_host import (
     winpty_factory,
 )
 from .messages import handle_client_message
+from .past import PastXp
 from .probes import ChangeScheduler, CommitScheduler, LineScheduler
 from .realms import Feed, Observatory, Realm
 
@@ -90,7 +91,8 @@ class Hub:
 
     def __init__(self, observatory: Observatory, *, clock: Callable[[], datetime] | None = None,
                  names: NameSource | None = None, preferences: PreferencesFile | None = None,
-                 tracked: Callable[[Any], list[str] | None] | None = None, xp: XpSource | None = None) -> None:
+                 tracked: Callable[[Any], list[str] | None] | None = None, xp: XpSource | None = None,
+                 past: PastXp | None = None) -> None:
         self.observatory = observatory
         self.clock = clock or (lambda: datetime.now(UTC))
         self.preferences_file = preferences
@@ -109,6 +111,9 @@ class Hub:
         self._commit_asks: dict[str, list[dict[str, Any]]] = {}
         self.commits = CommitScheduler(lambda: self.observatory.realms, lambda: self.world.hidden,
                                        lambda realm_id, now: self._commit_asks.get(realm_id, []), wall=self.clock)
+        # A leitura única do passado (R48, camada 3): roda numa thread própria e só entrega o resultado; quem aplica no mundo é `poll_once`.
+        self.past = past
+        self._published_past: Any = None                   # o indicador de progresso que os clientes viram da última vez
         self.feed = Feed()
         self.clients: set[asyncio.Queue[dict[str, Any]]] = set()
         self._published_time_key: tuple | None = None      # o que os clientes viram da última vez
@@ -128,6 +133,8 @@ class Hub:
             self.world.add_realm(realm_id)           # todo realm observado existe e tem lote, mesmo sem nenhuma sessão ainda
         world = self.world.snapshot(now)
         world["generated_at"] = now.isoformat()
+        if self.past is not None:
+            world["xp_past"] = self.past.progress()          # o indicador de progresso da leitura do passado (V-HUD-18)
         for realm in world["realms"]:
             if realm["id"] in self.observatory.realms:
                 realm.update({k: v for k, v in self.observatory.describe(realm["id"]).items() if k != "id"})
@@ -146,11 +153,17 @@ class Hub:
             if validate(event) is None and self.world.apply(event):
                 applied.append(event)
                 self.feed.add(event)
+        read = self.past.drain() if self.past is not None else []
+        for result in read:                           # as sessões antigas que a leitura do passado terminou entram na conta (R48)
+            self.world.add_past(result.ego, result.realm, result.provider, result.entries)
         now = self.clock()
         self.world.expire_commits(now)                # o prazo dos commits vale mesmo sem o git responder
         self._commit_asks = {rid: self.world.pending_commits(rid, now) for rid in list(self.world.realms)}
         shown = [e for e in applied if e["realm"] not in self.world.hidden]       # o que o Lucas escondeu não é distribuído
-        return shown, bool(shown) or len(self.observatory.realms) != known
+        progress = self.past.progress() if self.past is not None else None
+        past_changed = progress != self._published_past
+        self._published_past = progress
+        return shown, bool(shown) or bool(read) or past_changed or len(self.observatory.realms) != known
 
     def _line_filter(self, realm: Realm) -> LineFilter:
         return self.preferences.line_filter(norm_path(realm.cwd))
@@ -218,6 +231,10 @@ class Hub:
         """O extrato de XP para o painel Progressão (as `XP_EXTRACT_LIMIT` entradas mais novas)."""
         return self.world.xp_extract(XP_EXTRACT_LIMIT)
 
+    def xp_report(self) -> dict[str, Any]:
+        """O relatório da distribuição de níveis com o histórico lido (R54, D-107): o que o Lucas vê para aprovar a curva (ticket 25)."""
+        return self.world.xp_report()
+
     def history(self, realm_id: str) -> list[dict[str, Any]]:
         """O Histórico do realm: as sessões mais antigas que a sala, com o nome histórico quando já foi sorteado."""
         metas = self._history_metas(realm_id)[:HISTORY_LIMIT]
@@ -262,6 +279,8 @@ class Hub:
         self.lines.start()
         self.changes.start()
         self.commits.start()
+        if self.past is not None:
+            self.past.start()
         last_tick = time.monotonic()
         while True:
             try:
@@ -286,10 +305,13 @@ def create_app(config: GatewayConfig, *, pty_factory: Callable = winpty_factory,
                check_installed: bool = True, observatory: Observatory | None = None) -> FastAPI:
     names = LocalRegistry(config.state_dir) if config.state_dir is not None else NameBook()
     preferences = PreferencesFile(config.state_dir) if config.state_dir is not None else None
-    hub = Hub(observatory if observatory is not None else
-              Observatory(config.realms, roots=config.roots, lookback_minutes=config.lookback_minutes,
-                          recent_seconds=config.recent_seconds, home=config.home),
-              names=names, preferences=preferences, xp=names if isinstance(names, LocalRegistry) else None)       # o extrato de XP mora no mesmo registro
+    if observatory is None:
+        observatory = Observatory(config.realms, roots=config.roots, lookback_minutes=config.lookback_minutes,
+                                  recent_seconds=config.recent_seconds, home=config.home)
+    registry = names if isinstance(names, LocalRegistry) else None          # o extrato de XP e o ponto de parada do passado moram no mesmo registro
+    # Sem registro local não há onde guardar o ponto de parada: o passado só se lê com ele (nunca duas vezes a mesma sessão).
+    past = PastXp(observatory.leaders, observatory.past, registry) if registry is not None else None
+    hub = Hub(observatory, names=names, preferences=preferences, xp=registry, past=past)
 
     @contextlib.asynccontextmanager
     async def lifespan(_app: FastAPI):
@@ -301,6 +323,8 @@ def create_app(config: GatewayConfig, *, pty_factory: Callable = winpty_factory,
             hub.lines.stop()
             hub.changes.stop()
             hub.commits.stop()
+            if hub.past is not None:
+                hub.past.stop()
 
     app = FastAPI(title="The Orb", lifespan=lifespan)
     app.state.hub = hub
@@ -368,7 +392,8 @@ def create_app(config: GatewayConfig, *, pty_factory: Callable = winpty_factory,
                     await queue.put({"channel": "history", "realm": msg["realm"], "sessions": sessions,
                                      "total": max(len(sessions), hub.history_total(msg["realm"]))})
                 elif isinstance(msg, dict) and msg.get("type") == "xp":
-                    await queue.put({"channel": "xp", "entries": hub.xp_extract(), "limit": XP_EXTRACT_LIMIT})
+                    report = await asyncio.to_thread(hub.xp_report)         # varre as sessões lidas: fora do loop
+                    await queue.put({"channel": "xp", "entries": hub.xp_extract(), "limit": XP_EXTRACT_LIMIT, "report": report})
                 elif isinstance(msg, dict) and msg.get("type") == "feed" and isinstance(msg.get("alter_ego"), str):
                     await queue.put({"channel": "feed", "alter_ego": msg["alter_ego"],
                                      "events": hub.feed.history(msg["alter_ego"])})

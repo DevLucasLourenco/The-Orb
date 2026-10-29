@@ -4,7 +4,7 @@
 > âmbito. Vocabulário: [CONTEXT.md](../CONTEXT.md) · Contrato de eventos: [PROTOCOL.md](PROTOCOL.md)
 > · Decisões: [adr/](adr/).
 
-Última atualização: 2026-10-22
+Última atualização: 2026-10-29
 
 ---
 
@@ -49,11 +49,11 @@
 | Módulo | Pasta | Responsabilidade | Conhece | **Não** conhece |
 |---|---|---|---|---|
 | **Protocol** | `src/orb/protocol/` | Envelope, vocabulário fechado (atividades, sinais), limites de tamanho, validação | nada | todos os outros |
-| **Core** | `src/orb/core/` | O mundo: aplica eventos, deriva a atividade de cada personagem, Teams, pendências, Energy; snapshot; a sacola e o livro de nomes históricos (`names.py`); o traçado da cidade (`city.py`), a altura e os andares dos prédios (`building.py`), as janelas acesas da fachada (`facade.py`) e o perfil de trabalho (`profile.py`: papel, atributos por área e a Team em árvore) a XP e os níveis (`progression.py`: extrato com estados, X-COMMIT, escalas; tabela v1 em `rules.py`) a sala cheia (`room.py`: quem aparece em cada lugar, até 8, e quantos passaram) e a lista de tarefas do CLI (`tasks.py`: o resumo do realm e o Task Board) | Protocol | Adapters, Gateway, disco, rede, relógio |
+| **Core** | `src/orb/core/` | O mundo: aplica eventos, deriva a atividade de cada personagem, Teams, pendências, Energy; snapshot; a sacola e o livro de nomes históricos (`names.py`); o traçado da cidade (`city.py`), a altura e os andares dos prédios (`building.py`), as janelas acesas da fachada (`facade.py`) e o perfil de trabalho (`profile.py`: papel, atributos por área e a Team em árvore) a XP e os níveis (`progression.py`: extrato com estados, X-COMMIT, escalas; tabela v1 em `rules.py`) a sala cheia (`room.py`: quem aparece em cada lugar, até 8, e quantos passaram) e a lista de tarefas do CLI (`tasks.py`: o resumo do realm e o Task Board) e a XP das sessões antigas e a calibração da curva (`past.py`: o que uma sessão antiga rendeu; `calibration.py`: a distribuição de níveis e a faixa de *k* que cumpre a meta de D-107) | Protocol | Adapters, Gateway, disco, rede, relógio |
 | **Adapters** (claude, codex, hermes, opencode) | `src/orb/adapters/<provider>/` | Ler a fonte nativa do provider e produzir eventos (nativo + sinal + inner) pelo Mapa do provider | Protocol | Core, Gateway, outros adapters |
 | **Terminal Host** | `src/orb/terminal_host/` | Abrir o terminal real (ConPTY), chamar o CLI (lista fixa), transportar bytes, limpar o ambiente herdado | nada do domínio | Core, adapters |
-| **Gateway** | `src/orb/gateway/` | Autenticar, ligar terminal + adapter + Core por sessão, validar mensagens do cliente, distribuir por WebSocket; detectar os realms (`realms.py`) e decidir pasta → projeto (`projects.py`, a borda que conhece o disco) | todos, por interfaces | internals de adapters |
-| **Registro local** | `src/orb/registry/` | O arquivo SQLite do próprio Orb (R36): hoje a associação sessão → nome, a sacola de nomes e o extrato de XP (`xp_ledger`, com o estado de cada entrada); implementa as interfaces `NameSource` e `XpSource` do Core; a pasta do Orb (`paths.py`) | Core (a sacola, as interfaces `NameSource` e `XpSource` e o `Entry` do extrato) | Adapters, Gateway, providers |
+| **Gateway** | `src/orb/gateway/` | Autenticar, ligar terminal + adapter + Core por sessão, validar mensagens do cliente, distribuir por WebSocket; detectar os realms (`realms.py`) e decidir pasta → projeto (`projects.py`, a borda que conhece o disco); a leitura única do passado em segundo plano (`past.py`) | todos, por interfaces | internals de adapters |
+| **Registro local** | `src/orb/registry/` | O arquivo SQLite do próprio Orb (R36): hoje a associação sessão → nome, a sacola de nomes e o extrato de XP (`xp_ledger`, com o estado de cada entrada) e o ponto de parada da leitura do passado (`xp_past`); implementa as interfaces `NameSource`, `XpSource` e `PastStore` do Core; a pasta do Orb (`paths.py`) | Core (a sacola, as interfaces `NameSource` e `XpSource` e o `Entry` do extrato) | Adapters, Gateway, providers |
 | **Clients** | `clients/` | Renderizar o mundo e o Inner World, enviar teclas | só as mensagens do Gateway | adapters, providers |
 | **Probes** | `src/orb/probes/` | Fatos do mundo real, só leitura. **Feito:** o contador de linhas (`lines.py`, ticket 09), as alterações locais do git (`changes.py`, ticket 11) e o que o git diz dos commits das sessões (`commits.py`, ticket 23); o `git.py` é o jeito único de falar com o git (só leitura). Depois: CI | só o que o chamador passa (o filtro é `orb.core.rules.LineFilter`) | adapters, Gateway |
 
@@ -198,8 +198,8 @@ projeto.
    Observatório) ou, no mais tardar, na próxima varredura do índice. O **conteúdo** é lido de forma
    incremental só das sessões da **sala** (R28a, ticket 06): as escritas nos últimos 10 dias
    (`rules.RECENT_SESSION_SECONDS`, um só valor; `--lookback` [depuração] só o estreita). O que já existia antes do Orb abrir é lido só
-   do fim (`fresh_after`: só as criadas nos últimos 30 min são lidas desde o começo); o passado fica para a camada de histórico
-   (R48, ticket 25). A cidade mostra todos os projetos, e a sala só as sessões da janela. Cada provider tem **um** leitor
+   do fim (`fresh_after`: só as criadas nos últimos 30 min são lidas desde o começo); o passado é da camada de histórico
+   (R48, ticket 25: a leitura única, abaixo). A cidade mostra todos os projetos, e a sala só as sessões da janela. Cada provider tem **um** leitor
    para a cidade inteira; o do Claude identifica cada pasta de `~/.claude/projects/` pelo `cwd` gravado nela.
 5. **A sala, o Histórico do realm e a noite (ticket 06, R28a, D-059).** O Core marca cada Alter Ego com `in_room`
    (último evento nos últimos 10 dias, pela hora recebida) e cada realm com `night` (nenhuma sessão na sala; `World.add_realm`
@@ -234,6 +234,27 @@ ticket existir.
 | D-REALM-4 | ~~Esconder/fixar um realm?~~ **Decidido: uma lista com todos os realms, com marcação; desmarcar esconde (R3c).** Fixar não foi pedido. |
 | D-REALM-5 | ~~Persistência local do Orb?~~ **Decidido (2026-10-08): um arquivo de preferências próprio do Orb (R29)**, nunca dos providers, editado pela tela de configurações do Orb: realms escondidos (R3c), prazo das sessões recentes (R28a) e o que vier. Local proposto: `%LOCALAPPDATA%\the-orb\` no Windows (`~/.the-orb/` nos outros). Em aberto: se também guarda a posição dos prédios (V-PEND-5). |
 | D-REALM-6 | ~~Pasta de projeto que não existe mais no disco?~~ **Decidido (2026-10-08): não entra (R3d).** |
+
+### Leitura única do passado e calibração da curva (ticket 25, R48 camada 3, R54; D-088, D-107, D-108, D-203)
+
+O Orb lê as sessões antigas **uma vez**, em segundo plano, só para calcular a XP delas (o conteúdo antigo não entra na sala nem no Inner World).
+
+1. **Contrato de adapter** (`adapters/_shared/past.py`): `PastSource.read(meta, realm)` devolve os eventos de **uma sessão líder inteira, com a Team dela**, do começo
+   ao fim, em lotes (cada lote é uma leitura limitada do leitor do próprio provider). Cada adapter tem o seu `past.py`, que reaproveita o leitor da sala
+   (`replay=True`, `since=0`) restrito àquela sessão: Claude (o transcript e a pasta de subagentes), Codex (o rollout e os das threads-filhas, pelo `parent_id` do índice, abertos pelo
+   caminho que o índice informa em `SessionMeta.path`), Hermes e opencode (`session_id IN (...)` da sessão e das filhas; no opencode, só `session_v2` e `session_message`).
+2. **Quem decide** é o Gateway (`gateway/past.py`, `PastXp`): lista as sessões líderes que o Observatório já indexou (`Observatory.leaders()`), tira as que o registro já marcou para
+   esta versão da tabela, e lê as mais recentes primeiro. Cada passo lê **um lote de uma sessão**; a thread descansa `REST_RATIO` (3) vezes o que gastou. Ao fim da sessão,
+   o que passou do prazo de 30 dias sem chegar à principal expira (regra pura) e as entradas novas são gravadas **junto com a marca de "lida"** na mesma transação
+   (`LocalRegistry.record_past`): a marca nunca fica à frente do extrato, e uma leitura interrompida recomeça pela sessão que não terminou.
+3. **O registro local** (`xp_past`: provider, sessão, versão, hora) é o ponto de parada. Trocar a versão da tabela de XP faz o passado ser lido de novo para a versão nova; o extrato
+   da versão antiga fica intacto (D-203). Sem registro gravando (`error`), a leitura espera: sem ponto de parada não se lê.
+4. **O mundo** (`World.add_past`) recebe o extrato de cada sessão pelo `Hub.poll_once` (a thread da leitura nunca toca no mundo). A sessão antiga **não é um personagem**: só entra nas somas do
+   Realm, de Mankind e do placar por provider (`PastEgo`; os commits ficam inteiros num `Ledger` para o git confirmar, anular ou expirar, como os da sala). Se a sessão já é um
+   personagem, o extrato dela só recebe (`Ledger.absorb`) o que faltava.
+5. **A calibração** (`core/calibration.py`, `World.xp_report`): a XP confirmada de cada sessão que o Orb leu, na curva em uso e em curvas candidatas (k = 25, 50, 75, 100, 150, 200); a meta de D-107
+   (mediana das sessões com XP entre os níveis 2 e 4; no máximo 5% acima do 8) e a faixa de *k* que a cumpre. O painel Progressão a mostra (`{type: "xp"}` devolve também `report`); o indicador de
+   progresso vai no snapshot do mundo (`xp_past`). **O Orb só mostra: o *k* novo só entra com a aprovação do Lucas** (uma nova linha em `rules.XP_TABLE`, versão 2).
 
 ### Módulos novos decididos (2026-10-08 e 2026-10-09), ainda sem implementação
 
@@ -312,7 +333,7 @@ ticket existir.
 | Deltas de streaming (`outputDelta`, `agentMessage/delta`) | Não viram eventos um a um; o item completo (`item/completed`) carrega o texto |
 | Envio ao cliente | Snapshot ao conectar, depois deltas; bytes do terminal nunca são descartados |
 | Polling (nível 0) | **250 ms** para realms com sessão ativa (medido: ~270–470 ms ponta a ponta); varredura de sessões novas a cada **2 s** (D-087). **Feito (ticket 06):** `POLL_SECONDS` = 250 ms quando alguma sessão da sala está ativa (`World.any_active`); sem nenhuma, `IDLE_POLL_SECONDS` = 2 s (granularidade do mundo todo, não por realm: D-142) |
-| Histórico (R48, D-088) | **Duas camadas:** índice de metadados de todas as sessões (pasta, datas, título, provider), barato; conteúdo lido incrementalmente só das sessões da sala; o passado lido uma vez em segundo plano, com o ponto de parada no registro local |
+| Histórico (R48, D-088) | **Três camadas:** índice de metadados de todas as sessões (pasta, datas, título, provider), barato; conteúdo lido incrementalmente só das sessões da sala; o passado lido uma vez em segundo plano (ticket 25: só a XP dele), com o ponto de parada no registro local. A leitura do passado roda numa thread própria, **uma sessão por vez e um lote por passo**, e descansa 3 vezes o tempo que gastou (~25% de uma CPU); nunca toca no mundo |
 
 ## 6. Lógica bem estruturada
 
@@ -339,6 +360,7 @@ ticket existir.
 | Resultado de comando e Weather | Amostras dos quatro CLIs → `command.result` (código de saída, falha, comando que não é shell); resultados → Weather do realm (último vence, prazo da sala) | `tests/test_command_result.py` |
 | XP de commits e escalas | Evidência de commit (`gitOperation` do Claude, `git commit` dos outros) → XP provisória; repositório git de verdade → existe, linhas, na principal, revertido; o mundo confirma, anula ou expira; níveis do Realm e de Mankind e o placar; o extrato para o painel | `tests/test_commit_evidence.py`, `tests/test_commit_probe.py`, `tests/test_commit_scheduler.py`, `tests/test_commit_xp.py` |
 | XP e níveis | Eventos de teste, conserto, subagente e ofício → extrato (regra, recibo, versão da tabela) e nível pela curva k·n·(n−1); limites; tabela nova recalcula; o extrato no registro local, que sobrevive ao reinício sem pagar duas vezes | `tests/test_progression.py` |
+| Leitura do passado (R48 camada 3) e calibração (R54) | Uma sessão antiga inteira, com a Team, por adapter (Claude, Codex, Hermes, opencode), em lotes; ponto de parada por sessão e por versão da tabela no registro local; indicador de progresso; XP das sessões antigas nos níveis do Realm e de Mankind; commits do passado (expira ou espera o git); distribuição de níveis e faixa de *k* | `tests/test_past_sources.py`, `tests/test_past_scheduler.py`, `tests/test_past_registry.py`, `tests/test_past_xp.py` |
 | Sala cheia (lugares, teto de 8, "+N") | Sessões e subagentes → quem aparece em cada lugar e quantos passaram; prioridade; só subagente ativo; fora da sala não aparece; `ended_at` | `tests/test_room.py` |
 | Tarefas do CLI (R50) | Amostras sintéticas dos leitores (`TodoWrite`, `todowrite`, plano do Codex) → `tasks.updated`; lista nova substitui a anterior, lista vazia apaga, subagente não vale; resumo do realm e Task Board | `tests/test_tasks.py`, `tests/test_adapter_claude.py`, `tests/test_adapter_opencode.py`, `tests/test_adapter_codex.py` |
 | Papel, atributos e árvore da Team | Eventos de atividade → papel (o que mais fez; sem empate), parcela do trabalho por área, Team em ordem de árvore (pai antes dos filhos, pai desconhecido, laço de pais) | `tests/test_profile.py` |
@@ -370,17 +392,17 @@ The Orb/
 │   └── adr/        decisões numeradas
 ├── src/orb/
 │   ├── protocol/        events.py · vocab.py
-│   ├── core/            world.py · rules.py · names.py · room.py · tasks.py
+│   ├── core/            world.py · rules.py · names.py · room.py · tasks.py · past.py · calibration.py
 │   ├── registry/        store.py · preferences.py · paths.py
 │   ├── probes/          lines.py
 │   ├── adapters/
-│   │   ├── _shared/     base.py · commands.py · index.py · jsonl.py · sqlite.py
-│   │   ├── claude/      mapping.py · transcript.py · index.py · hooks.py
-│   │   ├── codex/       mapping.py · app_server.py · rollout.py · index.py
-│   │   ├── hermes/      mapping.py · state_db.py · index.py
-│   │   └── opencode/    mapping.py · state_db.py · index.py
+│   │   ├── _shared/     base.py · commands.py · index.py · jsonl.py · sqlite.py · past.py
+│   │   ├── claude/      mapping.py · transcript.py · index.py · hooks.py · past.py
+│   │   ├── codex/       mapping.py · app_server.py · rollout.py · index.py · past.py
+│   │   ├── hermes/      mapping.py · state_db.py · index.py · past.py
+│   │   └── opencode/    mapping.py · state_db.py · index.py · past.py
 │   ├── terminal_host/   launch.py · env.py · terminal.py
-│   └── gateway/         app.py · messages.py · realms.py · projects.py
+│   └── gateway/         app.py · messages.py · realms.py · projects.py · probes.py · past.py
 ├── clients/
 │   ├── web/             o mundo 3D: index.html, styles.css, js/ (scene, realm3d, areaicons, avatar, hud, innerworld, net, providers)
 │   └── godot/           terminal remoto (alternativa; godot-xterm só exibe)

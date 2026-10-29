@@ -5,6 +5,7 @@ Nível 0: `OpencodeDbReader` lê o SQLite `opencode.db` SOMENTE LEITURA, só as 
 """
 from .index import OpencodeDbIndex
 from .mapping import CAPABILITIES, PROVIDER
+from .past import OpencodeDbPast
 from .state_db import ALLOWED_TABLES, OpencodeDbReader, opencode_data_dir
 
-__all__ = ["ALLOWED_TABLES", "CAPABILITIES", "OpencodeDbIndex", "OpencodeDbReader", "PROVIDER", "opencode_data_dir"]
+__all__ = ["ALLOWED_TABLES", "CAPABILITIES", "OpencodeDbIndex", "OpencodeDbPast", "OpencodeDbReader", "PROVIDER", "opencode_data_dir"]

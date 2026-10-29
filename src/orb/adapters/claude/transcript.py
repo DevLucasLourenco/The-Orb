@@ -243,6 +243,10 @@ class TranscriptReader:
                     session.subagents[agent_id] = _Subagent(agent_id, JsonlFollower(sub_path))
 
     # --- leitura ----------------------------------------------------------------------------
+    def behind(self) -> bool:
+        """Ainda há bytes por ler em algum transcript acompanhado (ou nos subagentes dele)? A leitura do passado pergunta isto entre os lotes."""
+        return any(s.follower.behind or any(sub.follower.behind for sub in s.subagents.values()) for s in self._sessions.values())
+
     def poll(self) -> list[Event]:
         self._discover()
         events: list[Event] = []

@@ -22,6 +22,15 @@ class JsonlFollower:
     _buffer: bytes = field(default=b"", repr=False)
     discarded: int = 0              # linhas inválidas descartadas (observabilidade)
 
+    @property
+    def behind(self) -> bool:
+        """Ainda há bytes a ler? (a leitura do passado volta a pedir enquanto houver, mesmo que um lote não tenha dado nenhum evento)"""
+        try:
+            size = os.stat(self.path).st_size
+        except OSError:
+            return False
+        return self.offset < 0 or size > self.offset
+
     def poll(self) -> list[tuple[int, dict[str, Any]]]:
         """Novas entradas completas como (offset da linha, objeto)."""
         try:

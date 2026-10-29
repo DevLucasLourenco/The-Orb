@@ -50,6 +50,20 @@ class XpSource(Protocol):
     def record(self, ego_id: str, entry: Entry) -> None: ...
 
 
+class PastStore(Protocol):
+    """O que a leitura única do passado (R48, camada 3) pede do registro local: quais sessões já foram lidas para esta versão da tabela (o
+    ponto de parada, para nunca ler a mesma duas vezes) e gravar, de uma vez só, as entradas novas de uma sessão junto com a marca de que
+    ela foi lida: a marca nunca fica à frente do extrato."""
+
+    error: str | None
+
+    def recover(self) -> bool: ...
+
+    def past_done(self, version: int) -> set[tuple[str, str]]: ...
+
+    def record_past(self, ego_id: str, entries: list[Entry], provider: str, session: str, version: int, ts: str) -> None: ...
+
+
 def level_of(xp: int, k: int) -> dict[str, int]:
     """O nível pela curva k·n·(n−1): o nível n começa em k·n·(n−1) de XP e o seguinte em k·(n+1)·n. Devolve também onde a barra começa
     e termina."""
@@ -91,13 +105,32 @@ class Ledger:
         self._last_test: datetime | None = None
         self._day_xp: dict[tuple[str, Any], int] = {}
         for entry in self.entries:
-            when = _when(entry.ts)
-            if when is None:
+            self._count_limits(entry)
+
+    def _count_limits(self, entry: Entry) -> None:
+        """Põe uma entrada do extrato na conta dos limites (o teto do dia e o último teste que rendeu)."""
+        when = _when(entry.ts)
+        if when is None:
+            return
+        day = (entry.rule, when.date())
+        self._day_xp[day] = self._day_xp.get(day, 0) + entry.xp
+        if entry.rule == X_TEST and (self._last_test is None or when > self._last_test):
+            self._last_test = when
+
+    def absorb(self, entries: Iterable[Entry]) -> list[Entry]:
+        """Acrescenta o que outra leitura da mesma sessão gravou no registro (a releitura do passado, R48, ticket 25): as entradas desta versão
+        da tabela que ainda não estão aqui. Quem já está fica como está (o git pode ter mudado o estado dele aqui). Devolve as acrescentadas."""
+        added = []
+        for entry in entries:
+            if entry.version != self.table.version or (entry.rule, entry.ref) in self._seen:
                 continue
-            day = (entry.rule, when.date())
-            self._day_xp[day] = self._day_xp.get(day, 0) + entry.xp
-            if entry.rule == X_TEST and (self._last_test is None or when > self._last_test):
-                self._last_test = when
+            self.entries.append(entry)
+            self._seen.add((entry.rule, entry.ref))
+            self._count_limits(entry)
+            added.append(entry)
+        if added:
+            self._recount()
+        return added
 
     def _recount(self) -> None:
         self.total = sum(e.xp for e in self.entries if e.state == CONFIRMED)

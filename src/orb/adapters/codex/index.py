@@ -39,7 +39,7 @@ class RolloutIndex:
                 meta = self._known[path] = self._meta(entry)
                 if meta is None:
                     continue
-            found.append(replace(meta, updated_at=iso_from_seconds(stat.st_mtime), title=self._titles.get(meta.session_id)))
+            found.append(replace(meta, updated_at=iso_from_seconds(stat.st_mtime), title=self._titles.get(meta.session_id), path=str(path)))
         return found
 
     @staticmethod

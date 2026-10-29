@@ -132,3 +132,9 @@ Quando um bloco `bash` termina (`state.status` `completed` ou `error`), o evento
 **`todowrite`**: no `session_message` do assistente, o bloco `{type: "tool", name: "todowrite", state}` tem `state.input.todos` (lista de `{content, status, priority}`) e, quando termina, o mesmo em `state.metadata.todos` (mais `truncated`). `status` visto: `pending`, `in_progress`, `completed`. O leitor usa `state.input.todos` **quando a ferramenta termina** (`state.status` `completed`; uma que falhou não gravou lista) e gera, no próprio `session_message`, o evento `:tool_tasks` com `tasks.updated`, uma vez por bloco (a linha é reescrita durante o streaming). Só a sessão raiz: `todowrite` de uma sessão filha não vale. Estado fora dos três (por exemplo `cancelled`) não entra na conta.
 
 **Confiança: alta** para a forma e os três estados (18 blocos em `session_message` nesta máquina, opencode 2.0.23, conferidos só pelas chaves e valores de `status`, sem texto); `cancelled` não foi visto, e por isso não é contado. A tabela `todo` do banco **não é lida** (o adapter só lê `session_v2` e `session_message`).
+
+## Leitura do passado (ticket 25, R48 camada 3)
+
+`OpencodeDbPast` (`past.py`) entrega os eventos de **uma sessão antiga inteira, com a Team dela**, em lotes, para o cálculo único da XP retroativa (D-088, D-108). Reaproveita o `OpencodeDbReader` com `sessions=` (a sessão e as filhas pelo `parent_id`), `replay=True`: só `session_v2` e `session_message`, o mesmo cursor `(time_updated, id)`; o fim é `drained`. As tabelas de credenciais continuam intocadas.
+Somente leitura, como o resto do adapter. **Confiança: baixa para dado real**: testado só com amostras sintéticas da forma já verificada; nenhum histórico real foi lido para este ticket
+(o custo em um histórico grande ainda não foi medido).

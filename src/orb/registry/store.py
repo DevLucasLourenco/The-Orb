@@ -1,7 +1,7 @@
 """O arquivo SQLite do registro local: só o que o Orb derivou, nunca o conteúdo das sessões (R36).
 
-Hoje guarda a associação sessão -> nome histórico e a sacola de nomes (R37) e o extrato de XP de cada sessão (R53, ticket 22). O Chronicle
-e os pontos de parada das leituras entram aqui nos tickets deles. É o único arquivo que o Orb grava por
+Hoje guarda a associação sessão -> nome histórico e a sacola de nomes (R37), o extrato de XP de cada sessão (R53, ticket 22) e o ponto de
+parada da leitura única do passado (R48, ticket 25). O Chronicle entra aqui no ticket dele. É o único arquivo que o Orb grava por
 conta própria (os dos providers e dos projetos são só lidos, R16); nunca é apagado nem recriado por cima.
 
 Falha de disco (pasta sem permissão, arquivo corrompido, registro de um Orb mais novo, banco travado) não derruba
@@ -20,7 +20,7 @@ from pathlib import Path
 from ..core import NAMES, Entry, NameBag, NameBook
 
 REGISTRY_FILE = "registry.db"
-SCHEMA_VERSION = 3
+SCHEMA_VERSION = 4
 _QUERY_CHUNK = 500        # chaves por consulta (o SQLite limita as variáveis de uma consulta)
 _BUSY_SECONDS = 5.0       # o sorteio roda na thread de leitura (to_thread): esperar mais que isso travaria a observação
 _SCHEMA = (
@@ -31,6 +31,10 @@ _SCHEMA = (
     ("CREATE TABLE IF NOT EXISTS xp_ledger (ego TEXT NOT NULL, ts TEXT NOT NULL, rule TEXT NOT NULL, xp INTEGER NOT NULL, "
      "ref TEXT NOT NULL, evidence TEXT NOT NULL, version INTEGER NOT NULL, state TEXT NOT NULL DEFAULT 'confirmed', "
      "PRIMARY KEY (ego, rule, ref, version))"),
+    # O ponto de parada da leitura do passado (R48, ticket 25): uma linha por sessão já lida para uma versão da tabela de XP. A marca é gravada na
+    # mesma transação das entradas da sessão, então nunca fica à frente do extrato; trocar a versão da tabela recomeça a leitura (D-203).
+    ("CREATE TABLE IF NOT EXISTS xp_past (provider TEXT NOT NULL, session TEXT NOT NULL, version INTEGER NOT NULL, ts TEXT NOT NULL, "
+     "PRIMARY KEY (provider, session, version))"),
 )
 # O que cada versão anterior do esquema precisa para chegar à atual (o que `CREATE IF NOT EXISTS` não faz): de uma tabela que já existe.
 _MIGRATIONS: dict[int, tuple[str, ...]] = {
@@ -55,6 +59,7 @@ class LocalRegistry:
         self._busy_seconds = _BUSY_SECONDS
         self._memory = NameBook(rng=rng)        # a cópia que atende enquanto o disco falha
         self._xp_memory: dict[str, dict[tuple[str, str, int], Entry]] = {}       # o extrato de cada sessão, a cópia que segue o disco
+        self._past_memory: set[tuple[str, str, int]] = set()                      # as sessões do passado já lidas, a cópia que segue o disco
         self._ready = False
         try:
             self._prepare()
@@ -121,6 +126,47 @@ class LocalRegistry:
                              "ON CONFLICT (ego, rule, ref, version) DO UPDATE SET xp = excluded.xp, evidence = excluded.evidence, state = excluded.state",
                              (ego_id, entry.ts, entry.rule, entry.xp, entry.ref, json.dumps(entry.evidence, ensure_ascii=False), entry.version,
                               entry.state))
+        except _DISK_ERRORS as exc:
+            self._fail(exc)
+        else:
+            self.error = None
+
+    def recover(self) -> bool:
+        """Tenta o disco de novo (a falha pode ter sido passageira: antivírus, duas instâncias): verdadeiro se o registro voltou a gravar. Quem
+        precisa gravar para continuar (a leitura do passado) pergunta isto em vez de esperar um outro gravador limpar o erro."""
+        try:
+            self._prepare()
+        except _DISK_ERRORS as exc:
+            self._fail(exc)
+            return False
+        self.error = None
+        return True
+
+    def past_done(self, version: int) -> set[tuple[str, str]]:
+        """As sessões do passado (provider, id) que já foram lidas para esta versão da tabela de XP: o ponto de parada (R48)."""
+        try:
+            with closing(sqlite3.connect(self.path, timeout=self._busy_seconds)) as conn:
+                rows = conn.execute("SELECT provider, session FROM xp_past WHERE version = ?", (version,)).fetchall()
+        except _DISK_ERRORS:
+            rows = []
+        return {*rows, *((p, s) for p, s, v in self._past_memory if v == version)}
+
+    def record_past(self, ego_id: str, entries: list[Entry], provider: str, session: str, version: int, ts: str) -> None:
+        """Termina uma sessão do passado: grava as entradas novas dela e a marca de que foi lida, numa transação só. Uma entrada que já existe fica
+        como está (o git pode ter mudado o estado dela)."""
+        memory = self._xp_memory.setdefault(ego_id, {})
+        for entry in entries:
+            memory.setdefault((entry.rule, entry.ref, entry.version), entry)
+        self._past_memory.add((provider, session, version))
+        try:
+            if not self._ready:
+                self._prepare()
+            with self._transaction() as conn:
+                conn.executemany("INSERT INTO xp_ledger (ego, ts, rule, xp, ref, evidence, version, state) VALUES (?, ?, ?, ?, ?, ?, ?, ?) "
+                                 "ON CONFLICT (ego, rule, ref, version) DO NOTHING",
+                                 [(ego_id, e.ts, e.rule, e.xp, e.ref, json.dumps(e.evidence, ensure_ascii=False), e.version, e.state)
+                                  for e in entries])
+                conn.execute("INSERT OR REPLACE INTO xp_past (provider, session, version, ts) VALUES (?, ?, ?, ?)", (provider, session, version, ts))
         except _DISK_ERRORS as exc:
             self._fail(exc)
         else:

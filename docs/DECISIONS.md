@@ -5,7 +5,7 @@
 > [ARCHITECTURE.md](ARCHITECTURE.md), [adr/](adr/)…). Decisões difíceis de reverter também têm um ADR.
 > Nada é apagado: uma decisão revista fica listada, com a que a substituiu.
 
-Última atualização: 2026-10-22
+Última atualização: 2026-10-29
 
 Quem: **Lucas** = decidido por ele · **Delegada** = o Lucas deixou a definição com o Claude; vale até
 ele revisar, e a proposta está escrita no documento do assunto.
@@ -695,3 +695,21 @@ conferidos na tela com um snapshot do mundo feito de eventos sintéticos. **O Lu
 | ~~Q-T14-7~~ D-228 | Quando o sinal sai? | **Claude:** a cada `TodoWrite`. **opencode:** quando o `todowrite` termina com sucesso, uma vez por bloco. **Codex:** a cada `turn/plan/updated`. Cada lista substitui a anterior; lista vazia apaga o progresso. |
 | ~~Q-T14-8~~ D-229 | Quais os limites? | Até **100** tarefas por sinal (as primeiras; `done` e `total` contam todas) e título de **200** caracteres, cortado com reticências. |
 | ~~Q-T14-9~~ D-230 | Como o progresso aparece no cartão? | Uma linha "tarefas" com a barra em branco neutro e "7 de 12"; passar o mouse lista as primeiras 5 abertas (▶ em andamento). Sem lista, a linha não existe. |
+
+### Rodada: o que a implementação do ticket 25 decidiu por conta própria (aberta em 2026-10-29)
+
+Ao implementar o ticket 25 ([.scratch/the-orb-cidade-viva/issues/25-xp-retroativa-e-calibracao.md](../.scratch/the-orb-cidade-viva/issues/25-xp-retroativa-e-calibracao.md)),
+nove pontos **não estavam escritos** e foram escolhidos de forma provisória (regra P2); **aguardam o Lucas** (os D-NNN são dados quando ele responder). A leitura do passado, o ponto de parada, o indicador, o
+mundo e a calibração estão cobertos por teste (históricos sintéticos, sem rede nem CLI real); **nenhum histórico real foi lido** (a calibração de verdade acontece quando o Lucas abrir o Orb e ver o painel Progressão).
+
+| Id | Pergunta | Proposta (já aplicada, provisória) |
+|---|---|---|
+| Q-T25-1 | Quando a leitura do passado roda? | **Sozinha, ao abrir o Orb**, em segundo plano, sem botão nem configuração (R29: nada de parâmetro novo). Só com o registro local gravando: sem ele não há ponto de parada, e a leitura espera. |
+| Q-T25-2 | Qual é a unidade do ponto de parada? | **A sessão líder inteira, com a Team dela**, por versão da tabela de XP. As entradas e a marca de "lida" são gravadas numa transação só. Uma leitura interrompida recomeça a sessão que não terminou (as já marcadas nunca voltam). |
+| Q-T25-3 | O que a meta de D-107 quer dizer em números? | "A sessão típica fica entre os níveis 2 e 4" = a **mediana das sessões que têm alguma XP** (sessão sem recibo nenhum não diz nada da curva). "Só sessões excepcionais passam do 8" = **no máximo 5%** das sessões acima do nível 8. |
+| Q-T25-4 | Que curvas o relatório compara? | A em uso e **k = 25, 50, 75, 100, 150, 200**, mais a faixa de *k* (de 5 em 5) que cumpre a meta. Realm e Mankind mantêm a proporção atual **1 : 10 : 50** do *k* do Alter Ego em cada curva. |
+| Q-T25-5 | E os commits do passado? | Entram como **provisórios**, como os da sala. Os que passaram de 30 dias sem chegar à principal **expiram na leitura** (regra pura); os recentes esperam o Probe dos commits (o git decide), mesmo que a sessão não esteja mais na sala. |
+| Q-T25-6 | Como não pesar no Orb? | Uma thread, **uma sessão por vez, um lote por passo**, descansando 3 vezes o que gastou (~25% de uma CPU no máximo); as sessões mais **recentes primeiro**. A thread nunca toca no mundo: entrega o resultado e o `Hub` o aplica. |
+| Q-T25-7 | A sessão antiga aparece na cidade? | **Não**: não é personagem (não está na sala, não tem estado nem nome). Só soma no Realm, em Mankind e no placar, e entra no relatório. O extrato do painel continua só com as sessões que o Orb viu na sala. |
+| Q-T25-8 | E os realms que o Lucas escondeu? | O passado deles é lido igual (nada se apaga), mas **fica fora do relatório e de Mankind**, como o resto do que está escondido. |
+| Q-T25-9 | Quem escolhe o novo *k*, e como ele entra? | **O Lucas**, olhando o relatório com o histórico real. O escolhido vira uma nova linha em `rules.XP_TABLE` (versão 2); o extrato da v1 fica intacto e o passado é lido de novo para a v2 (D-203). **Até lá, os *k* seguem 50 / 500 / 2.500.** |
