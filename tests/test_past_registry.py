@@ -1,4 +1,5 @@
 """O ponto de parada da leitura do passado no registro local (ticket 25, R48 camada 3, D-088, D-203): quais sessões já foram lidas, por versão da tabela de XP."""
+import json
 import sqlite3
 
 from orb.registry import REGISTRY_FILE, LocalRegistry
@@ -50,10 +51,28 @@ def test_a_registry_from_the_previous_schema_gets_the_past_table_and_keeps_its_e
     assert registry.error is None and registry.past_done(1) == set() and len(registry.entries_of("claude:s1", 1)) == 1
 
 
-def test_when_the_disk_fails_the_past_is_kept_in_memory_and_the_error_says_so(tmp_path):
+def test_when_the_disk_fails_the_session_is_not_marked_as_read_not_even_in_memory_and_the_error_says_so(tmp_path):
     blocker = tmp_path / "arquivo"
     blocker.write_text("x", encoding="utf-8")
     registry = LocalRegistry(blocker / "the-orb")                          # o pai é um arquivo
     registry.record_past("claude:o1", [entry(ref="a")], "claude", "o1", 1, stamp(0))
     assert registry.error
-    assert registry.past_done(1) == {("claude", "o1")} and [e.ref for e in registry.entries_of("claude:o1", 1)] == ["a"]
+    assert registry.past_done(1) == set() and registry.entries_of("claude:o1", 1) == []       # a marca nunca fica à frente do extrato
+
+
+def test_a_transaction_that_fails_in_the_middle_leaves_neither_the_mark_nor_the_entries_anywhere(tmp_path, monkeypatch):
+    registry = LocalRegistry(tmp_path)
+    original = json.dumps
+
+    def broken(value, **kwargs):
+        if isinstance(value, dict) and value.get("boom"):
+            raise OSError("disco falhou no meio")
+        return original(value, **kwargs)
+
+    monkeypatch.setattr("orb.registry.store.json.dumps", broken)
+    registry.record_past("claude:o1", [entry(ref="a"), entry(ref="b", boom=True)], "claude", "o1", 1, stamp(0))
+    assert registry.error and registry.past_done(1) == set() and registry.entries_of("claude:o1", 1) == []
+    monkeypatch.undo()
+    assert LocalRegistry(tmp_path).past_done(1) == set()                    # nem no disco: a transação voltou inteira
+    registry.record_past("claude:o1", [entry(ref="a")], "claude", "o1", 1, stamp(1))      # na próxima abertura o disco volta e a sessão é lida
+    assert registry.error is None and registry.past_done(1) == {("claude", "o1")}

@@ -153,11 +153,8 @@ class LocalRegistry:
 
     def record_past(self, ego_id: str, entries: list[Entry], provider: str, session: str, version: int, ts: str) -> None:
         """Termina uma sessão do passado: grava as entradas novas dela e a marca de que foi lida, numa transação só. Uma entrada que já existe fica
-        como está (o git pode ter mudado o estado dela)."""
-        memory = self._xp_memory.setdefault(ego_id, {})
-        for entry in entries:
-            memory.setdefault((entry.rule, entry.ref, entry.version), entry)
-        self._past_memory.add((provider, session, version))
+        como está (o git pode ter mudado o estado dela). **O disco vem primeiro:** a cópia em memória só segue o disco depois que a transação deu certo, então
+        uma sessão cujo extrato não foi gravado nunca parece lida (a marca não fica à frente do extrato); ela é lida de novo na próxima abertura."""
         try:
             if not self._ready:
                 self._prepare()
@@ -170,6 +167,10 @@ class LocalRegistry:
         except _DISK_ERRORS as exc:
             self._fail(exc)
         else:
+            memory = self._xp_memory.setdefault(ego_id, {})
+            for entry in entries:
+                memory.setdefault((entry.rule, entry.ref, entry.version), entry)
+            self._past_memory.add((provider, session, version))
             self.error = None
 
     def _fail(self, exc: Exception) -> None:
