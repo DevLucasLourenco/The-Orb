@@ -254,7 +254,8 @@ O Orb lê as sessões antigas **uma vez**, em segundo plano, só para calcular a
    personagem, o extrato dela só recebe (`Ledger.absorb`) o que faltava.
 5. **A calibração** (`core/calibration.py`, `World.xp_report`): a XP confirmada de cada sessão que o Orb leu, na curva em uso e em curvas candidatas (k = 25, 50, 75, 100, 150, 200); a meta de D-107
    (mediana das sessões com XP entre os níveis 2 e 4; no máximo 5% acima do 8) e a faixa de *k* que a cumpre. O painel Progressão a mostra (`{type: "xp"}` devolve também `report`); o indicador de
-   progresso vai no snapshot do mundo (`xp_past`). **O Orb só mostra: o *k* novo só entra com a aprovação do Lucas** (uma nova linha em `rules.XP_TABLE`, versão 2).
+   progresso vai no snapshot do mundo (`xp_past`). **O Orb só mostra: o *k* novo só entra com a escolha do Lucas diante do relatório real (D-239)** (uma nova linha em `rules.XP_TABLE`, versão 2).
+6. **Limites conhecidos.** Sessão que falha nunca ganha a marca e volta a cada abertura (só na contagem de erros); o plano roda uma vez por abertura; `record_past` grava no disco antes de a memória seguir; custo com históricos grandes não medido (DECISIONS, rodada do ticket 25).
 
 ### Módulos novos decididos (2026-10-08 e 2026-10-09), ainda sem implementação
 

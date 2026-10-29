@@ -245,6 +245,15 @@ ele revisar, e a proposta está escrita no documento do assunto.
 | D-228 | 2026-10-22 | **Cada lista substitui a anterior da sessão e a lista vazia a apaga;** o sinal sai a cada `TodoWrite`, quando o `todowrite` do opencode termina com sucesso e a cada plano do Codex | Lucas | qt14-7, R50 |
 | D-229 | 2026-10-22 | **Limites do sinal:** até 100 tarefas listadas (`done` e `total` contam todas) e título de 200 caracteres | Lucas | qt14-8, R49 |
 | D-230 | 2026-10-22 | **O cartão da sessão mostra a linha "tarefas"** com a barra em branco neutro e "7 de 12"; a dica lista as 5 primeiras abertas; sem lista, a linha não existe | Lucas | qt14-9, V-HUD-15 |
+| D-231 | 2026-10-29 | **A leitura do passado roda sozinha ao abrir o Orb,** em segundo plano, sem botão nem configuração (R29), e só com o registro local gravando: sem ele não há ponto de parada e a leitura espera | Lucas | qt25-1, R48, D-088 |
+| D-232 | 2026-10-29 | **O ponto de parada é uma marca por sessão líder e por versão da tabela,** gravada na mesma transação das entradas dela; uma leitura interrompida recomeça a sessão que não terminou, as marcadas nunca voltam e uma versão nova da tabela lê o passado de novo (D-203) | Lucas | qt25-2, R48, D-108 |
+| D-233 | 2026-10-29 | **A meta de D-107 em números:** a sessão típica é a **mediana** das sessões que têm alguma XP e fica entre os níveis 2 e 4; "só excepcionais passam do 8" = no máximo **5%** das sessões acima do nível 8 | Lucas | qt25-3, D-107, R54 |
+| D-234 | 2026-10-29 | **O relatório de calibração compara a curva em uso com k = 25, 50, 75, 100, 150 e 200** e mostra a faixa de k (de 5 em 5) que cumpre a meta; Realm e Mankind seguem a proporção 1 : 10 : 50 em cada curva | Lucas | qt25-4, D-107, R54 |
+| D-235 | 2026-10-29 | **Commits do passado seguem a regra da sala:** entram provisórios, expiram na leitura se passaram de 30 dias sem chegar à principal, e os recentes esperam o Probe dos commits (o git decide) | Lucas | qt25-5, R53, D-106 |
+| D-236 | 2026-10-29 | **Ritmo da leitura do passado:** uma sessão por vez, um lote por passo, descansando 3 vezes o que gastou (~25% de uma CPU no máximo), as mais recentes primeiro; a thread nunca toca no mundo | Lucas | qt25-6, R48 |
+| D-237 | 2026-10-29 | **A sessão antiga não aparece na cidade:** não é personagem (sem sala, estado nem nome); só soma no Realm, em Mankind e no placar e entra no relatório; o extrato do painel segue só com o que o Orb viu na sala | Lucas | qt25-7, R48, R54 |
+| D-238 | 2026-10-29 | **O passado de realms escondidos é lido igual** (nada se apaga, P3), mas fica fora do relatório e de Mankind | Lucas | qt25-8, R3c |
+| D-239 | 2026-10-29 | **Os k seguem 50 / 500 / 2.500 até o Lucas ver o relatório com o histórico real** e escolher o k de Alter Ego (Realm e Mankind na mesma proporção, a menos que ele diga outra); o escolhido vira a tabela v2, o extrato da v1 fica e o passado é lido de novo. **Provisória por natureza** | Lucas | qt25-9, D-107, D-203, R54 |
 
 ## Decisões revistas
 
@@ -699,17 +708,26 @@ conferidos na tela com um snapshot do mundo feito de eventos sintéticos. **O Lu
 ### Rodada: o que a implementação do ticket 25 decidiu por conta própria (aberta em 2026-10-29)
 
 Ao implementar o ticket 25 ([.scratch/the-orb-cidade-viva/issues/25-xp-retroativa-e-calibracao.md](../.scratch/the-orb-cidade-viva/issues/25-xp-retroativa-e-calibracao.md)),
-nove pontos **não estavam escritos** e foram escolhidos de forma provisória (regra P2); **aguardam o Lucas** (os D-NNN são dados quando ele responder). A leitura do passado, o ponto de parada, o indicador, o
+nove pontos **não estavam escritos** e foram escolhidos de forma provisória (regra P2). **O Lucas confirmou as nove em 2026-10-29 (D-231 a D-239).** A leitura do passado, o ponto de parada, o indicador, o
 mundo e a calibração estão cobertos por teste (históricos sintéticos, sem rede nem CLI real); **nenhum histórico real foi lido** (a calibração de verdade acontece quando o Lucas abrir o Orb e ver o painel Progressão).
 
 | Id | Pergunta | Proposta (já aplicada, provisória) |
 |---|---|---|
-| Q-T25-1 | Quando a leitura do passado roda? | **Sozinha, ao abrir o Orb**, em segundo plano, sem botão nem configuração (R29: nada de parâmetro novo). Só com o registro local gravando: sem ele não há ponto de parada, e a leitura espera. |
-| Q-T25-2 | Qual é a unidade do ponto de parada? | **A sessão líder inteira, com a Team dela**, por versão da tabela de XP. As entradas e a marca de "lida" são gravadas numa transação só. Uma leitura interrompida recomeça a sessão que não terminou (as já marcadas nunca voltam). |
-| Q-T25-3 | O que a meta de D-107 quer dizer em números? | "A sessão típica fica entre os níveis 2 e 4" = a **mediana das sessões que têm alguma XP** (sessão sem recibo nenhum não diz nada da curva). "Só sessões excepcionais passam do 8" = **no máximo 5%** das sessões acima do nível 8. |
-| Q-T25-4 | Que curvas o relatório compara? | A em uso e **k = 25, 50, 75, 100, 150, 200**, mais a faixa de *k* (de 5 em 5) que cumpre a meta. Realm e Mankind mantêm a proporção atual **1 : 10 : 50** do *k* do Alter Ego em cada curva. |
-| Q-T25-5 | E os commits do passado? | Entram como **provisórios**, como os da sala. Os que passaram de 30 dias sem chegar à principal **expiram na leitura** (regra pura); os recentes esperam o Probe dos commits (o git decide), mesmo que a sessão não esteja mais na sala. |
-| Q-T25-6 | Como não pesar no Orb? | Uma thread, **uma sessão por vez, um lote por passo**, descansando 3 vezes o que gastou (~25% de uma CPU no máximo); as sessões mais **recentes primeiro**. A thread nunca toca no mundo: entrega o resultado e o `Hub` o aplica. |
-| Q-T25-7 | A sessão antiga aparece na cidade? | **Não**: não é personagem (não está na sala, não tem estado nem nome). Só soma no Realm, em Mankind e no placar, e entra no relatório. O extrato do painel continua só com as sessões que o Orb viu na sala. |
-| Q-T25-8 | E os realms que o Lucas escondeu? | O passado deles é lido igual (nada se apaga), mas **fica fora do relatório e de Mankind**, como o resto do que está escondido. |
-| Q-T25-9 | Quem escolhe o novo *k*, e como ele entra? | **O Lucas**, olhando o relatório com o histórico real. O escolhido vira uma nova linha em `rules.XP_TABLE` (versão 2); o extrato da v1 fica intacto e o passado é lido de novo para a v2 (D-203). **Até lá, os *k* seguem 50 / 500 / 2.500.** |
+| ~~Q-T25-1~~ D-231 | Quando a leitura do passado roda? | **Sozinha, ao abrir o Orb**, em segundo plano, sem botão nem configuração (R29: nada de parâmetro novo). Só com o registro local gravando: sem ele não há ponto de parada, e a leitura espera. |
+| ~~Q-T25-2~~ D-232 | Qual é a unidade do ponto de parada? | **A sessão líder inteira, com a Team dela**, por versão da tabela de XP. As entradas e a marca de "lida" são gravadas numa transação só. Uma leitura interrompida recomeça a sessão que não terminou (as já marcadas nunca voltam). |
+| ~~Q-T25-3~~ D-233 | O que a meta de D-107 quer dizer em números? | "A sessão típica fica entre os níveis 2 e 4" = a **mediana das sessões que têm alguma XP** (sessão sem recibo nenhum não diz nada da curva). "Só sessões excepcionais passam do 8" = **no máximo 5%** das sessões acima do nível 8. |
+| ~~Q-T25-4~~ D-234 | Que curvas o relatório compara? | A em uso e **k = 25, 50, 75, 100, 150, 200**, mais a faixa de *k* (de 5 em 5) que cumpre a meta. Realm e Mankind mantêm a proporção atual **1 : 10 : 50** do *k* do Alter Ego em cada curva. |
+| ~~Q-T25-5~~ D-235 | E os commits do passado? | Entram como **provisórios**, como os da sala. Os que passaram de 30 dias sem chegar à principal **expiram na leitura** (regra pura); os recentes esperam o Probe dos commits (o git decide), mesmo que a sessão não esteja mais na sala. |
+| ~~Q-T25-6~~ D-236 | Como não pesar no Orb? | Uma thread, **uma sessão por vez, um lote por passo**, descansando 3 vezes o que gastou (~25% de uma CPU no máximo); as sessões mais **recentes primeiro**. A thread nunca toca no mundo: entrega o resultado e o `Hub` o aplica. |
+| ~~Q-T25-7~~ D-237 | A sessão antiga aparece na cidade? | **Não**: não é personagem (não está na sala, não tem estado nem nome). Só soma no Realm, em Mankind e no placar, e entra no relatório. O extrato do painel continua só com as sessões que o Orb viu na sala. |
+| ~~Q-T25-8~~ D-238 | E os realms que o Lucas escondeu? | O passado deles é lido igual (nada se apaga), mas **fica fora do relatório e de Mankind**, como o resto do que está escondido. |
+| ~~Q-T25-9~~ D-239 | Quem escolhe o novo *k*, e como ele entra? | **O Lucas**, olhando o relatório com o histórico real. O escolhido vira uma nova linha em `rules.XP_TABLE` (versão 2); o extrato da v1 fica intacto e o passado é lido de novo para a v2 (D-203). **Até lá, os *k* seguem 50 / 500 / 2.500.** |
+
+**Limites conhecidos da leitura do passado (declarados, não são decisões do Lucas):**
+
+- Uma sessão que falha (arquivo que sumiu, transcript do Claude sem nenhum evento, rollout ainda incompleto) **nunca ganha a marca** e é tentada de novo a cada abertura; aparece só na contagem de erros do indicador.
+- O plano (`_plan()`) roda **uma vez** por abertura: a sessão que o índice listar depois da primeira varredura (e o cache das sessões-filhas do Codex, Hermes e opencode) só entra na próxima abertura; as criadas com o Orb aberto são da sala.
+- `World.xp_report` é pedido pelo loop e lê `world.realms` e `world.past` enquanto a thread de leitura aplica eventos: só tira cópias com `list(...)` (uma corrida pequena é tolerada, como no extrato).
+- `PastXp` fecha cada sessão com `ledger.settle([], hora de parede)`: o relógio de parede é da borda e é o mesmo critério de `World.expire_commits`.
+- O custo com rollouts de centenas de MB e bancos grandes **não foi medido** (nenhum histórico real foi lido), e uma sessão interrompida recomeça do início.
+- O `record_past` grava no disco primeiro: se a transação falha, a sessão não parece lida (nem em memória) e é lida de novo na próxima abertura.
